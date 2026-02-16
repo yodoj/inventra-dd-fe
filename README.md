@@ -69,7 +69,7 @@ http://localhost:5173/
         └───views
 ```
 
-### 📌 Penjelasan Singkat
+### Penjelasan Singkat
 
 - **.vscode/**  
   Berisi konfigurasi khusus untuk Visual Studio Code.
