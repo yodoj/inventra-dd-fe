@@ -1,88 +1,74 @@
 # INVENTRA DD - Inventory and Resource Asset System Sekolah Islam Dian Didaktika
 
-Aplikasi frontend berbasis Vue.js untuk manajemen aset sekolah, mencakup:
+## Penjelasan Fitur Ridya Azizah Khayyira Mumtaz - 2306245895
+### 1. Mengelola Aset (EPIC02):
+**Tujuan Fitur:**
+- Memungkinkan pengguna melihat daftar aset pada unit masing-masing untuk meningkatkan transparansi kondisi aset.
 
-  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset, persetujuan peminjaman, persetujuan pengadaan aset, pengantian barang rusak
+**Komponen:**
+- Daftar Aset
+  - Menampilkan tabel aset (Nama, Kategori, Unit, Status, Jumlah).
+  - Data ditampilkan sesuai hak akses role.
+  - Search berdasarkan nama aset.
+  - Filter berdasarkan Kategori, Status, dan Unit (untuk Sarpras dan Yayasan).
+- Tambah Aset untuk Sarpras dan Yayasan
+  - Form modal dengan input lengkap (Nama, Kategori, Jumlah, Status, Unit*).
+  - Validasi field wajib.
+  - Notifikasi sukses/gagal setelah submit.
+- Edit Aset untuk Sarpras dan Yayasan
+  - Form pre-filled dengan data sebelumnya.
+  - Update data melalui API.
+  - Refresh otomatis setelah berhasil.
+- Hapus Aset untuk Yayasan dan Sarpras
+  - Dialog konfirmasi sebelum menghapus.
+  - Notifikasi hasil aksi.
 
-  - **MIS**: laporan utilisasi aset & pengadaan
+### 2. Mengajukan Peminjaman Aset (EPIC03):
+**Tujuan Fitur:**
+- Memfasilitasi proses pengajuan peminjaman aset baik dalam unit sendiri maupun lintas unit secara terstruktur dan terdokumentasi.
 
-  - **EIS**: dashboard pengadaan & peminjaman
+**Komponen:**
+- Form Pengajuan
+  - Dropdown aset tersedia.
+  - Input jumlah, tanggal mulai & kembali.
+  - Input tujuan peminjaman.
+  - Dropdown unit tujuan (khusus Sarpras).
+  - Validasi frontend (field wajib & validasi tanggal).
+  - Notifikasi sukses setelah submit.
 
-Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
+- Daftar Pengajuan Saya
+  - Menampilkan tabel pengajuan milik user.
+  - Kolom: Aset, Jumlah, Periode, Status.
 
+- Edit & Delete (Jika status pengajuan masih DIAJUKAN)
+  - Tombol aksi hanya muncul jika status masih DIAJUKAN.
+  - Notifikasi hasil aksi.
 
-## Tech Stack
+### 3. Dashboard Utilisasi Aset (EPC11):
+**Tujuan Fitur:**
+- Menyediakan ringkasan dan analisis data utilisasi aset untuk membantu pengambilan keputusan berdasarkan role.
 
-- VS Code
-- Node.js
-- Git
+**Komponen Dashboard:**
+- Summary Card Inventori Aset
+   - Total seluruh aset.
+   - Total per kategori.
+   - Data sesuai role (Yayasan: semua unit, lainnya: unit sendiri).
 
-## Instalasi dan Menjalankan Aplikasi
+- Grafik Utilisasi
+  - Bar Chart utilisasi per unit (khusus Yayasan).
 
-Jalankan beberapa komando berikut ini melalui aplikasi
-terminal seperti Command Prompt, PowerShell, Windows Terminal, Bash, Zsh, atau aplikasi
-sejenis. 
+- Tren Utilisasi Aset
+  - Line Chart tren utilisasi berdasarkan periode.
 
-### Clone Repository 
+- Top 5 Aset Paling Sering Dipinjam
+  - Menampilkan 5 aset dengan frekuensi peminjaman tertinggi. 
 
-```sh
-git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-frontend.git
-```
+- Top 5 Aset Paling Sering Rusak/Hilang
+  - Menampilkan 5 aset dengan tingkat kerusakan atau kehilangan tertinggi.
 
-### Masuk ke folder project
-
-```sh
-cd ibuprofen-frontend
-```
-
-### Install dependencies
-
-```sh
-npm install
-```
-
-### Jalankan project
-
-```sh
-cd npm run dev
-```
-
-### Mengakses aplikasi di browser
-
-Setelah menjalankan perintah di atas, aplikasi dapat diakses melalui:
-
-http://localhost:5173/
-
-
-## Struktur Direktori
-
-```sh
-└───ibuprofen-frontend
-    ├───.vscode
-    ├───public
-    └───src
-        ├───assets
-        ├───components
-        │   └───icons
-        ├───router
-        ├───stores
-        └───views
-```
-
-### Penjelasan Singkat
-
-- **.vscode/**  
-  Berisi konfigurasi khusus untuk Visual Studio Code.
-
-- **public/**  
-  Berisi file statis yang dapat diakses langsung oleh browser.
-
-- **src/**  
-  Folder utama pengembangan aplikasi.
-
-  - **assets/** : Menyimpan gambar, file CSS, dan aset lainnya.  
-  - **components/** : Komponen Vue yang dapat digunakan kembali.  
-    - **icons/** : Komponen ikon yang digunakan dalam aplikasi.  
-  - **router/** : Konfigurasi routing aplikasi.  
-  - **stores/** : Manajemen state aplikasi.  
-  - **views/** : Halaman utama yang ditampilkan kepada pengguna.
+- Filter Dashboard
+  - Komponen: 
+    - Periode (bulan/tahun)
+    - Kategori aset
+    - Unit (khusus Yayasan)
+  - Data diperbarui secara dinamis sesuai filter.
