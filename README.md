@@ -1,88 +1,52 @@
-# INVENTRA DD - Inventory and Resource Asset System Sekolah Islam Dian Didaktika
+## Penjelasan Fitur Nadira Aliya Nashwa - 2306165692
+## 1. Mengajukan Pengadaan Aset (EPIC04)
+**Tujuan Fitur:**
+Mengatur proses pengajuan pengadaan aset agar:
+- Setiap kebutuhan aset terdokumentasi dengan jelas.
+- Pengadaan dilakukan berdasarkan kebutuhan yang terverifikasi.
+- Memudahkan proses review dan persetujuan pengadaan.
+- Mendukung perencanaan dan kontrol anggaran.
+- Mengurangi risiko pengadaan yang tidak diperlukan.
 
-Aplikasi frontend berbasis Vue.js untuk manajemen aset sekolah, mencakup:
+**Alur Proses:**
+- Guru/Sarpras mengajukan pengadaan aset.
+- Status awal: DIAJUKAN.
+- Kepala Sekolah melakukan review.
+- Jika disetujui → Status berubah menjadi DISETUJUI OLEH KEPALA SEKOLAH.
+- Jika ditolak → Status berubah menjadi DITOLAK.
+- Jika disetujui oleh Kepsek → diteruskan ke Yayasan untuk review akhir.
+- Jika disetujui oleh Yayasan → Status berubah menjadi DISETUJUI OLEH YAYASAN.
+- Jika ditolak oleh Yayasan → Status berubah menjadi DITOLAK.
 
-  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset, persetujuan peminjaman, persetujuan pengadaan aset, pengantian barang rusak
+## 2. Mengelola Persetujuan Peminjaman Aset (EPIC05)
+**Tujuan Fitur:**
+Mengatur proses review dan persetujuan peminjaman aset agar:
+- Tidak ada pengajuan peminjaman tanpa approval
+- Proses terdokumentasi dengan baik
+- Mengurangi risiko bentrok penggunaan aset.
+- Menjaga kontrol dan ketersediaan aset di setiap unit.
+Meningkatkan transparansi proses peminjaman.
 
-  - **MIS**: laporan utilisasi aset & pengadaan
+**Alur Proses:**
+- Guru/Sarpras (lintas unit)/Siswa mengajukan peminjaman aset
+- Status awal: DIAJUKAN
+- Sarpras melakukan review
+- Jika disetujui → Status pengajuan berubah menjadi DISETUJUI
+- Jika ditolak → Status pengajuan berubah menjadi DITOLAK
 
-  - **EIS**: dashboard pengadaan & peminjaman
+### 3. Dashboard Pengadaan Aset (EPIC10):
+**Tujuan Fitur:**
+Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pengambilan keputusan.
 
-Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
+**Komponen Dashboard:**
+- Summary Card:
+    Menampilkan total pengadaan, total biaya, perbandingan antar unit (Khusus yayasan)
 
+- Grafik Pengadaan per Tahun:
+    Menampilkan total biaya pengadaan dan jumlah aset pengadaan tiap tahun
 
-## Tech Stack
+- Top 5 Aset Paling Cepat Habis
+    Menampilkan aset yang paling cepat habis / paling sering dibeli ulang.
 
-- VS Code
-- Node.js
-- Git
-
-## Instalasi dan Menjalankan Aplikasi
-
-Jalankan beberapa komando berikut ini melalui aplikasi
-terminal seperti Command Prompt, PowerShell, Windows Terminal, Bash, Zsh, atau aplikasi
-sejenis. 
-
-### Clone Repository 
-
-```sh
-git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-frontend.git
-```
-
-### Masuk ke folder project
-
-```sh
-cd ibuprofen-frontend
-```
-
-### Install dependencies
-
-```sh
-npm install
-```
-
-### Jalankan project
-
-```sh
-cd npm run dev
-```
-
-### Mengakses aplikasi di browser
-
-Setelah menjalankan perintah di atas, aplikasi dapat diakses melalui:
-
-http://localhost:5173/
-
-
-## Struktur Direktori
-
-```sh
-└───ibuprofen-frontend
-    ├───.vscode
-    ├───public
-    └───src
-        ├───assets
-        ├───components
-        │   └───icons
-        ├───router
-        ├───stores
-        └───views
-```
-
-### Penjelasan Singkat
-
-- **.vscode/**  
-  Berisi konfigurasi khusus untuk Visual Studio Code.
-
-- **public/**  
-  Berisi file statis yang dapat diakses langsung oleh browser.
-
-- **src/**  
-  Folder utama pengembangan aplikasi.
-
-  - **assets/** : Menyimpan gambar, file CSS, dan aset lainnya.  
-  - **components/** : Komponen Vue yang dapat digunakan kembali.  
-    - **icons/** : Komponen ikon yang digunakan dalam aplikasi.  
-  - **router/** : Konfigurasi routing aplikasi.  
-  - **stores/** : Manajemen state aplikasi.  
-  - **views/** : Halaman utama yang ditampilkan kepada pengguna.
+- Top 5 Pengadaan dengan Biaya Terbesar
+    Menampilkan 5 transaksi pengadaan dengan nilai tertinggi.
