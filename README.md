@@ -1,48 +1,88 @@
-# inventra-dd-fe
+# INVENTRA DD - Inventory and Resource Asset System Sekolah Islam Dian Didaktika
 
-This template should help get you started developing with Vue 3 in Vite.
+Aplikasi frontend berbasis Vue.js untuk manajemen aset sekolah, mencakup:
 
-## Recommended IDE Setup
+  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset, persetujuan peminjaman, persetujuan pengadaan aset, pengantian barang rusak
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+  - **MIS**: laporan utilisasi aset & pengadaan
 
-## Recommended Browser Setup
+  - **EIS**: dashboard pengadaan & peminjaman
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
 
-## Type Support for `.vue` Imports in TS
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Tech Stack
 
-## Customize configuration
+- VS Code
+- Node.js
+- Git
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Instalasi dan Menjalankan Aplikasi
 
-## Project Setup
+Jalankan beberapa komando berikut ini melalui aplikasi
+terminal seperti Command Prompt, PowerShell, Windows Terminal, Bash, Zsh, atau aplikasi
+sejenis. 
+
+### Clone Repository 
+
+```sh
+git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-frontend.git
+```
+
+### Masuk ke folder project
+
+```sh
+cd ibuprofen-frontend
+```
+
+### Install dependencies
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Jalankan project
 
 ```sh
-npm run dev
+cd npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### Mengakses aplikasi di browser
+
+Setelah menjalankan perintah di atas, aplikasi dapat diakses melalui:
+
+http://localhost:5173/
+
+
+## Struktur Direktori
 
 ```sh
-npm run build
+└───ibuprofen-frontend
+    ├───.vscode
+    ├───public
+    └───src
+        ├───assets
+        ├───components
+        │   └───icons
+        ├───router
+        ├───stores
+        └───views
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### 📌 Penjelasan Singkat
 
-```sh
-npm run lint
-```
+- **.vscode/**  
+  Berisi konfigurasi khusus untuk Visual Studio Code.
+
+- **public/**  
+  Berisi file statis yang dapat diakses langsung oleh browser.
+
+- **src/**  
+  Folder utama pengembangan aplikasi.
+
+  - **assets/** : Menyimpan gambar, file CSS, dan aset lainnya.  
+  - **components/** : Komponen Vue yang dapat digunakan kembali.  
+    - **icons/** : Komponen ikon yang digunakan dalam aplikasi.  
+  - **router/** : Konfigurasi routing aplikasi.  
+  - **stores/** : Manajemen state aplikasi.  
+  - **views/** : Halaman utama yang ditampilkan kepada pengguna.
