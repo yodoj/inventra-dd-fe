@@ -1,5 +1,5 @@
 ## Penjelasan Fitur Nadira Aliya Nashwa - 2306165692
-## 1. Mengajukan Pengadaan Aset (EPIC04)
+### 1. Mengajukan Pengadaan Aset (EPIC04)
 **Tujuan Fitur:**
 Mengatur proses pengajuan pengadaan aset agar:
 - Setiap kebutuhan aset terdokumentasi dengan jelas.
@@ -18,7 +18,7 @@ Mengatur proses pengajuan pengadaan aset agar:
 - Jika disetujui oleh Yayasan → Status berubah menjadi DISETUJUI OLEH YAYASAN.
 - Jika ditolak oleh Yayasan → Status berubah menjadi DITOLAK.
 
-## 2. Mengelola Persetujuan Peminjaman Aset (EPIC05)
+### 2. Mengelola Persetujuan Peminjaman Aset (EPIC05)
 **Tujuan Fitur:**
 Mengatur proses review dan persetujuan peminjaman aset agar:
 - Tidak ada pengajuan peminjaman tanpa approval
