@@ -15,8 +15,10 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "axios": "^1.13.5",
     "date-fns": "^4.1.0",
     "flowbite": "^4.0.1",
+    "lucide-vue-next": "^0.575.0",
     "pinia": "^3.0.4",
     "simple-datatables": "^10.2.0",
     "uuid": "^13.0.0",
