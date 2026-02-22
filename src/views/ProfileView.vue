@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
+const router = useRouter();
 
 const profile = computed(() => authStore.user);
 const isSiswa = computed(() => {
@@ -20,7 +22,7 @@ const initials = computed(() => {
 });
 
 const handleEditClick = () => {
-  console.log('Edit profile clicked');
+  router.push('/profile/edit');
 };
 </script>
 
