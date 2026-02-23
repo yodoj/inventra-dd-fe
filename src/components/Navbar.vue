@@ -183,9 +183,9 @@ const isSarpras = () => {
               <p class="user-role">{{ authStore.userRole }}</p>
             </div>
             <div class="divider"></div>
-            <a href="#" class="dropdown-item">
+            <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
-            </a>
+            </router-link>
             <a v-if="isSarpras()" href="#" class="dropdown-item">
               <Settings class="icon-sm" /> Pengelolaan Profile
             </a>

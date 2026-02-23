@@ -20,6 +20,21 @@ const router = createRouter({
       name: 'about',
       component: () => import('../views/AboutView.vue'),
     },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+    },
+    {
+      path: '/profile/edit',
+      name: 'edit-profile',
+      component: () => import('../views/EditProfileView.vue'),
+    },
+    {
+      path: '/profile/change-password',
+      name: 'change-password',
+      component: () => import('../views/ChangePasswordView.vue'),
+    },
   ],
 })
 
