@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import axios from 'axios';
+import { toast } from 'vue-sonner';
+import api from '@/services/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -38,9 +39,7 @@ const fetchProfile = async () => {
   if (!authStore.token) { router.push('/login'); return; }
   isLoading.value = true;
   try {
-    const response = await axios.get('http://localhost:8080/api/users/profile', {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    const response = await api.get('/api/profile');
     const data = response.data.data;
     formData.value = {
       name: data.name || '',
@@ -52,21 +51,53 @@ const fetchProfile = async () => {
       kelas: data.kelas || '',
     };
   } catch (err: any) {
-    if (err.response?.status === 401) router.push('/login');
-    else errorMessage.value = 'Gagal memuat data profil. Silakan coba lagi.';
+    errorMessage.value = 'Gagal memuat data profil. Silakan coba lagi.';
   } finally {
     isLoading.value = false;
   }
 };
 
 const handleSaveProfile = async () => {
-  if (!formData.value.name.trim()) { errorMessage.value = 'Nama Lengkap tidak boleh kosong'; return; }
-  if (!formData.value.phoneNumber.trim()) { errorMessage.value = 'No Telepon tidak boleh kosong'; return; }
-  if (!/^\d+$/.test(formData.value.phoneNumber)) { errorMessage.value = 'No Telepon hanya boleh berisi angka'; return; }
+  // Validation: Name
+  if (!formData.value.name.trim()) {
+    errorMessage.value = 'Nama Lengkap tidak boleh kosong';
+    return;
+  }
+
+  // Validation: Phone Number
+  if (!formData.value.phoneNumber.trim()) {
+    errorMessage.value = 'No Telepon tidak boleh kosong';
+    return;
+  }
+  if (!/^\d+$/.test(formData.value.phoneNumber)) {
+    errorMessage.value = 'No Telepon hanya boleh berisi angka';
+    return;
+  }
+
+  // Validation: For SISWA role only
   if (isSiswa.value) {
-    if (!formData.value.nisn.trim()) { errorMessage.value = 'NISN tidak boleh kosong'; return; }
-    if (!/^\d+$/.test(formData.value.nisn)) { errorMessage.value = 'NISN hanya boleh berisi angka'; return; }
-    if (!formData.value.kelas.trim()) { errorMessage.value = 'Kelas tidak boleh kosong'; return; }
+    if (!formData.value.nisn.trim()) {
+      errorMessage.value = 'NISN tidak boleh kosong untuk Siswa';
+      return;
+    }
+    if (!/^\d+$/.test(formData.value.nisn)) {
+      errorMessage.value = 'NISN hanya boleh berisi angka';
+      return;
+    }
+    if (!formData.value.kelas.trim()) {
+      errorMessage.value = 'Kelas tidak boleh kosong untuk Siswa';
+      return;
+    }
+  } else {
+    // Non-SISWA cannot have NISN or KELAS
+    if (formData.value.nisn?.trim()) {
+      errorMessage.value = 'NISN hanya dapat diisi oleh Siswa';
+      return;
+    }
+    if (formData.value.kelas?.trim()) {
+      errorMessage.value = 'Kelas hanya dapat diisi oleh Siswa';
+      return;
+    }
   }
 
   isSaving.value = true;
@@ -74,20 +105,26 @@ const handleSaveProfile = async () => {
   successMessage.value = '';
 
   try {
-    const payload: any = { name: formData.value.name, phoneNumber: formData.value.phoneNumber };
-    if (isSiswa.value) { payload.nisn = formData.value.nisn; payload.kelas = formData.value.kelas; }
+    const payload: any = {
+      name: formData.value.name,
+      phoneNumber: formData.value.phoneNumber
+    };
 
-    const response = await axios.put('http://localhost:8080/api/users/profile', payload, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    });
+    if (isSiswa.value) {
+      payload.nisn = formData.value.nisn;
+      payload.kelas = formData.value.kelas;
+    }
+
+    const response = await api.put('/api/profile', payload);
 
     const updatedUser = { ...authStore.user, ...response.data.data };
     authStore.setAuth(updatedUser, authStore.token!);
-    successMessage.value = 'Profil berhasil diperbarui!';
+
+    toast.success('Profil berhasil diperbarui!');
     setTimeout(() => router.push('/profile'), 1500);
   } catch (err: any) {
-    if (err.response?.status === 401) router.push('/login');
-    else errorMessage.value = err.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
+    errorMessage.value = err.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
+    toast.error(errorMessage.value);
   } finally {
     isSaving.value = false;
   }

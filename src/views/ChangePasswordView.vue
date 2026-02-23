@@ -3,7 +3,8 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { Eye, EyeOff } from 'lucide-vue-next';
-import axios from 'axios';
+import { toast } from 'vue-sonner';
+import api from '@/services/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -59,27 +60,18 @@ const handleSavePassword = async () => {
   successMessage.value = '';
 
   try {
-    await axios.put(
-      'http://localhost:8080/api/users/profile/password',
-      {
-        currentPassword: formData.value.currentPassword,
-        newPassword: formData.value.newPassword,
-        confirmPassword: formData.value.confirmPassword
-      },
-      {
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      }
-    );
+    await api.put('/api/profile/password', {
+      currentPassword: formData.value.currentPassword,
+      newPassword: formData.value.newPassword,
+      confirmPassword: formData.value.confirmPassword
+    });
 
-    successMessage.value = 'Password berhasil diubah!';
+    toast.success('Password berhasil diubah!');
     setTimeout(() => router.push('/profile'), 1500);
   } catch (err: any) {
-    if (err.response?.status === 401) {
-      router.push('/login');
-    } else {
-      errorMessage.value =
-        err.response?.data?.message || 'Gagal mengubah password. Silakan coba lagi.';
-    }
+    errorMessage.value =
+      err.response?.data?.message || 'Gagal mengubah password. Silakan coba lagi.';
+    toast.error(errorMessage.value);
   } finally {
     isLoading.value = false;
   }
