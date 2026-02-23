@@ -1,152 +1,89 @@
 # INVENTRA DD - Inventory and Resource Asset System Sekolah Islam Dian Didaktika
 
+Aplikasi frontend berbasis Vue.js untuk manajemen aset sekolah, mencakup:
 
-Aplikasi backend berbasis Spring Boot untuk manajemen aset sekolah, mencakup:
-  
-  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset,
-  persetujuan peminjaman, persetujuan pengadaan aset, penggantian barang rusak
+  - **TPS**: Kelola profil, kelola aset, peminjaman aset, pengadaan aset, persetujuan peminjaman, persetujuan pengadaan aset, pengantian barang rusak
 
-  - **MIS**: Laporan utilisasi aset & pengadaan
+  - **MIS**: laporan utilisasi aset & pengadaan
 
-  - **EIS**: Dashboard pengadaan & peminjaman
+  - **EIS**: dashboard pengadaan & peminjaman
 
 Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap branch anggota.
 
+
 ## Tech Stack
 
-- Java 11+
-- Spring Boot
-- Gradle
-- Database (PostgreSQL)
-- Docker 
- 
+- VS Code
+- Node.js
+- Git
+
 ## Instalasi dan Menjalankan Aplikasi
+
 Jalankan beberapa komando berikut ini melalui aplikasi
 terminal seperti Command Prompt, PowerShell, Windows Terminal, Bash, Zsh, atau aplikasi
 sejenis.
 
 **1. Clone Repository**
-```
-git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-backend.git
+
+```sh
+git clone https://gitlab.cs.ui.ac.id/propensi-2025-2026-genap/kelas-a/ibuprofen/ibuprofen-frontend.git
 ```
 
 **2. Masuk ke folder project**
 ```
-cd ibuprofen-backend
+cd ibuprofen-frontend
 ```
 
-**3. Menjalankan aplikasi**
+**3. Install dependencies**
 ```
-./gradlew bootRun
+npm install
 ```
+
+**4. Jalankan project**
+
+```sh
+cd npm run dev
+```
+
+**5. Mengakses aplikasi di browser**
+
+Setelah menjalankan perintah di atas, aplikasi dapat diakses melalui:
+
+http://localhost:5173/
+
 
 ## Struktur Direktori
-```
-ibuprofen-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/io/ibuprofen/inventra_dd_be/
-│   │   │   ├── InventraDdBeApplication.java
-│   │   │   ├── Aset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── Profile
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PeminjamanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PengadaanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PersetujuanPeminjamanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── PersetujuanPengadaanAset
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   │   ├── Penggantian Barang Rusak
-│   │   │   │   ├── config/
-│   │   │   │   ├── security/
-│   │   │   │   ├── model/
-│   │   │   │   ├── repository/
-│   │   │   │   ├── service/
-│   │   │   │   ├── restcontroller/
-│   │   │   │   ├── dto/
-│   │   │   │   │   ├── request/
-│   │   │   │   │   └── response/
-│   │   │   │   └── util/
-│   │   └── resources/
-│   │
-│   └── test/
-│   │   ├── java/io/ibuprofen/inventra_dd_be/
-│   │       └── InventraDdBeApplicationTests.java
-│
-├── .gitignore
-└── README.md
+
+```sh
+└───ibuprofen-frontend
+    ├───.vscode
+    ├───public
+    └───src
+        ├───assets
+        ├───components
+        │   └───icons
+        ├───router
+        ├───stores
+        └───views
 ```
 
-## Penjelasan Struktur Direktori:
+### Penjelasan Singkat
 
-| Folder            | Fungsi                                                 |
-| ----------------- | ------------------------------------------------------ |
-| `config/`         | Konfigurasi khusus module (bean, config tambahan, dll) |
-| `security/`       | Pengaturan keamanan (JWT filter, role access, dsb)     |
-| `model/`          | Entity / representasi tabel database                   |
-| `repository/`     | Interface JPA untuk akses database                     |
-| `service/`        | Business logic aplikasi                                |
-| `restcontroller/` | Endpoint API (Controller REST)                         |
-| `dto/request/`    | Object untuk menerima request dari client              |
-| `dto/response/`   | Object untuk response ke client                        |
-| `util/`           | Helper / utility khusus module                         |
+- **.vscode/**  
+  Berisi konfigurasi khusus untuk Visual Studio Code.
+
+- **public/**  
+  Berisi file statis yang dapat diakses langsung oleh browser.
+
+- **src/**  
+  Folder utama pengembangan aplikasi.
+
+  - **assets/** : Menyimpan gambar, file CSS, dan aset lainnya.  
+  - **components/** : Komponen Vue yang dapat digunakan kembali.  
+    - **icons/** : Komponen ikon yang digunakan dalam aplikasi.  
+  - **router/** : Konfigurasi routing aplikasi.  
+  - **stores/** : Manajemen state aplikasi.  
+  - **views/** : Halaman utama yang ditampilkan kepada pengguna.
 
 
 ## Penjelasan Fitur Raysha Reifika Ryzki - 2306208426
@@ -195,40 +132,48 @@ Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pe
 
 
 ## Penjelasan Fitur Ridya Azizah Khayyira Mumtaz - 2306245895
-
 ### 1. Mengelola Aset (EPIC02):
 **Tujuan Fitur:**
 - Memungkinkan pengguna melihat daftar aset pada unit masing-masing untuk meningkatkan transparansi kondisi aset.
 
-**Alur Proses:**
-- Sistem menampilkan daftar aset sesuai hak akses:
-  - Role unit (Guru/Siswa/Kepsek):  hanya melihat aset pada unit sendiri.
-  - Sarpras: mengelola aset pada unit miliknya.
-  - Yayasan: mengelola aset pada seluruh unit.
-- Pengguna dapat melakukan pencarian dan filter berdasarkan kategori, status, dan unit (jika diizinkan).
-- Pengguna dengan hak akses (Sarpras/Yayasan) dapat:
-  - Menambahkan aset baru
-  - Memperbarui detail aset
-  - Menghapus aset tertentu
-- Data aset diperbarui dalam sistem dan ditampilkan kembali pada daftar aset.
+**Komponen:**
+- Daftar Aset
+  - Menampilkan tabel aset (Nama, Kategori, Unit, Status, Jumlah).
+  - Data ditampilkan sesuai hak akses role.
+  - Search berdasarkan nama aset.
+  - Filter berdasarkan Kategori, Status, dan Unit (untuk Sarpras dan Yayasan).
+- Tambah Aset untuk Sarpras dan Yayasan
+  - Form modal dengan input lengkap (Nama, Kategori, Jumlah, Status, Unit*).
+  - Validasi field wajib.
+  - Notifikasi sukses/gagal setelah submit.
+- Edit Aset untuk Sarpras dan Yayasan
+  - Form pre-filled dengan data sebelumnya.
+  - Update data melalui API.
+  - Refresh otomatis setelah berhasil.
+- Hapus Aset untuk Yayasan dan Sarpras
+  - Dialog konfirmasi sebelum menghapus.
+  - Notifikasi hasil aksi.
 
 ### 2. Mengajukan Peminjaman Aset (EPIC03):
 **Tujuan Fitur:**
 - Memfasilitasi proses pengajuan peminjaman aset baik dalam unit sendiri maupun lintas unit secara terstruktur dan terdokumentasi.
 
-**Alur Proses:**
-- Pengguna (Siswa/Guru/Sarpras) membuka halaman pengajuan peminjaman.
-- Sistem menampilkan daftar aset yang tersedia dan dapat dipinjam sesuai unit dan role.
-- Pengguna mengisi detail peminjaman (aset, waktu, tujuan, jumlah).
-- Sistem melakukan validasi:
-  - Aset aktif dan tersedia
-  - Jumlah tidak melebihi stok
-  - Waktu pengembalian lebih besar dari waktu peminjaman
-  - Untuk lintas unit (Sarpras), unit tujuan harus berbeda dari unit asal
-- Jika valid, sistem menyimpan data dan menetapkan status awal DIAJUKAN.
-- Pengguna dapat melihat daftar pengajuan yang telah dibuat beserta statusnya.
-- Selama status masih DIAJUKAN, pengguna dapat memperbarui atau menghapus pengajuan.
-- Sistem memastikan setiap perubahan hanya dapat dilakukan oleh pemilik pengajuan dan sesuai unitnya
+**Komponen:**
+- Form Pengajuan
+  - Dropdown aset tersedia.
+  - Input jumlah, tanggal mulai & kembali.
+  - Input tujuan peminjaman.
+  - Dropdown unit tujuan (khusus Sarpras).
+  - Validasi frontend (field wajib & validasi tanggal).
+  - Notifikasi sukses setelah submit.
+
+- Daftar Pengajuan Saya
+  - Menampilkan tabel pengajuan milik user.
+  - Kolom: Aset, Jumlah, Periode, Status.
+
+- Edit & Delete (Jika status pengajuan masih DIAJUKAN)
+  - Tombol aksi hanya muncul jika status masih DIAJUKAN.
+  - Notifikasi hasil aksi.
 
 ### 3. Dashboard Utilisasi Aset (EPC11):
 **Tujuan Fitur:**
@@ -236,18 +181,15 @@ Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pe
 
 **Komponen Dashboard:**
 - Summary Card Inventori Aset
-   - Menampilkan total jumlah seluruh aset & per kategori
-   - Data ditampilkan sesuai hak akses role:
-     - Yayasan: seluruh unit.
-     - Sarpras/Kepsek: hanya unit masing-masing.
+   - Total seluruh aset.
+   - Total per kategori.
+   - Data sesuai role (Yayasan: semua unit, lainnya: unit sendiri).
 
-- Utilisasi Aset per Unit (Khusus Yayasan)
-  - Menampilkan perbandingan tingkat utilisasi antar unit.
-  - Hanya muncul jika role = Yayasan.
+- Grafik Utilisasi
+  - Bar Chart utilisasi per unit (khusus Yayasan).
 
 - Tren Utilisasi Aset
-  - Menampilkan tren penggunaan aset berdasarkan periode (bulan/tahun).
-  - Data menyesuaikan filter yang dipilih pengguna.
+  - Line Chart tren utilisasi berdasarkan periode.
 
 - Top 5 Aset Paling Sering Dipinjam
   - Menampilkan 5 aset dengan frekuensi peminjaman tertinggi. 
@@ -256,11 +198,11 @@ Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pe
   - Menampilkan 5 aset dengan tingkat kerusakan atau kehilangan tertinggi.
 
 - Filter Dashboard
-  - Filter akan memperbarui seluruh komponen dashboard secara dinamis sesuai parameter yang dipilih.
   - Komponen: 
     - Periode (bulan/tahun)
     - Kategori aset
     - Unit (khusus Yayasan)
+  - Data diperbarui secara dinamis sesuai filter.
 
 
 ## Penjelasan Fitur Indah Cahya Puspitahati - 2306245453
@@ -488,36 +430,30 @@ Memberikan gambaran visual dan analisis terkait pengadaan aset untuk membantu pe
 
 ## Penjelasan Fitur Patricia Gloria Sujatmoko Silaban - 2306275172
 
-### 1. Modul Manajemen Akun (User Management)
-Fokus pada pengelolaan data profil pengguna dengan keamanan berbasis token dan role.
+### 1. Manajemen Akun Pengguna (User Profile)
+Fitur ini mencakup tampilan untuk melihat dan mengelola data profil pengguna sesuai dengan role masing-masing.
 
-* **Melihat Profil Mandiri**
-    * **Endpoint:** `GET /api/profile`
-    * **Fungsi:** Mengambil data profil lengkap berdasarkan token sesi pengguna yang aktif.
-    * **Keamanan:** Memastikan pengguna hanya dapat mengakses data miliknya sendiri.
-* **Mengedit Profil Mandiri**
-    * **Endpoint:** `PUT /api/profile`
-    * **Fungsi:** Memperbarui informasi profil atau mengubah kata sandi.
-    * **Validasi:** Sistem wajib melakukan validasi agar field `Role`, `Email`, dan `Unit` tidak dapat diubah oleh pemilik akun sendiri untuk menjaga konsistensi organisasi.
-* **Update Akun oleh Admin (Sarpras)**
-    * **Endpoint:** `PUT /api/users/{id}`
-    * **Fungsi:** Memperbarui informasi atau hak akses pengguna lain.
-    * **Otorisasi:** Mengimplementasikan Role-Based Access Control (RBAC) sehingga hanya role **Sarpras** yang dapat mengakses endpoint ini.
+* **[SELF] Melihat Akun Pengguna**
+    * Menampilkan informasi profil lengkap (Nama, Email, No HP, Password, dan field wajib lainnya sesuai role).
+    * Format tampilan yang mudah dibaca untuk verifikasi data mandiri.
+* **[SELF] Mengedit Akun Pengguna**
+    * Formulir yang terisi otomatis (*pre-filled*) dengan data profil saat ini.
+    * Field `Role`, `Unit`, dan `Email` disetel sebagai *read-only* (disabled) untuk menjaga konsistensi data.
+    * Fitur *toggle* (ikon mata) pada input password untuk melihat/menyembunyikan teks.
+    * Notifikasi sukses menggunakan *Pop-up Message* atau *Toast Notification* setelah data berhasil disimpan.
+* **[ADM] Mengedit Akun Pengguna (Role Sarpras)**
+    * Formulir khusus untuk admin Sarpras guna mengubah informasi atau hak akses akun pengguna lain.
+    * Tersedia tombol "Batal" untuk kembali ke halaman daftar tanpa menyimpan perubahan.
 
-### 2. Modul Laporan Pengadaan Aset (Reporting)
-Fokus pada pengolahan data agregat dan ekspor dokumen.
+### 2. Laporan Pengadaan Aset (Reporting)
+Fitur ini mencakup visualisasi data laporan pengadaan dalam bentuk tabel dinamis dan fungsi ekspor.
 
-* **Get Laporan Pengadaan**
-    * **Endpoint:** `GET /api/laporan/pengadaan`
-    * **Parameter:** Menerima `period_type` (daily, monthly, yearly) serta `start_date` dan `end_date`.
-    * **Fitur:** Mendukung filter (Unit, Kategori, Status), pencarian (nama aset), dan pengurutan (estimated_price).
-    * **Otorisasi:** Hanya dapat diakses oleh role **Yayasan, Kepsek, dan Sarpras**.
-* **Export Laporan PDF**
-    * **Endpoint:** `GET /api/laporan/pengadaan/export/pdf`
-    * **Fungsi:** Menghasilkan dokumen PDF berdasarkan dataset yang sesuai dengan filter yang dikirimkan.
-    * **Output:** Mengembalikan file PDF valid (`Content-Type: application/pdf`).
-
-## 🔒 Keamanan & Validasi Global
-* **RBAC:** Setiap endpoint dilindungi oleh pengecekan role sesuai spesifikasi backlog.
-* **Validasi Input:** Mengembalikan error `400 Bad Request` jika format tanggal atau parameter tidak sesuai.
-* **Autentikasi:** Mengembalikan `401/403` untuk token atau role yang tidak valid.
+* **Tabel Laporan Pengadaan**
+    * **Kontrol Periode Dinamis:** Dropdown untuk memilih tipe periode (Harian, Bulanan, Tahunan)
+    * **Filter & Pencarian:** Filter berdasarkan Unit (TK/SD/SMP/SMA/All), Kategori, dan Status. Serta fitur search berdasarkan Nama/Merk Aset.
+    * **Sort & Pagination:** Fitur pengurutan (asc/desc) pada kolom Estimasi Harga dan navigasi halaman (pagination).
+    * **Empty State:** Tampilan khusus jika data tidak ditemukan.
+* **Ekspor Laporan PDF**
+    * Tombol "Unduh PDF" yang mengirimkan filter aktif ke backend.
+    * Status *loading* pada tombol selama proses unduhan berlangsung.
+    * Penanganan error jika API gagal men-generate file.
