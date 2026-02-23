@@ -2,7 +2,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { 
-  Search, 
   ChevronDown, 
   User, 
   LogOut, 
@@ -21,7 +20,6 @@ const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
-const searchQueries = ref('');
 const isProfileOpen = ref(false);
 const openDropdown = ref<string | null>(null);
 let dropdownTimeout: number | null = null;
@@ -170,10 +168,6 @@ const isSarpras = () => {
 
       <!-- Right Actions -->
       <div class="nav-actions">
-        <div class="search-bar">
-          <Search class="search-icon" />
-          <input type="text" placeholder="Search" v-model="searchQueries" />
-        </div>
 
         <!-- Auth Section -->
         <div v-if="authStore.isAuthenticated" class="profile-section">
@@ -339,34 +333,6 @@ const isSarpras = () => {
   gap: 20px;
 }
 
-.search-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-secondary);
-  width: 18px;
-}
-
-.search-bar input {
-  background: var(--gray-100);
-  border: none;
-  padding: 10px 12px 10px 40px;
-  border-radius: 20px;
-  width: 200px;
-  font-size: 0.9rem;
-  transition: width 0.3s, background 0.3s;
-}
-
-.search-bar input:focus {
-  width: 280px;
-  background: var(--gray-200);
-  outline: none;
-}
 
 .profile-section {
   position: relative;
@@ -468,7 +434,5 @@ const isSarpras = () => {
 
 @media (max-width: 1024px) {
   .nav-links { gap: 16px; }
-  .search-bar input { width: 120px; }
-  .search-bar input:focus { width: 180px; }
 }
 </style>
