@@ -35,6 +35,11 @@ const router = createRouter({
       name: 'change-password',
       component: () => import('../views/ChangePasswordView.vue'),
     },
+    {
+      path: '/pengadaan/tinjau/all',
+      name: 'peninjauan-pengadaan-aset-all',
+      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+    }
   ],
 })
 
