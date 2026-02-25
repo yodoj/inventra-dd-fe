@@ -4,41 +4,46 @@
 
     <div class="review-card">
       <div class="review-grid">
-        <!-- LEFT -->
         <div class="field">
           <label class="label">Status</label>
-          <div class="select-wrap">
-            <select
-              v-model="form.status"
-              class="status-select status-select-lg"
-              :disabled="isLocked"
-            >
-              <option disabled value="">
-                {{ isLocked ? "Status sudah final" : "Pilih status" }}
-              </option>
 
-              <option
+          <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
+            <button
+              type="button"
+              class="dd-btn"
+              :disabled="isLocked"
+              @click="ddOpen = !ddOpen"
+            >
+              <span :class="{ placeholder: !form.status }">
+                {{ form.status ? STATUS_LABEL[form.status] : "Pilih status" }}
+              </span>
+
+              <svg class="dd-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
+              </svg>
+            </button>
+
+            <div v-if="ddOpen" class="dd-menu">
+              <button
                 v-for="s in allowedNextStatuses"
                 :key="s"
-                :value="s"
+                type="button"
+                class="dd-item"
+                @click="selectStatus(s)"
               >
                 {{ STATUS_LABEL[s] }}
-              </option>
-            </select>
-
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z" />
-            </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- RIGHT -->
+
         <div class="field">
           <label class="label">Alasan</label>
           <textarea
             v-model="form.alasan"
             class="textarea"
-            placeholder="Placeholder"
+            placeholder="Masukkan alasan anda"
             rows="3"
           />
         </div>
@@ -57,7 +62,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from "vue";
+import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue";
 
 const statusSebelumnya = ref("DISETUJUI_KEPSEK"); // dummy, nanti ambil dari API
 
@@ -72,7 +77,20 @@ const STATUS_LABEL = {
   DISETUJUI_YAYASAN: "Disetujui Yayasan",
   DITOLAK: "Ditolak",
 };
+const ddOpen = ref(false);
 
+function selectStatus(s) {
+  form.status = s;
+  ddOpen.value = false;
+}
+
+function onDocClick(e) {
+  // klik di luar -> tutup
+  if (!e.target.closest(".dd")) ddOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("click", onDocClick));
+onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
 const allowedNextStatuses = computed(() => {
   switch (statusSebelumnya.value) {
     case "DIAJUKAN":
@@ -188,7 +206,7 @@ function onSave() {
   border-radius: 10px;
   background: #fff;
   appearance: none;
-  padding-right: 44px;
+  padding-right: px;
 }
 
 .chev {
@@ -225,12 +243,16 @@ function onSave() {
   margin-top: 34px;
 }
 
+.textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
 .btn {
   min-width: 200px;
   height: 50px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-weight: 700;
   font-size: 18px;
   cursor: pointer;
 }
@@ -244,14 +266,73 @@ function onSave() {
 .btn-primary {
   background: #00588F;
   color: #fff;
+  font-weight: 700;
 }
 
 .btn-primary:hover {
-  filter: brightness(0.80);
+  filter: brightness(0.9);
 }
 
 .btn-secondary:hover {
-  filter: brightness(0.8);
+  filter: brightness(0.9);
+}
+
+.dd { position: relative; }
+
+.dd-btn{
+  width:100%;
+  height:56px;
+  padding:0 16px;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  cursor:pointer;
+  font-size:16px;
+}
+
+.dd-btn:focus{
+  outline:none;
+  border-color:rgba(0,88,143,.45);
+  box-shadow:0 0 0 4px rgba(0,88,143,.12);
+}
+
+.dd-btn .placeholder{ color:#9ca3af; }
+
+.dd-icon{ width:18px; height:18px; fill:#6b7280; }
+
+.dd-menu{
+  position:absolute;
+  left:0; right:0;
+  margin-top:10px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.10);
+  overflow:hidden;
+  z-index:50;
+}
+
+.dd-item{
+  width:100%;
+  text-align:left;
+  padding:14px 16px;
+  background:#fff;
+  border:0;
+  cursor:pointer;
+  font-size:15px;
+}
+
+.dd-item:hover{
+  background: rgba(0, 88, 143, 0.08);
+}
+
+.dd.disabled .dd-btn{
+  background:#f3f4f6;
+  color:#9ca3af;
+  cursor:not-allowed;
 }
 
 @media (max-width: 860px) {

@@ -45,6 +45,12 @@ const router = createRouter({
       // path: '/pengadaan/tinjau/{kode_pengadaan}',
       name: 'peninjauan-pengadaan-aset-create-review',
       component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
+    },
+    {
+      path: '/pengadaan/bukti/PG0001',
+      // path: '/pengadaan/bukti/{kode_pengadaan}',
+      name: 'peninjauan-pengadaan-aset-buy-after-review',
+      component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
     }
   ],
 })
