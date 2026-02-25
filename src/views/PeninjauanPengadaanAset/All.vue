@@ -16,13 +16,38 @@
         />
       </div>
 
-      <select v-model="statusFilter" class="status-select">
-        <option value="ALL">Semua Status</option>
-        <option value="DIAJUKAN">Diajukan</option>
-        <option value="DISETUJUI_KEPSEK">Disetujui oleh Kepsek</option>
-        <option value="DISETUJUI_YAYASAN">Disetujui oleh Yayasan</option>
-        <option value="TIDAK_DISETUJUI">Tidak Disetujui</option>
-      </select>
+      <!-- CUSTOM STATUS DROPDOWN -->
+      <div class="status-dd" :class="{ open: statusOpen }">
+        <button type="button" class="status-dd-btn" @click="statusOpen = !statusOpen">
+          <span :class="{ placeholder: statusFilter === 'ALL' }">
+            {{ statusFilterLabel }}
+          </span>
+
+          <svg class="status-dd-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
+            />
+          </svg>
+        </button>
+
+        <div v-if="statusOpen" class="status-dd-menu">
+          <button type="button" class="status-dd-item" @click="pickStatus('ALL')">
+            Semua Status
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DIAJUKAN')">
+            Diajukan
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_KEPSEK')">
+            Disetujui oleh Kepsek
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_YAYASAN')">
+            Disetujui oleh Yayasan
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('TIDAK_DISETUJUI')">
+            Tidak Disetujui
+          </button>
+        </div>
+      </div>
     </div>
 
       <div class="table-wrapper">
@@ -117,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import SearchIcon from "@/components/icons/SearchIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
 import 'primeicons/primeicons.css';
@@ -155,6 +180,7 @@ const rows = ref([
   },
 ]);
 
+const statusOpen = ref(false);
 function getStatusClass(status) {
   const map = {
     DIAJUKAN: "status-diajukan",
@@ -169,6 +195,28 @@ function getStatusClass(status) {
 function formatStatus(status) {
   return status.replaceAll("_", " ");
 }
+const statusFilterLabel = computed(() => {
+  const map = {
+    ALL: "Semua Status",
+    DIAJUKAN: "Diajukan",
+    DISETUJUI_KEPSEK: "Disetujui oleh Kepsek",
+    DISETUJUI_YAYASAN: "Disetujui oleh Yayasan",
+    TIDAK_DISETUJUI: "Tidak Disetujui",
+  };
+  return map[statusFilter.value] || "Semua Status";
+});
+
+function pickStatus(v) {
+  statusFilter.value = v;
+  statusOpen.value = false;
+}
+
+function onDocClickFilter(e) {
+  if (!e.target.closest(".status-dd")) statusOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("click", onDocClickFilter));
+onBeforeUnmount(() => document.removeEventListener("click", onDocClickFilter));
 
 function getSortIcon(column) {
   if (sortKey.value !== column) {
@@ -191,20 +239,20 @@ function sortBy(key) {
 
 const filteredRows = computed(() => {
   let data = rows.value.filter((row) => {
-    const search = q.value.toLowerCase();
+  const search = q.value.toLowerCase();
 
-    const matchSearch =
-      row.nama.toLowerCase().includes(search) ||
-      row.kode.toLowerCase().includes(search) ||
-      row.merk.toLowerCase().includes(search) ||
-      row.namaPengaju.toLowerCase().includes(search);
+  const matchSearch =
+    row.nama.toLowerCase().includes(search) ||
+    row.kode.toLowerCase().includes(search) ||
+    row.merk.toLowerCase().includes(search) ||
+    row.namaPengaju.toLowerCase().includes(search);
 
-    const matchStatus =
-      statusFilter.value === "ALL" ||
-      row.status === statusFilter.value;
+  const matchStatus =
+    statusFilter.value === "ALL" ||
+    row.status === statusFilter.value;
 
-    return matchSearch && matchStatus;
-  });
+  return matchSearch && matchStatus;
+});
 
   if (sortKey.value) {
     data.sort((a, b) => {
@@ -276,10 +324,73 @@ function formatRupiah(n) {
   transform: translateY(-50%);
 }
 
-.status-select {
-  padding: 12px 16px;
-  border-radius: 10px;
+.status-dd {
+  position: relative;
+  width: 260px; /* bisa kamu ubah */
+  flex: 0 0 auto;
+}
+
+.status-dd-btn {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
   border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.status-dd-btn:focus {
+  outline: none;
+  border-color: rgba(0, 88, 143, 0.45);
+  box-shadow: 0 0 0 4px rgba(0, 88, 143, 0.12);
+}
+
+.status-dd-btn .placeholder {
+  color: #6b7280;
+}
+
+.status-dd-icon {
+  width: 18px;
+  height: 18px;
+  fill: #6b7280;
+  flex: 0 0 auto;
+}
+
+.status-dd-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-top: 10px;
+
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+
+  overflow: hidden;
+  z-index: 100;
+}
+
+.status-dd-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: #fff;
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.status-dd-item:hover {
+  background: rgba(0, 88, 143, 0.08);
 }
 
 .table-card {
@@ -298,6 +409,11 @@ table {
   min-width: 1000px;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
 }
 
 thead {
@@ -465,7 +581,7 @@ th {
 }
 
 th:nth-child(1),
-td:nth-child(1) { width: 70px; }   /* Kode */ 
+td:nth-child(1) { width: 70px; }   /* Kode */
 
 th:nth-child(2),
 td:nth-child(2) { width: 120px; }  /* Nama Pengaju */
