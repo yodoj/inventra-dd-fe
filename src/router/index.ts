@@ -47,6 +47,31 @@ const router = createRouter({
       component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
     },
     {
+      path: '/assets/kelola',
+      name: 'managed-assets',
+      component: () => import('../views/ManagedAssetsView.vue'),
+    },
+    {
+      path: '/assets/tambah-barang',
+      name: 'add-asset-barang',
+      component: () => import('../views/AddAssetBarangView.vue'),
+    },
+    {
+      path: '/assets/tambah-ruangan',
+      name: 'add-asset-ruangan',
+      component: () => import('../views/AddAssetRuanganView.vue'),
+    },
+    {
+      path: '/assets/ubah-barang/:id',
+      name: 'update-asset-barang',
+      component: () => import('../views/UpdateAssetBarangView.vue'),
+    },
+    {
+      path: '/assets/ubah-ruangan/:id',
+      name: 'update-asset-ruangan',
+      component: () => import('../views/UpdateAssetRuanganView.vue'),
+    },
+    {
       path: '/pengadaan/bukti/PG0001',
       // path: '/pengadaan/bukti/{kode_pengadaan}',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
