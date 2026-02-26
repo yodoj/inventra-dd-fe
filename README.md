@@ -15,7 +15,10 @@ Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap bra
 
 - VS Code
 - Node.js
+- npm
 - Git
+- Docker yang sudah dijalankan
+- Backend yang sudah dijalankan
 
 ## Instalasi dan Menjalankan Aplikasi
 
@@ -39,10 +42,18 @@ cd ibuprofen-frontend
 npm install
 ```
 
-**4. Jalankan project**
+Install tambahan package icon:
+
+```
+npm install lucide-vue-next
+```
+
+**4. Jalankan Aplikasi**
+
+Pastikan backend dan docker sudah dijalankan. Lalu jalankan command ini:
 
 ```sh
-cd npm run dev
+npm run dev
 ```
 
 **5. Mengakses aplikasi di browser**

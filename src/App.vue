@@ -20,4 +20,7 @@ const showNavbar = computed(() => route.path !== '/login')
 .with-navbar {
   padding-top: 0;
 }
+body {
+  background-color: #FAFAFA;
+}
 </style>

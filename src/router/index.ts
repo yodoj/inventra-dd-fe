@@ -35,6 +35,23 @@ const router = createRouter({
       name: 'change-password',
       component: () => import('../views/ChangePasswordView.vue'),
     },
+    {
+      path: '/pengadaan/tinjau/all',
+      name: 'peninjauan-pengadaan-aset-all',
+      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+    },
+    {
+      path: '/pengadaan/tinjau/PG0001',
+      // path: '/pengadaan/tinjau/{kode_pengadaan}',
+      name: 'peninjauan-pengadaan-aset-create-review',
+      component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
+    },
+    {
+      path: '/pengadaan/bukti/PG0001',
+      // path: '/pengadaan/bukti/{kode_pengadaan}',
+      name: 'peninjauan-pengadaan-aset-buy-after-review',
+      component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
+    }
   ],
 })
 
