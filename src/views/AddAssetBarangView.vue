@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, markRaw } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { toast } from 'vue-sonner';
+import SuccessToast from '@/components/SuccessToast.vue';
 
 const router = useRouter();
 const assetStore = useAssetStore();
@@ -17,16 +19,19 @@ const form = ref({
   lokasiAset: '',
   statusAset: '',
   kategoriAset: '',
-  unit: '', // Initialize empty, will be set in onMounted
+  unit: authStore.user?.unit || '',
   gambarUrlAset: '',
   keteranganAset: ''
 });
 
-onMounted(() => {
-  if (authStore.user?.unit) {
-    form.value.unit = authStore.user.unit;
+// Watch for user changes to ensure unit is set if auth loads late
+watch(() => authStore.user, (newUser) => {
+  if (newUser?.unit && !form.value.unit) {
+    form.value.unit = newUser.unit;
   }
-});
+}, { immediate: true });
+
+// Initialized in ref and watch above
 
 const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
@@ -58,7 +63,7 @@ watch(() => form.value.kategoriAset, (newCat) => {
   }
 });
 
-const units = ['SD', 'SMP', 'SMA', 'TK', 'YAYASAN'];
+const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'Pusat', 'Global'];
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
@@ -73,6 +78,9 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   try {
     await assetStore.createAssetBarang(form.value);
+    toast.custom(markRaw(SuccessToast), {
+      componentProps: { message: 'Aset barang berhasil ditambahkan' }
+    });
     router.push('/assets/kelola');
   } catch (error) {
     console.error('Failed to create asset:', error);
@@ -98,22 +106,22 @@ const handleSubmit = async () => {
             <!-- Left Column -->
             <div class="form-column">
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Nama Aset</label>
+                <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
                 <input v-model="form.namaAset" type="text" placeholder="Contoh: Kamera DSLR" class="form-input" required />
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Merk</label>
+                <label class="s2-subtitle mb-2 block">Merk <span class="required-star">*</span></label>
                 <input v-model="form.merkAset" type="text" placeholder="Contoh: Sony" class="form-input" required />
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kuantitas</label>
+                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
                 <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Lokasi</label>
+                <label class="s2-subtitle mb-2 block">Lokasi <span class="required-star">*</span></label>
                 <input v-model="form.lokasiAset" type="text" placeholder="Contoh: Lab Komputer" class="form-input" required />
               </div>
             </div>
@@ -121,7 +129,7 @@ const handleSubmit = async () => {
             <!-- Middle Column -->
             <div class="form-column">
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kategori</label>
+                <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
                 <div class="custom-select">
                   <select v-model="form.kategoriAset" class="form-input" :class="{ 'placeholder-color': !form.kategoriAset }" required>
                     <option value="" disabled>Pilih Kategori</option>
@@ -132,7 +140,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status</label>
+                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
                 <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
                   <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" :disabled="!form.kategoriAset" required>
                     <option value="" disabled>{{ form.kategoriAset ? 'Pilih Status' : 'Pilih kategori terlebih dahulu' }}</option>
@@ -151,19 +159,22 @@ const handleSubmit = async () => {
             <!-- Right Column -->
             <div class="form-column">
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Unit</label>
-                <div class="custom-select">
-                  <select v-model="form.unit" class="form-input" :class="{ 'placeholder-color': !form.unit }" :disabled="!isYayasanOrAdmin" required>
+                <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
+                <div v-if="!isYayasanOrAdmin">
+                  <input :value="form.unit" type="text" class="form-input bg-gray-50 cursor-not-allowed" disabled />
+                </div>
+                <div v-else class="custom-select">
+                  <select v-model="form.unit" class="form-input" :class="{ 'placeholder-color': !form.unit }" required>
                     <option value="" disabled>Pilih Unit</option>
                     <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
                   </select>
-                  <ChevronDown v-if="isYayasanOrAdmin" class="select-icon" />
+                  <ChevronDown class="select-icon" />
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Link Gambar</label>
-                <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan link URL gambar" class="form-input" />
+                <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
+                <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan link URL gambar" class="form-input" required />
               </div>
             </div>
           </div>
@@ -341,5 +352,8 @@ select option {
   .form-grid {
     grid-template-columns: 1fr;
   }
+}
+.required-star {
+  color: var(--error);
 }
 </style>

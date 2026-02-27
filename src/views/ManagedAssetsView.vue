@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, markRaw } from 'vue';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import SearchIcon from '@/components/icons/SearchIcon.vue';
@@ -8,6 +8,8 @@ import { Package, Home, ChevronDown, ChevronLeft, ChevronRight, Trash2, Plus } f
 import { useRouter } from 'vue-router';
 import 'primeicons/primeicons.css';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { toast } from 'vue-sonner';
+import SuccessToast from '@/components/SuccessToast.vue';
 
 const router = useRouter();
 const assetStore = useAssetStore();
@@ -19,7 +21,7 @@ const categoryFilter = ref('');
 const statusFilter = ref('');
 
 const currentPage = ref(0);
-const pageSize = 50;
+const pageSize = ref(10);
 
 const showDeleteModal = ref(false);
 const assetToDelete = ref<any>(null);
@@ -64,8 +66,13 @@ const loadAssets = () => {
   if (categoryFilter.value) filters.category = categoryFilter.value;
   if (statusFilter.value) filters.status = statusFilter.value;
 
-  assetStore.fetchAssets(activeTab.value, currentPage.value, pageSize, filters);
+  assetStore.fetchAssets(activeTab.value, currentPage.value, pageSize.value, filters);
 };
+
+watch(pageSize, () => {
+  currentPage.value = 0;
+  loadAssets();
+});
 
 const handleFilter = () => {
   currentPage.value = 0;
@@ -99,8 +106,14 @@ const handleDelete = async () => {
   try {
     if (activeTab.value === 'barang') {
       await assetStore.deleteAssetBarang(assetToDelete.value.id_aset);
+      toast.custom(markRaw(SuccessToast), {
+        componentProps: { message: 'Aset barang berhasil dihapus' }
+      });
     } else {
       await assetStore.deleteAssetRuangan(assetToDelete.value.id_aset);
+      toast.custom(markRaw(SuccessToast), {
+        componentProps: { message: 'Aset ruangan berhasil dihapus' }
+      });
     }
     showDeleteModal.value = false;
     assetToDelete.value = null;
@@ -178,13 +191,6 @@ const handleEdit = (asset: any) => {
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">Daftar Aset</h1>
-        <button 
-          v-if="isSarprasOrYayasan"
-          @click="router.push(activeTab === 'barang' ? '/assets/tambah-barang' : '/assets/tambah-ruangan')" 
-          class="btn-add"
-        >
-          <Plus class="w-5 h-5" /> Tambah Aset
-        </button>
       </div>
 
       <!-- Tab Switcher -->
@@ -247,6 +253,16 @@ const handleEdit = (asset: any) => {
           <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
         </div>
       </div>
+      
+      <!-- Add Button Positioned Above Table -->
+      <div v-if="isSarprasOrYayasan" class="flex justify-end mb-16">
+        <button 
+          @click="router.push(activeTab === 'barang' ? '/assets/tambah-barang' : '/assets/tambah-ruangan')" 
+          class="btn-add"
+        >
+          <Plus class="w-5 h-5" /> Tambah Aset
+        </button>
+      </div>
 
       <!-- Table Section -->
       <div class="table-container shadow-sm">
@@ -254,17 +270,17 @@ const handleEdit = (asset: any) => {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr>
-                <th>Kode</th>
-                <th>Gambar</th>
-                <th>Nama</th>
-                <th v-if="activeTab === 'barang'">Merk</th>
-                <th v-if="activeTab === 'barang'">Qty</th>
-                <th v-if="canSeeUnit">Unit</th>
-                <th v-if="activeTab === 'barang'">Lokasi</th>
-                <th>Kategori</th>
-                <th>Status</th>
-                <th>Keterangan</th>
-                <th v-if="canSeeAction" class="text-center">Aksi</th>
+                <th class="col-kode">Kode</th>
+                <th class="col-img">Gambar</th>
+                <th class="col-nama">Nama</th>
+                <th v-if="activeTab === 'barang'" class="col-merk">Merk</th>
+                <th v-if="activeTab === 'barang'" class="col-qty">Qty</th>
+                <th v-if="canSeeUnit" class="col-unit">Unit</th>
+                <th v-if="activeTab === 'barang'" class="col-lokasi">Lokasi</th>
+                <th class="col-kategori">Kategori</th>
+                <th class="col-status text-center">Status</th>
+                <th class="col-keterangan">Keterangan</th>
+                <th v-if="canSeeAction" class="col-aksi text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -285,7 +301,7 @@ const handleEdit = (asset: any) => {
                 <td v-if="canSeeUnit">{{ asset.unit }}</td>
                 <td v-if="activeTab === 'barang'">{{ asset.lokasi_aset || '-' }}</td>
                 <td>{{ formatStatusDisplay(asset.kategori_aset) }}</td>
-                <td>
+                <td class="text-center">
                   <span :class="['badge', getStatusClass(asset.status_aset)]">
                     {{ formatStatusDisplay(asset.status_aset) }}
                   </span>
@@ -319,10 +335,23 @@ const handleEdit = (asset: any) => {
         </div>
 
         <!-- Pagination -->
-        <div class="pagination-section mt-12 mb-8">
-          <p class="c2-caption text-gray-500">
-            Showing Page {{ assetStore.currentPage + 1 }} of {{ assetStore.totalPages }}
-          </p>
+        <div class="pagination-section mt-20 mb-8">
+          <div class="flex items-center gap-4">
+            <p class="c2-caption text-gray-500">
+              Showing Page {{ assetStore.currentPage + 1 }} of {{ assetStore.totalPages }}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">Per page:</span>
+              <div class="custom-select page-size-wrapper">
+                <select v-model="pageSize" class="page-size-select">
+                  <option :value="10">10</option>
+                  <option :value="30">30</option>
+                  <option :value="50">50</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
+            </div>
+          </div>
           <div class="pagination-btns">
             <button 
               @click="prevPage" 
@@ -514,18 +543,39 @@ table thead {
   color: white;
 }
 
-table th {
-  padding: 14px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
+table {
+  table-layout: fixed;
+  width: 100%;
 }
 
+table th {
+  padding: 14px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.col-kode { width: 80px; }
+.col-img { width: 85px; }
+.col-nama { width: 130px; }
+.col-merk { width: 90px; }
+.col-qty { width: 65px; }
+.col-unit { width: 70px; }
+.col-lokasi { width: 110px; }
+.col-kategori { width: 100px; }
+.col-status { width: 90px; }
+.col-aksi { width: 100px; }
+.col-keterangan { width: 160px; }
+
 table td {
-  padding: 12px 16px;
+  padding: 12px 12px;
   border-bottom: 1px solid #EEEEEE;
   vertical-align: middle;
-  font-size: 14px;
+  font-size: 13px;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .asset-img {
@@ -537,19 +587,22 @@ table td {
 }
 
 .badge {
-  padding: 4px 12px;
+  padding: 4px 8px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   display: inline-block;
   text-align: center;
-  min-width: 80px;
+  min-width: 70px;
+  line-height: 1.2;
 }
 
-.status-tersedia { background-color: #ECF8FD; color: #1FA2FF; }
+.status-tersedia { background-color: #E6F7F0; color: #008B58; }
+.status-dipinjam { background-color: #ECF8FD; color: #1FA2FF; }
 .status-habis { background-color: #FBE5E6; color: #DC3545; }
-.status-diperbaiki { background-color: #FFEED9; color: #AA5B00; }
+.status-diperbaiki { background-color: #FEF9C3; color: #A16207; }
 .status-rusak { background-color: #EFEFEF; color: #333437; }
+.status-dimusnahkan { background-color: #F3F4F6; color: #6B7280; }
 
 .btn-icon {
   width: 32px;
@@ -585,17 +638,64 @@ td:last-child {
 }
 
 .btn-page {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 16px;
   border-radius: 8px;
   background: white;
   border: 1px solid #D1D5DB;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: #F9FAFB;
+  border-color: #00588F;
+  color: #00588F;
 }
 
 .btn-page:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.page-size-wrapper {
+  width: 80px;
+}
+
+.page-size-select {
+  width: 100%;
+  padding: 6px 32px 6px 12px !important;
+  border-radius: 8px;
+  border: 1px solid #D1D5DB;
+  font-size: 13px;
+  outline: none;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #374151;
+  font-weight: 500;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.page-size-wrapper .select-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.page-size-select:hover {
+  border-color: #00588F;
+}
+
+.page-size-select:focus {
+  border-color: #00588F;
+  box-shadow: 0 0 0 2px rgba(0, 88, 143, 0.1);
 }
 
 .btn-add {
@@ -628,6 +728,10 @@ td:last-child {
 
 .mb-20 {
   margin-bottom: 40px;
+}
+
+.mt-20 {
+  margin-top: 40px;
 }
 
 </style>
