@@ -9,7 +9,7 @@ const showNavbar = computed(() => route.path !== '/login')
 </script>
 
 <template>
-  <Toaster position="top-center" richColors />
+  <Toaster position="top-right" richColors />
   <Navbar v-if="showNavbar" />
   <main :class="{ 'with-navbar': showNavbar }">
     <RouterView />
@@ -19,5 +19,8 @@ const showNavbar = computed(() => route.path !== '/login')
 <style>
 .with-navbar {
   padding-top: 0;
+}
+body {
+  background-color: #FAFAFA;
 }
 </style>
