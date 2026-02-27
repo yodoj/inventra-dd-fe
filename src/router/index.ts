@@ -49,27 +49,27 @@ const router = createRouter({
     {
       path: '/assets/kelola',
       name: 'managed-assets',
-      component: () => import('../views/ManagedAssetsView.vue'),
+      component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
     },
     {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
-      component: () => import('../views/AddAssetBarangView.vue'),
+      component: () => import('../views/MengelolaAset/AddAssetBarangView.vue'),
     },
     {
       path: '/assets/tambah-ruangan',
       name: 'add-asset-ruangan',
-      component: () => import('../views/AddAssetRuanganView.vue'),
+      component: () => import('../views/MengelolaAset/AddAssetRuanganView.vue'),
     },
     {
       path: '/assets/ubah-barang/:id',
       name: 'update-asset-barang',
-      component: () => import('../views/UpdateAssetBarangView.vue'),
+      component: () => import('../views/MengelolaAset/UpdateAssetBarangView.vue'),
     },
     {
       path: '/assets/ubah-ruangan/:id',
       name: 'update-asset-ruangan',
-      component: () => import('../views/UpdateAssetRuanganView.vue'),
+      component: () => import('../views/MengelolaAset/UpdateAssetRuanganView.vue'),
     },
     {
       path: '/pengadaan/bukti/PG0001',
