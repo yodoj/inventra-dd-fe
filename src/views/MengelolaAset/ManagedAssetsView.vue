@@ -237,61 +237,12 @@ const handleEdit = (asset: any) => {
         </button>
       </div>
 
-      <!-- Filter Section -->
-      <div class="filter-card mb-20">
-        <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Aset</h3>
-        <div class="filter-grid">
-          <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
-            <div class="custom-select">
-              <select v-model="categoryFilter" :class="{ 'placeholder-color': !categoryFilter }">
-                <option value="">Kategori</option>
-                <option v-for="cat in (activeTab === 'barang' ? categoriesBarang : categoriesRuangan)" :key="cat.value" :value="cat.value">
-                  {{ cat.label }}
-                </option>
-              </select>
-              <ChevronDown class="select-icon" />
-            </div>
-          </div>
-          <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Status Aset</label>
-            <div class="custom-select">
-              <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
-                <option value="">Semua Status</option>
-                <option v-for="st in availableStatuses" :key="st.value" :value="st.value">{{ st.label }}</option>
-              </select>
-              <ChevronDown class="select-icon" />
-            </div>
-          </div>
-          <div v-if="isSarprasOrYayasan" class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
-            <div class="custom-select">
-              <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
-                <option value="">Semua Unit</option>
-                <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
-              </select>
-              <ChevronDown class="select-icon" />
-            </div>
-          </div>
-          <div class="filter-item flex-grow">
-
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Aset</label>
-            <div class="search-box">
-              <SearchIcon class="search-icon" />
-              <input 
-                v-model="searchQuery" 
-                type="text" 
-                placeholder="Search" 
-                @keyup.enter="handleFilter"
-              />
-            </div>
-          </div>
-        </div>
-        <div class="filter-actions" style="margin-top: 10px;">
-          <button @click="handleFilter" class="btn-apply btn-medium">Terapkan Filter</button>
-          <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
-        </div>
-      </div>
+      <AssetFilter 
+        :active-tab="activeTab"
+        :is-sarpras-or-yayasan="isSarprasOrYayasan"
+        @filter="handleFilterChange"
+        @reset="handleReset"
+      />
       
       <!-- Add Button Positioned Above Table -->
       <div v-if="isSarprasOrYayasan" class="flex justify-end mb-16">
@@ -457,121 +408,7 @@ const handleEdit = (asset: any) => {
   color: white;
 }
 
-.filter-card {
-  background: white;
-  padding: 24px 28px 20px;
-  border-radius: 16px;
-  border: 1px solid #EEEEEE;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
-
-.filter-grid {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-
-.filter-item {
-  /* min-width: 180px;
-  flex-shrink: 0; */
-}
-
-.custom-select {
-  position: relative;
-}
-
-.custom-select select {
-  width: 100%;
-  padding: 12px 16px;
-  padding-right: 40px;
-  border: 1px solid #D1D5DB;
-  border-radius: 12px;
-  background: white;
-  font-size: 14px;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: none !important;
-}
-
-.custom-select select::-ms-expand {
-  display: none;
-}
-
-.custom-select select:focus {
-  border-color: #00588F;
-}
-
-.custom-select select.placeholder-color {
-  color: #9CA3AF;
-}
-
-.search-box input::placeholder {
-  color: #9CA3AF;
-}
-
-select option {
-  color: #374151;
-}
-
-.select-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  color: #6B7280;
-}
-
-.search-box {
-  position: relative;
-}
-
-.search-box input {
-  width: 100%;
-  padding: 10px 12px 10px 40px;
-  border: 1px solid #D1D5DB;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6B7280;
-}
-
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 10px;
-}
-
-.btn-apply {
-  background-color: #00588F;
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 40px;
-  cursor: pointer;
-}
-
-.btn-reset {
-  background-color: white;
-  color: var(--text-primary);
-  border: 1px solid #D1D5DB;
-  padding: 10px 24px;
-  border-radius: 40px;
-  cursor: pointer;
-}
+/* Filter styles moved to AssetFilter.vue */
 
 .table-container {
   background: white;
