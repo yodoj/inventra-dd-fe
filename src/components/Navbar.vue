@@ -15,12 +15,16 @@ import {
   PieChart
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
+import { useToastStore } from '@/stores/toast';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 const router = useRouter();
 const route = useRoute();
 
 const isProfileOpen = ref(false);
+const showLogoutModal = ref(false);
 const openDropdown = ref<string | null>(null);
 let dropdownTimeout: number | null = null;
 
@@ -52,9 +56,16 @@ const protectedNavigate = (path: string) => {
   }
 };
 
+const confirmLogout = () => {
+  showLogoutModal.value = true;
+  isProfileOpen.value = false;
+};
+
 const handleLogout = () => {
+  showLogoutModal.value = false;
   authStore.logout();
   router.push('/login');
+  toastStore.success('Logged Out', 'Anda berhasil keluar dari sistem');
 };
 
 const closeAll = (e: MouseEvent) => {
@@ -73,12 +84,21 @@ onUnmounted(() => {
   window.removeEventListener('click', closeAll);
 });
 
-const isAdminOrSarpras = () => {
-  return ['ADMIN', 'SARPRAS'].includes(authStore.userRole || '');
+const isAdmin = () => authStore.userRole === 'ADMIN';
+const isSarpras = () => authStore.userRole === 'SARPRAS';
+const isKepsek = () => authStore.userRole === 'KEPSEK';
+const isYayasan = () => authStore.userRole === 'YAYASAN';
+const isGuru = () => authStore.userRole === 'GURU';
+const isSiswa = () => authStore.userRole === 'SISWA';
+
+// Groups for easier checks
+const canSeeReports = () => {
+  return ['ADMIN', 'SARPRAS', 'KEPSEK', 'YAYASAN'].includes(authStore.userRole || '');
 };
 
-const isSarpras = () => {
-  return authStore.userRole === 'SARPRAS';
+const canSeeRusak = () => {
+  // Siswa, Guru, Sarpras, and Admin can see "Penggantian Barang Rusak"
+  return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
 };
 </script>
 
@@ -114,7 +134,7 @@ const isSarpras = () => {
             <div @click="protectedNavigate('/assets/kelola')" class="dropdown-item" style="cursor: pointer;">
               <PackageCheck class="icon-sm" /> Mengelola Aset
             </div>
-            <template v-if="isAdminOrSarpras()">
+            <template v-if="canSeeReports()">
               <div @click="protectedNavigate('/assets/laporan')" class="dropdown-item" style="cursor: pointer;">
                 <FileText class="icon-sm" /> Laporan Utilisasi Aset
               </div>
@@ -151,10 +171,10 @@ const isSarpras = () => {
             <div @click="protectedNavigate('/pengadaan/pengajuan')" class="dropdown-item" style="cursor: pointer;">
               <ClipboardCheck class="icon-sm" /> Pengajuan Pengadaan Aset
             </div>
-            <div @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
+            <div v-if="canSeeRusak()" @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
               <RefreshCw class="icon-sm" /> Penggantian Barang Rusak
             </div>
-            <template v-if="isAdminOrSarpras()">
+            <template v-if="canSeeReports()">
               <div @click="protectedNavigate('/pengadaan/laporan')" class="dropdown-item" style="cursor: pointer;">
                 <BarChart3 class="icon-sm" /> Laporan Pengadaan Aset
               </div>
@@ -171,6 +191,10 @@ const isSarpras = () => {
 
         <!-- Auth Section -->
         <div v-if="authStore.isAuthenticated" class="profile-section">
+          <div class="user-greeting">
+            <span class="user-name">Welcome, {{ authStore.userName }}!</span>
+            <span class="user-role">{{ authStore.userRole }}</span>
+          </div>
           <button @click.stop="toggleProfile" class="profile-trigger">
             <div class="avatar">
               <img src="@/assets/avatar-icon.png" alt="User Avatar" />
@@ -178,18 +202,10 @@ const isSarpras = () => {
           </button>
           
           <div v-if="isProfileOpen" class="profile-dropdown fade-in">
-            <div class="user-info">
-              <p class="user-name">{{ authStore.userName }}</p>
-              <p class="user-role">{{ authStore.userRole }}</p>
-            </div>
-            <div class="divider"></div>
-            <a href="#" class="dropdown-item">
+            <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
-            </a>
-            <a v-if="isSarpras()" href="#" class="dropdown-item">
-              <Settings class="icon-sm" /> Pengelolaan Profile
-            </a>
-            <button @click="handleLogout" class="dropdown-item logout-btn">
+            </router-link>
+            <button @click="confirmLogout" class="dropdown-item logout-btn">
               <LogOut class="icon-sm" /> Logout
             </button>
           </div>
@@ -201,6 +217,17 @@ const isSarpras = () => {
       </div>
     </div>
   </nav>
+
+  <ConfirmationModal
+    :show="showLogoutModal"
+    title="Konfirmasi Logout"
+    message="Apakah Anda yakin ingin keluar dari sistem?"
+    confirm-text="Ya, Logout"
+    cancel-text="Batal"
+    type="danger"
+    @confirm="handleLogout"
+    @cancel="showLogoutModal = false"
+  />
 </template>
 
 <style scoped>
@@ -336,6 +363,31 @@ const isSarpras = () => {
 
 .profile-section {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.user-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.user-role {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .profile-trigger {
@@ -374,26 +426,6 @@ const isSarpras = () => {
   flex-direction: column;
 }
 
-.user-info {
-  padding: 12px 16px;
-}
-
-.user-name {
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.user-role {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.divider {
-  height: 1px;
-  background: var(--gray-200);
-  margin: 4px 0;
-}
 
 .logout-btn {
   width: 100%;

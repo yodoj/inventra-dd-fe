@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
 import Navbar from '@/components/Navbar.vue'
+import Toast from '@/components/Toast.vue'
 import { computed } from 'vue'
 
 const route = useRoute()
@@ -9,7 +10,8 @@ const showNavbar = computed(() => route.path !== '/login')
 </script>
 
 <template>
-  <Toaster position="top-center" richColors />
+  <Toaster position="top-right" richColors />
+  <Toast />
   <Navbar v-if="showNavbar" />
   <main :class="{ 'with-navbar': showNavbar }">
     <RouterView />
@@ -19,5 +21,8 @@ const showNavbar = computed(() => route.path !== '/login')
 <style>
 .with-navbar {
   padding-top: 0;
+}
+body {
+  background-color: #FAFAFA;
 }
 </style>
