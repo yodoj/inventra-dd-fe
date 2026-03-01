@@ -5,13 +5,13 @@ import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import { toast } from 'vue-sonner';
-import SuccessToast from '@/components/SuccessToast.vue';
+import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
 const route = useRoute();
 const assetStore = useAssetStore();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const id = route.params.id as string;
 
@@ -39,7 +39,9 @@ const statuses = [
   { label: 'Sedang Dipinjam', value: 'SEDANG_DIPINJAM' }
 ];
 
-const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'Pusat', 'Global'];
+const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'superadmin', 'yayasan'];
+
+
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
@@ -74,9 +76,7 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   try {
     await assetStore.updateAssetRuangan(id, form.value);
-    toast.custom(markRaw(SuccessToast), {
-      componentProps: { message: 'Aset ruangan berhasil diperbarui' }
-    });
+    toastStore.success('Success', 'Aset ruangan berhasil diperbarui');
     router.push('/assets/kelola');
   } catch (error) {
     console.error('Failed to update asset:', error);
