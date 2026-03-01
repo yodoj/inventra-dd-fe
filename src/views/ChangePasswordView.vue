@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import api from '@/services/api';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -22,6 +23,7 @@ const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 const showCancelModal = ref(false);
+const showConfirmModal = ref(false);
 
 const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
   if (field === 'current') showCurrentPassword.value = !showCurrentPassword.value;
@@ -50,11 +52,24 @@ const handleSavePassword = async () => {
     errorMessage.value = 'Password baru tidak boleh sama dengan password lama';
     return;
   }
-  if (formData.value.newPassword.length < 8) {
-    errorMessage.value = 'Password baru minimal 8 karakter';
+  // Strong password validation
+  const p = formData.value.newPassword;
+  const hasEightChars = p.length >= 8;
+  const hasUpper = /[A-Z]/.test(p);
+  const hasLower = /[a-z]/.test(p);
+  const hasNumber = /[0-9]/.test(p);
+  const hasSpecial = /[^A-Za-z0-9]/.test(p);
+
+  if (!hasEightChars || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+    errorMessage.value = 'Password baru tidak memenuhi kriteria keamanan';
     return;
   }
 
+  showConfirmModal.value = true;
+};
+
+const submitSavePassword = async () => {
+  showConfirmModal.value = false;
   isLoading.value = true;
   errorMessage.value = '';
   successMessage.value = '';
@@ -160,7 +175,27 @@ const confirmCancel = () => {
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
-          <p class="form-hint">Minimal 8 karakter</p>
+          <!-- Real-time Validation Checklist -->
+          <div class="password-requirements mt-3">
+            <p class="text-xs font-semibold mb-2 text-gray-500">KRITERIA PASSWORD:</p>
+            <ul class="requirements-list">
+              <li :class="{ 'valid': /[A-Z]/.test(formData.newPassword) }">
+                <span class="dot"></span> Uppercase letter
+              </li>
+              <li :class="{ 'valid': /[a-z]/.test(formData.newPassword) }">
+                <span class="dot"></span> Lowercase letter
+              </li>
+              <li :class="{ 'valid': /[0-9]/.test(formData.newPassword) }">
+                <span class="dot"></span> Number
+              </li>
+              <li :class="{ 'valid': /[^A-Za-z0-9]/.test(formData.newPassword) }">
+                <span class="dot"></span> Special character (e.g. !?<>@#$%)
+              </li>
+              <li :class="{ 'valid': formData.newPassword.length >= 8 }">
+                <span class="dot"></span> 8 characters or more
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Confirm Password -->
@@ -193,6 +228,19 @@ const confirmCancel = () => {
 
       </form>
     </div>
+
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :show="showConfirmModal"
+      title="Konfirmasi Ubah Password"
+      message="Apakah Anda yakin ingin mengubah password Anda?"
+      confirm-text="Ya, Ubah Password"
+      cancel-text="Batal"
+      type="confirm"
+      :is-loading="isLoading"
+      @confirm="submitSavePassword"
+      @cancel="showConfirmModal = false"
+    />
 
     <!-- Cancel Confirmation Modal -->
     <Transition name="modal">
@@ -374,6 +422,55 @@ const confirmCancel = () => {
   font-size: 12px;
   color: #999;
   margin: 0;
+}
+
+/* Password Requirements Checklist */
+.password-requirements {
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.requirements-list li {
+  font-size: 11px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li.valid {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.requirements-list li.valid .dot {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.mt-3 {
+  margin-top: 12px;
 }
 
 /* ── ACTION BUTTONS ── */

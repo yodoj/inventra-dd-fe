@@ -5,12 +5,12 @@ import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import { toast } from 'vue-sonner';
-import SuccessToast from '@/components/SuccessToast.vue';
+import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
 const assetStore = useAssetStore();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const form = ref({
   namaAset: '',
@@ -63,7 +63,7 @@ watch(() => form.value.kategoriAset, (newCat) => {
   }
 });
 
-const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'Pusat', 'Global'];
+const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'superadmin', 'yayasan'];
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
@@ -78,9 +78,7 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   try {
     await assetStore.createAssetBarang(form.value);
-    toast.custom(markRaw(SuccessToast), {
-      componentProps: { message: 'Aset barang berhasil ditambahkan' }
-    });
+    toastStore.success('Success', 'Aset barang berhasil ditambahkan');
     router.push('/assets/kelola');
   } catch (error) {
     console.error('Failed to create asset:', error);
