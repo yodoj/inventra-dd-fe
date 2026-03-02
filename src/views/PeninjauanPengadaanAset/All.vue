@@ -12,7 +12,7 @@
         <input
           v-model="q"
           type="text"
-          placeholder="Cari nama aset, kode, atau merk"
+          placeholder="Cari nama pengaju, nama aset, atau merk"
         />
       </div>
 
@@ -43,8 +43,8 @@
           <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_YAYASAN')">
             Disetujui oleh Yayasan
           </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('TIDAK_DISETUJUI')">
-            Tidak Disetujui
+          <button type="button" class="status-dd-item" @click="pickStatus('DITOLAK')">
+            Ditolak
           </button>
         </div>
       </div>
@@ -54,25 +54,19 @@
         <table>
           <thead>
             <tr>
-              <th @click="sortBy('kode')" class="sortable">
-                <div class="th-inner">
-                  <span class="th-text">Kode</span>
-                  <i class="sort-icon pi" :class="getSortIcon('kode')"></i>
-                </div>
-              </th>
               <th>Nama Pengaju</th>
               <th>Gambar</th>
               <th @click="sortBy('nama')" class="sortable">
-              <div class="th-inner">
-                <span class="th-text">Nama</span>
-                <i class="sort-icon pi" :class="getSortIcon('nama')"></i>
-              </div>
-            </th>
+                <div class="th-inner">
+                  <span class="th-text">Nama</span>
+                  <i class="sort-icon pi" :class="getSortIcon('nama')"></i>
+                </div>
+              </th>
               <th>Merk</th>
               <th>Qty</th>
               <th @click="sortBy('tanggal')" class="sortable">
                 <div class="th-inner">
-                  <span class="th-text">Tanggal Pengadaan</span>
+                  <span class="th-text">Tanggal</span>
                   <i class="sort-icon pi" :class="getSortIcon('tanggal')"></i>
                 </div>
               </th>
@@ -82,15 +76,14 @@
                   <i class="sort-icon pi" :class="getSortIcon('harga')"></i>
                 </div>
               </th>
-              <th>Alasan</th>
-              <th @click="sortBy('status')">Status</th>
+              <th>Alasan & Riwayat Review</th>
+              <th @click="sortBy('statusPengadaan')">Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="row in filteredRows" :key="row.kode">
-              <td>{{ row.kode }}</td>
+            <tr v-for="row in filteredRows" :key="row.idPengadaan">
               <td>{{ row.namaPengaju }}</td>
               <td>
                 <div class="img-box">
@@ -100,40 +93,54 @@
               <td class="bold">{{ row.nama }}</td>
               <td>{{ row.merk }}</td>
               <td class="center">{{ row.qty }}</td>
-              <td>{{ formatDate(row.tanggal) }}</td>
+              <td class="date-column">
+                <span>{{ formatDate(row.tanggal) }}</span>
+              </td>
               <td>{{ formatRupiah(row.harga) }}</td>
-              <td>{{ row.alasan }}</td>
+
+              <td>
+                <div class="alasan-wrapper">
+                  <div class="alasan-main">{{ row.alasan }}</div>
+
+                  <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
+                    Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span>
+                    ({{ formatRole(row.reviewerRole) }})
+                    pada <span class="highlight">{{ formatDate(row.tanggalReview) }}</span>
+                  </div>
+                </div>
+              </td>
+
               <td class="center">
-                <span :class="['badge', getStatusClass(row.status)]">
-                  {{ formatStatus(row.status) }}
+                <span :class="['badge', getStatusClass(row.statusPengadaan)]">
+                  {{ formatStatus(row.statusPengadaan) }}
                 </span>
               </td>
-                <td class="center">
-                  <div class="action-buttons">
 
-                    <button
-                      v-if="row.status === 'DIAJUKAN'"
-                      class="btn-circle review-btn"
-                    >
-                      <i class="pi pi-comments"></i>
-                    </button>
+              <td class="center">
+                <button
+                  v-if="getActionType(row) === 'CREATE'"
+                  type="button"
+                  class="btn-circle review-btn"
+                  @click.stop="selectAndGoCreate(row)"
+                >
+                  <i class="pi pi-comments"></i>
+                </button>
 
-                    <button
-                      v-else
-                      class="btn-circle edit-btn"
-                    >
-                      <EditIcon />
-                    </button>
+                <button
+                  v-else-if="getActionType(row) === 'EDIT'"
+                  type="button"
+                  class="btn-circle edit-btn"
+                  @click.stop="selectAndGoEdit(row)"
+                >
+                  <EditIcon />
+                </button>
 
-                  </div>
-                </td>
+                <span v-else class="no-action-text">Tidak ada aksi</span>
+              </td>
             </tr>
 
             <tr v-if="filteredRows.length === 0">
-              <td colspan="10" class="empty">
-                Tidak ada data ditemukan
-              </td>
-
+              <td colspan="10" class="empty">Tidak ada data ditemukan</td>
             </tr>
           </tbody>
         </table>
@@ -143,86 +150,62 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import SearchIcon from "@/components/icons/SearchIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
-import 'primeicons/primeicons.css';
+import "primeicons/primeicons.css";
+
+import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
+import { useAuthStore } from "@/stores/auth";
+const auth = useAuthStore();
+const role = computed(() => auth.userRole);
+
+const store = useTinjauPengadaanStore();
+const router = useRouter();
+
 const q = ref("");
 const statusFilter = ref("ALL");
-
 const sortKey = ref("");
 const sortOrder = ref("asc");
 
-// Dummy data, nanti ambil dari API
-const rows = ref([
-  {
-    kode: "PG0001",
-    namaPengaju: "Indah",
-    gambar: "https://via.placeholder.com/120x80",
-    nama: "Kertas",
-    merk: "Sidu",
-    qty: 1,
-    tanggal: "2026-02-17",
-    harga: 50000,
-    alasan: "Keterangan teks",
-    status: "DISETUJUI_YAYASAN",
-  },
-  {
-    kode: "PG0002",
-    namaPengaju: "Cia",
-    gambar: "https://via.placeholder.com/120x80",
-    nama: "Microphone",
-    merk: "JBL",
-    qty: 2,
-    tanggal: "2026-03-22",
-    harga: 75000,
-    alasan: "Keterangan teks",
-    status: "DIAJUKAN",
-  },
-]);
 
 const statusOpen = ref(false);
-function getStatusClass(status) {
-  const map = {
-    DIAJUKAN: "status-diajukan",
-    DISETUJUI_KEPSEK: "status-kepsek",
-    DISETUJUI_YAYASAN: "status-yayasan",
-    TIDAK_DISETUJUI: "status-ditolak",
-  };
 
-  return map[status] || "";
+function onDocClickFilter(e) {
+  if (!e.target.closest(".status-dd")) statusOpen.value = false;
 }
+onMounted(() => document.addEventListener("click", onDocClickFilter));
+onBeforeUnmount(() => document.removeEventListener("click", onDocClickFilter));
 
-function formatStatus(status) {
-  return status.replaceAll("_", " ");
-}
 const statusFilterLabel = computed(() => {
   const map = {
     ALL: "Semua Status",
     DIAJUKAN: "Diajukan",
     DISETUJUI_KEPSEK: "Disetujui oleh Kepsek",
     DISETUJUI_YAYASAN: "Disetujui oleh Yayasan",
-    TIDAK_DISETUJUI: "Tidak Disetujui",
+    DITOLAK: "Tidak Disetujui",
+    DIBELI: "Dibeli",
   };
   return map[statusFilter.value] || "Semua Status";
 });
 
-function pickStatus(v) {
-  statusFilter.value = v;
-  statusOpen.value = false;
+function getStatusClass(statusPengadaan) {
+  const map = {
+    DIAJUKAN: "status-diajukan",
+    DISETUJUI_KEPSEK: "status-kepsek",
+    DISETUJUI_YAYASAN: "status-yayasan",
+    DITOLAK: "status-ditolak",
+    DIBELI: "status-yayasan",
+  };
+  return map[statusPengadaan] || "";
 }
 
-function onDocClickFilter(e) {
-  if (!e.target.closest(".status-dd")) statusOpen.value = false;
+function formatStatus(statusPengadaan) {
+  return String(statusPengadaan || "").replaceAll("_", " ");
 }
-
-onMounted(() => document.addEventListener("click", onDocClickFilter));
-onBeforeUnmount(() => document.removeEventListener("click", onDocClickFilter));
 
 function getSortIcon(column) {
-  if (sortKey.value !== column) {
-    return "pi-sort-alt unsorted";
-  }
-
+  if (sortKey.value !== column) return "pi-sort-alt unsorted";
   return sortOrder.value === "asc"
     ? "pi-sort-amount-up-alt active-sort"
     : "pi-sort-amount-down active-sort";
@@ -237,27 +220,94 @@ function sortBy(key) {
   }
 }
 
-const filteredRows = computed(() => {
-  let data = rows.value.filter((row) => {
-  const search = q.value.toLowerCase();
+function pickStatus(v) {
+  statusFilter.value = v;
+  statusOpen.value = false;
+}
 
-  const matchSearch =
-    row.nama.toLowerCase().includes(search) ||
-    row.kode.toLowerCase().includes(search) ||
-    row.merk.toLowerCase().includes(search) ||
-    row.namaPengaju.toLowerCase().includes(search);
+function formatRole(role) {
+  if (!role) return "";
+  const r = String(role).toLowerCase();
+  if (r === 'kepsek') return 'Kepsek';
+  if (r === 'yayasan') return 'Yayasan';
+  return role;
+}
 
-  const matchStatus =
-    statusFilter.value === "ALL" ||
-    row.status === statusFilter.value;
+function formatDate(isoOrDate) {
+  if (!isoOrDate) return "-";
+  const d = String(isoOrDate).slice(0, 10);
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y}`;
+}
 
-  return matchSearch && matchStatus;
+function formatRupiah(n) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(n || 0));
+}
+
+async function fetchAll() {
+  try {
+    await store.fetchAll();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+onMounted(fetchAll);
+
+const tableRows = computed(() => {
+  return store.items.map((it) => ({
+    idPengadaan: it.idPengadaan ?? 0,
+
+    namaPengaju: it.namaPengaju ?? "-",
+    gambar: it.linkGambar ?? "",
+    nama: it.namaAset ?? "",
+    merk: it.merk ?? "",
+    qty: it.qty ?? 0,
+    tanggal: it.waktuPengadaan ?? "",
+    harga: it.estimasiHarga ?? 0,
+    alasan: it.alasan ?? "-",
+    namaReviewer: it.namaReviewer ?? "-",
+    reviewerRole: it.reviewerRole ?? "-",
+    tanggalReview: it.updatedAt ?? null,
+    statusPengadaan: it.statusPengadaan ?? "DIAJUKAN",
+    kepsekFirstReviewedAt: it.kepsekFirstReviewedAt ?? null,
+    yayasanFirstReviewedAt: it.yayasanFirstReviewedAt ?? null,
+  }));
 });
+
+const filteredRows = computed(() => {
+  let data = tableRows.value.filter((row) => {
+    const search = (q.value ?? "").toLowerCase();
+
+    const nama = String(row.nama ?? "").toLowerCase();
+    const kode = String(row.kode ?? "").toLowerCase();
+    const merk = String(row.merk ?? "").toLowerCase();
+    const namaPengaju = String(row.namaPengaju ?? "").toLowerCase();
+
+    const matchSearch =
+      nama.includes(search) ||
+      kode.includes(search) ||
+      merk.includes(search) ||
+      namaPengaju.includes(search);
+
+    const matchStatus =
+      statusFilter.value === "ALL" ||
+      String(row.statusPengadaan ?? "") === statusFilter.value;
+
+    return matchSearch && matchStatus;
+  });
 
   if (sortKey.value) {
     data.sort((a, b) => {
       let aVal = a[sortKey.value];
       let bVal = b[sortKey.value];
+
+      aVal = aVal ?? "";
+      bVal = bVal ?? "";
 
       if (typeof aVal === "string") aVal = aVal.toLowerCase();
       if (typeof bVal === "string") bVal = bVal.toLowerCase();
@@ -270,19 +320,79 @@ const filteredRows = computed(() => {
 
   return data;
 });
-
-function formatDate(d) {
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y}`;
+function withinDays(fromISO, days = 2) {
+  if (!fromISO) return false;
+  const from = new Date(fromISO).getTime();
+  const now = Date.now();
+  const diffDays = (now - from) / (1000 * 60 * 60 * 24);
+  return diffDays <= days;
 }
 
-function formatRupiah(n) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(n);
+function firstTs(role, row) {
+  if (role === "KEPSEK") return row.kepsekFirstReviewedAt || row.createdAt || null;
+  if (role === "YAYASAN") return row.yayasanFirstReviewedAt || row.createdAt || null;
+  return null;
 }
+
+function getActionType(row) {
+  const r = role.value;
+  const status = row.statusPengadaan;
+
+  const kepsekSudahReview = !!row.kepsekFirstReviewedAt;
+  const yayasanSudahReview = !!row.yayasanFirstReviewedAt;
+
+  if (r === "KEPSEK") {
+    // CREATE: Muncul jika status masih DIAJUKAN
+    if (status === "DIAJUKAN" && !kepsekSudahReview) return "CREATE";
+
+    // UPDATE: Kepsek bisa edit balik jika dia yang terakhir review
+    // Syarat: Status DITOLAK atau DISETUJUI_KEPSEK, Yayasan BELUM review, dan masih < 2 hari
+    if (!yayasanSudahReview && kepsekSudahReview) {
+      if (status === "DITOLAK" || status === "DISETUJUI_KEPSEK") {
+        return withinDays(row.kepsekFirstReviewedAt, 2) ? "EDIT" : "NONE";
+      }
+    }
+
+    // Jika sudah ditolak/disetujui Yayasan, Kepsek terkunci total
+    return "NONE";
+  }
+
+  if (r === "YAYASAN") {
+    // CREATE: Yayasan hanya bisa review jika sudah direview Kepsek (DISETUJUI_KEPSEK)
+    if (status === "DISETUJUI_KEPSEK" && !yayasanSudahReview) return "CREATE";
+
+    // UPDATE: Yayasan bisa edit balik jika dia yang membuat status DITOLAK tersebut
+    // Syarat: Yayasan sudah pernah review, status belum DIBELI, dan masih < 2 hari
+    if (yayasanSudahReview) {
+      const masaGaransi = withinDays(row.yayasanFirstReviewedAt, 2);
+      const belumFinal = status !== "DIBELI";
+
+      // Jika status DITOLAK, pastikan itu ditolak oleh Yayasan (bukan dari Kepsek)
+      // Kita tahu itu milik Yayasan jika yayasanFirstReviewedAt sudah terisi
+      return (masaGaransi && belumFinal) ? "EDIT" : "NONE";
+    }
+
+    // Jika status DITOLAK (oleh Kepsek), Yayasan tidak punya tombol apa-apa
+    return "NONE";
+  }
+
+  return "NONE";
+}
+
+function selectAndGoCreate(row) {
+  const id = row.idPengadaan;
+  if (!id) return;
+  store.selectPengadaan(id);
+  router.push(`/pengadaan/tinjau/${id}`);
+}
+
+function selectAndGoEdit(row) {
+  const id = row.idPengadaan;
+  if (!id) return;
+  store.selectPengadaan(id);
+  router.push(`/pengadaan/tinjau/update/${id}`);
+}
+
 </script>
 
 <style scoped>
@@ -326,7 +436,7 @@ function formatRupiah(n) {
 
 .status-dd {
   position: relative;
-  width: 260px; /* bisa kamu ubah */
+  width: 260px;
   flex: 0 0 auto;
 }
 
@@ -409,6 +519,7 @@ table {
   min-width: 1000px;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
 }
 
 .input::placeholder {
@@ -432,13 +543,23 @@ th {
 td {
   font-weight: 400;
   font-size: 12px;
-  padding: 14px 16px;
+  padding: 14px 12px;
   border-bottom: 1px solid #f1f5f9;
   text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.5;
+  vertical-align: middle;
 }
 
 tbody tr:hover {
-  background: #f9fafb;
+  background-color: #f0f7ff !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover td {
+  color: #000;
 }
 
 .img-box {
@@ -580,36 +701,66 @@ th {
   color: #ffffff;
 }
 
+.alasan-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 40px;
+}
+
+.alasan-main {
+  margin-bottom: 16px;
+  word-break: normal;
+}
+
+.date-column span {
+  display: block;
+  max-width: 100%;
+  word-break: normal;
+}
+
+.reviewer-info {
+  font-size: 10px;
+  color: #64748b;
+  font-style: italic;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 4px;
+  line-height: 1.4;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #00588f;
+}
+
+
+
 th:nth-child(1),
-td:nth-child(1) { width: 70px; }   /* Kode */
+td:nth-child(1) { width: 110px; }  /* Nama Pengaju */
 
 th:nth-child(2),
-td:nth-child(2) { width: 120px; }  /* Nama Pengaju */
+td:nth-child(2) { width: 90px; }   /* Gambar */
 
 th:nth-child(3),
-td:nth-child(3) { width: 90px; }   /* Gambar */
+td:nth-child(3) { width: 140px; }  /* Nama */
 
 th:nth-child(4),
-td:nth-child(4) { width: 130px; }  /* Nama */
+td:nth-child(4) { width: 80px; }   /* Merk */
 
 th:nth-child(5),
-td:nth-child(5) { width: 60px; }   /* Merk */
+td:nth-child(5) { width: 45px; }   /* Qty */
 
 th:nth-child(6),
-td:nth-child(6) { width: 30px; }   /* Qty */
+td:nth-child(6) { width: 90px; }  /* Tanggal */
 
 th:nth-child(7),
-td:nth-child(7) { width: 10px; }  /* Tanggal */
+td:nth-child(7) { width: 110px; }  /* Harga */
 
 th:nth-child(8),
-td:nth-child(8) { width: 70px; }  /* Harga */
+td:nth-child(8) { width: 220px; }  /* Alasan */
 
 th:nth-child(9),
-td:nth-child(9) { width: 160px; }  /* Alasan */
+td:nth-child(9) { width: 110px; } /* Status */
 
 th:nth-child(10),
-td:nth-child(10) { width: 80px; } /* Status */
-
-th:nth-child(11),
-td:nth-child(11) { width: 30px; }  /* Aksi */
+td:nth-child(10) { width: 70px; }  /* Aksi */
 </style>
