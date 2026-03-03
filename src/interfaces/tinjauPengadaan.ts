@@ -17,7 +17,7 @@ export interface PembelianRequestDTO {
 
 export interface TinjauPengadaanResponseDTO {
   id: number;
-  idPengadaan: number;
+  idPengadaan: string;
 
   namaAset: string;
   linkGambar: string;
@@ -38,6 +38,8 @@ export interface TinjauPengadaanResponseDTO {
   namaReviewer?: string | null;
 
   userId?: string | number | null;
+  harga?: number | null;
+  buktiPembelian?: string | null;
 }
 
 export interface BaseResponseDTO<T> {

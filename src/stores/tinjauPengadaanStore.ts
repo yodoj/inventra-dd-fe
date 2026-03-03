@@ -101,16 +101,15 @@ async function createTinjauan(pengadaanId: number, payload: TinjauPengadaanReque
     }
   }
 
-  // Di tinjauPengadaanStore.ts
-  // tinjauPengadaanStore.ts
-  // Di dalam tinjauPengadaanStore.ts
+
   async function prosesBeli(idPengadaan: string, harga: number, file: File) {
     try {
-      // Panggil service dengan pola payload objek
       const result = await tinjauPengadaanService.beliPengadaan(idPengadaan, {
         harga: harga,
         buktiPembelian: file
       });
+
+      current.value = result;
 
       return result;
     } catch (error: any) {

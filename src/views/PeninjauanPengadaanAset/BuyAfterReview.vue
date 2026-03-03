@@ -52,13 +52,37 @@
         </label>
       </div>
     </div>
+    <div class="actions">
+            <button type="button" class="btn btn-secondary" @click="onCancel">
+              Batal
+            </button>
+            <button type="button" class="btn btn-primary" @click="triggerConfirm">
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
 
-      <div class="actions">
-        <button type="button" class="btn btn-secondary" @click="onCancel">
-          Batal
-        </button>
-        <button type="button" class="btn btn-primary" @click="onSave">
-          Simpan
+  <div v-if="showConfirmModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Konfirmasi Pembelian</h3>
+        <button class="close-btn" @click="showConfirmModal = false">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="info-icon-box">
+          <svg viewBox="0 0 24 24" class="info-svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </div>
+        <p>Apakah Anda yakin data pembelian dan bukti sudah benar?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-batal" @click="showConfirmModal = false">Batal</button>
+        <button class="btn-confirm" @click="confirmSave" :disabled="store.isLoading">
+          {{ store.isLoading ? 'Proses...' : 'Ya, Simpan' }}
         </button>
       </div>
     </div>
@@ -74,7 +98,7 @@ const router = useRouter();
 const store = useTinjauPengadaanStore();
 
 const pengadaanId = computed(() => {
-  console.log("Isi Route Params:", route.params); // Debug: Lihat apa isinya di console
+  console.log("Isi Route Params:", route.params);
   return route.params.idPengadaan;
 });
 
@@ -109,20 +133,33 @@ function onCancel() {
   router.back();
 }
 
-async function onSave() {
-  if (form.harga === undefined || form.harga === null || form.harga === "") {
+const showConfirmModal = ref(false);
+
+function triggerConfirm() {
+  if (!form.harga || form.harga === "") {
     alert("Harga wajib diisi.");
     return;
   }
-
-  const formData = new FormData();
-  formData.append("harga", String(form.harga));
-
-  if (fotoFile.value) {
-    formData.append("buktiPembelian", fotoFile.value);
+  if (!fotoFile.value) {
+    alert("Bukti pembelian wajib diunggah.");
+    return;
   }
+  showConfirmModal.value = true;
+}
 
-  await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
+async function confirmSave() {
+  try {
+    showConfirmModal.value = false;
+
+    await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
+
+    alert("Berhasil memperbarui pembelian!");
+
+    router.push("/pengadaan/pengajuan");
+  } catch (err) {
+    console.error("Gagal simpan pembelian:", err);
+    alert(err.message || "Terjadi kesalahan saat menyimpan data.");
+  }
 }
 </script>
 
@@ -346,6 +383,97 @@ async function onSave() {
   filter: brightness(0.9);
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.modal-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-icon-box {
+  width: 48px;
+  height: 48px;
+  background-color: #f0f9ff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info-svg {
+  width: 26px;
+  height: 26px;
+  fill: #2b5281;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-batal {
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: #f4f6f8;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-confirm {
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: #2b5281;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @media (max-width: 860px) {
   .review-grid {
     grid-template-columns: 1fr;
@@ -363,18 +491,3 @@ async function onSave() {
 }
 </style>
 
-
-<!-- Buat nanti backend
-
-const formData = new FormData();
-formData.append("harga", form.harga);
-formData.append("foto", form.foto);
-
-// axios example
-await axios.post("/api/upload", formData, {
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
-});
-
--->
