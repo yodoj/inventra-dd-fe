@@ -239,7 +239,7 @@ const handleEdit = (asset: any) => {
       </div>
 
       <!-- Filter Section -->
-      <div class="filter-card mb-20">
+      <div class="filter-card mb-32">
         <h3 class="s2-subtitle" style="margin-bottom: 20px;">Filter Aset</h3>
         <div class="filter-grid">
           <div class="filter-item">
@@ -295,7 +295,7 @@ const handleEdit = (asset: any) => {
       </div>
       
       <!-- Add Button Positioned Above Table -->
-      <div v-if="isSarprasOrYayasan" class="flex justify-end mb-16">
+      <div v-if="isSarprasOrYayasan" class="flex justify-end mb-24">
         <button 
           @click="router.push(activeTab === 'barang' ? '/assets/tambah-barang' : '/assets/tambah-ruangan')" 
           class="btn-add"
@@ -460,8 +460,8 @@ const handleEdit = (asset: any) => {
 
 .filter-card {
   background: white;
-  padding: 32px 36px 24px;
-  border-radius: 16px;
+  padding: 40px 48px;
+  border-radius: 20px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
@@ -548,7 +548,7 @@ select option {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  padding-top: 20px;
+  padding-top: 32px;
 }
 
 .btn-apply {
@@ -585,19 +585,22 @@ select option {
 .btn-add {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background-color: #00588F;
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
+  padding: 14px 28px;
+  border-radius: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 88, 143, 0.2);
 }
 
 .btn-add:hover {
   background-color: #004470;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 88, 143, 0.3);
 }
 
 .table-container {
