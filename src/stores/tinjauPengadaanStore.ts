@@ -112,9 +112,11 @@ async function createTinjauan(pengadaanId: number, payload: TinjauPengadaanReque
       current.value = result;
 
       return result;
-    } catch (error: any) {
-      console.error("Error di Store:", error.message);
-      throw error;
+    } catch (e: any) {
+      errorMessage.value = e.response?.data?.message || e.message || "Gagal memproses pembelian";
+      throw e;
+    } finally {
+      loading.value = false;
     }
   }
 
