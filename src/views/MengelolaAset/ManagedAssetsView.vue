@@ -8,17 +8,20 @@ import { Package, Home, ChevronDown, ChevronLeft, ChevronRight, Trash2, Plus } f
 import { useRouter } from 'vue-router';
 import 'primeicons/primeicons.css';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import { toast } from 'vue-sonner';
-import SuccessToast from '@/components/SuccessToast.vue';
+import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
 const assetStore = useAssetStore();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const activeTab = ref<'barang' | 'ruangan'>('barang');
 const searchQuery = ref('');
 const categoryFilter = ref('');
 const statusFilter = ref('');
+const unitFilter = ref('');
+
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 const currentPage = ref(0);
 const pageSize = ref(10);
@@ -47,12 +50,40 @@ const statuses = [
   { label: 'Dimusnahkan', value: 'DIMUSNAHKAN' }
 ];
 
+const availableStatuses = computed(() => {
+  if (activeTab.value === 'ruangan') {
+    return statuses.filter(s => ['TERSEDIA', 'SEDANG_PERBAIKAN', 'SEDANG_DIPINJAM'].includes(s.value));
+  }
+  
+  if (categoryFilter.value === 'BARANG_HABIS_PAKAI') {
+    return statuses.filter(s => ['TERSEDIA', 'HABIS'].includes(s.value));
+  }
+  
+  if (categoryFilter.value === 'BARANG_TIDAK_HABIS_PAKAI') {
+    return statuses.filter(s => ['TERSEDIA', 'RUSAK', 'SEDANG_PERBAIKAN', 'DIMUSNAHKAN', 'SEDANG_DIPINJAM'].includes(s.value));
+  }
+  
+  return statuses;
+});
+
+watch([activeTab, categoryFilter], () => {
+  statusFilter.value = '';
+});
+
 const isSarprasOrYayasan = computed(() => {
   return ['SARPRAS', 'YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
 });
 
 const canSeeUnit = computed(() => isSarprasOrYayasan.value);
 const canSeeAction = computed(() => isSarprasOrYayasan.value);
+
+const totalColumns = computed(() => {
+  let cols = activeTab.value === 'barang' ? 8 : 5; // Base columns
+  if (canSeeUnit.value) cols++;
+  if (canSeeAction.value) cols++;
+  if (activeTab.value === 'barang') cols++; // For merk column which is only in barang
+  return cols;
+});
 
 const handleTabChange = (tab: 'barang' | 'ruangan') => {
   activeTab.value = tab;
@@ -63,8 +94,9 @@ const handleTabChange = (tab: 'barang' | 'ruangan') => {
 const loadAssets = () => {
   const filters: any = {};
   if (searchQuery.value) filters.search = searchQuery.value;
-  if (categoryFilter.value) filters.category = categoryFilter.value;
+  if (categoryFilter.value) filters.kategori = categoryFilter.value;
   if (statusFilter.value) filters.status = statusFilter.value;
+  if (unitFilter.value) filters.unit = unitFilter.value;
 
   assetStore.fetchAssets(activeTab.value, currentPage.value, pageSize.value, filters);
 };
@@ -83,6 +115,7 @@ const handleReset = () => {
   searchQuery.value = '';
   categoryFilter.value = '';
   statusFilter.value = '';
+  unitFilter.value = '';
   currentPage.value = 0;
   loadAssets();
 };
@@ -106,14 +139,10 @@ const handleDelete = async () => {
   try {
     if (activeTab.value === 'barang') {
       await assetStore.deleteAssetBarang(assetToDelete.value.id_aset);
-      toast.custom(markRaw(SuccessToast), {
-        componentProps: { message: 'Aset barang berhasil dihapus' }
-      });
+      toastStore.success('Success', 'Aset barang berhasil dihapus');
     } else {
       await assetStore.deleteAssetRuangan(assetToDelete.value.id_aset);
-      toast.custom(markRaw(SuccessToast), {
-        componentProps: { message: 'Aset ruangan berhasil dihapus' }
-      });
+      toastStore.success('Success', 'Aset ruangan berhasil dihapus');
     }
     showDeleteModal.value = false;
     assetToDelete.value = null;
@@ -211,10 +240,10 @@ const handleEdit = (asset: any) => {
 
       <!-- Filter Section -->
       <div class="filter-card mb-20">
-        <h3 class="s2-subtitle mb-4">Filter Aset</h3>
+        <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Aset</h3>
         <div class="filter-grid">
           <div class="filter-item">
-            <label class="c2-caption mb-2 block">Kategori Aset</label>
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
             <div class="custom-select">
               <select v-model="categoryFilter" :class="{ 'placeholder-color': !categoryFilter }">
                 <option value="">Kategori</option>
@@ -226,17 +255,28 @@ const handleEdit = (asset: any) => {
             </div>
           </div>
           <div class="filter-item">
-            <label class="c2-caption mb-2 block">Status Aset</label>
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Status Aset</label>
             <div class="custom-select">
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
                 <option value="">Semua Status</option>
-                <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+                <option v-for="st in availableStatuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
+          <div v-if="isSarprasOrYayasan" class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
+            <div class="custom-select">
+              <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
+                <option value="">Semua Unit</option>
+                <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
           </div>
           <div class="filter-item flex-grow">
-            <label class="c2-caption mb-2 block">Cari Aset</label>
+
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Aset</label>
             <div class="search-box">
               <SearchIcon class="search-icon" />
               <input 
@@ -248,7 +288,7 @@ const handleEdit = (asset: any) => {
             </div>
           </div>
         </div>
-        <div class="filter-actions mt-6">
+        <div class="filter-actions" style="margin-top: 10px;">
           <button @click="handleFilter" class="btn-apply btn-medium">Terapkan Filter</button>
           <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
         </div>
@@ -285,10 +325,10 @@ const handleEdit = (asset: any) => {
             </thead>
             <tbody>
               <tr v-if="assetStore.isLoading">
-                <td colspan="11" class="text-center py-8">Memuat data...</td>
+                <td :colspan="totalColumns" class="text-center py-8">Memuat data...</td>
               </tr>
               <tr v-else-if="assetStore.assets.length === 0">
-                <td colspan="11" class="text-center py-8 text-gray-500">Tidak ada data ditemukan</td>
+                <td :colspan="totalColumns" class="text-center py-8 text-gray-500">Tidak ada data ditemukan</td>
               </tr>
               <tr v-for="asset in assetStore.assets" :key="asset.id_aset">
                 <td class="b3-body">{{ asset.kode_aset }}</td>
@@ -420,7 +460,7 @@ const handleEdit = (asset: any) => {
 
 .filter-card {
   background: white;
-  padding: 24px;
+  padding: 24px 28px 20px;
   border-radius: 16px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -430,10 +470,7 @@ const handleEdit = (asset: any) => {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-}
-
-.filter-item {
-  min-width: 200px;
+  align-items: flex-end;
 }
 
 .custom-select {
@@ -511,6 +548,7 @@ select option {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  padding-top: 10px;
 }
 
 .btn-apply {
@@ -677,61 +715,5 @@ td:last-child {
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
-  color: #374151;
-  font-weight: 500;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
 }
-
-.page-size-wrapper .select-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.page-size-select:hover {
-  border-color: #00588F;
-}
-
-.page-size-select:focus {
-  border-color: #00588F;
-  box-shadow: 0 0 0 2px rgba(0, 88, 143, 0.1);
-}
-
-.btn-add {
-  background-color: #00588F;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 40px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 88, 143, 0.2);
-}
-
-.btn-add:hover {
-  background-color: #004470;
-}
-
-.py-16 {
-  padding-top: 32px;
-  padding-bottom: 32px;
-}
-
-.mb-16 {
-  margin-bottom: 32px;
-}
-
-.mb-20 {
-  margin-bottom: 40px;
-}
-
-.mt-20 {
-  margin-top: 40px;
-}
-
 </style>
