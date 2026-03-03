@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
+import PengadaanAsetView from '@/views/PengadaanAset/PengadaanAsetView.vue';
+import AddPengadaanAsetView from '@/views/PengadaanAset/AddPengadaanAsetView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -76,7 +78,17 @@ const router = createRouter({
       // path: '/pengadaan/bukti/{kode_pengadaan}',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
-    }
+    },
+    {
+      path: '/pengadaan/pengajuan',
+      name: 'pengadaan-list',
+      component: PengadaanAsetView,
+    },
+    {
+      path: '/pengadaan/ajukan-pengadaan',
+      name: 'pengadaan-add',
+      component: AddPengadaanAsetView,
+    },
   ],
 })
 
