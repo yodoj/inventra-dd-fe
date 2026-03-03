@@ -40,6 +40,7 @@ export interface TinjauPengadaanResponseDTO {
   userId?: string | number | null;
   harga?: number | null;
   buktiPembelian?: string | null;
+  unit?: string | null;
 }
 
 export interface BaseResponseDTO<T> {

@@ -113,6 +113,7 @@ const tableRows = computed(() => {
     idPengadaan: it.idPengadaan ?? 0,
 
     namaPengaju: it.namaPengaju ?? "-",
+    rolePengaju: it.unit ?? "-",
     gambar: it.linkGambar ?? "",
     nama: it.namaAset ?? "",
     merk: it.merk ?? "",
@@ -334,7 +335,12 @@ function getActionType(row) {
 
           <tbody>
             <tr v-for="row in filteredRows" :key="row.idPengadaan">
-              <td>{{ row.namaPengaju }}</td>
+              <td>
+                <div class="pengaju-wrapper">
+                  <div class="bold">{{ row.namaPengaju }}</div>
+                  <div class="role-text">{{ row.rolePengaju }}</div>
+                </div>
+              </td>
               <td>
                 <div class="img-box">
                   <img :src="row.gambar" />
@@ -717,12 +723,6 @@ th {
   font-size: 14px;
 }
 
-th:nth-child(10),
-td:nth-child(10) {
-  width: 90px;
-  text-align: center;
-}
-
 .no-action-text {
   color: #9ca3af;
   font-size: 11px;
@@ -780,6 +780,19 @@ td:nth-child(10) {
 }
 
 
+.pengaju-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.role-text {
+  font-size: 10px;
+  color: #94a3b8; /* Warna abu-abu (slate-400) */
+  font-weight: 400;
+  text-transform: uppercase; /* Opsional: agar terlihat lebih rapi */
+}
+
 
 th:nth-child(1),
 td:nth-child(1) { width: 110px; }  /* Nama Pengaju */
@@ -810,4 +823,5 @@ td:nth-child(9) { width: 110px; } /* Status */
 
 th:nth-child(10),
 td:nth-child(10) { width: 70px; }  /* Aksi */
+
 </style>
