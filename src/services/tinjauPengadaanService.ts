@@ -3,7 +3,8 @@ import type { AxiosResponse, AxiosError } from "axios";
 import type {
   TinjauPengadaanRequestDTO,
   TinjauPengadaanResponseDTO,
-  BaseResponseDTO
+  BaseResponseDTO,
+  PembelianRequestDTO
 } from "@/interfaces/tinjauPengadaan";
 
 const API_BASE = "/api/pengadaan";
@@ -80,4 +81,30 @@ export const tinjauPengadaanService = {
       throw new Error(getErrorMessage(err));
     }
   },
+
+  async beliPengadaan(idPengadaan: string, data: PembelianRequestDTO) {
+    try{
+    const formData = new FormData();
+
+    const hargaAman = data?.harga !== undefined ? data.harga : 0;
+    formData.append('harga', hargaAman.toString());
+    if (data?.buktiPembelian) {
+        formData.append('buktiPembelian', data.buktiPembelian);
+      }
+    const response = await api.post<BaseResponseDTO<TinjauPengadaanResponseDTO>>(
+      `/api/pengadaan/tinjau/bukti/${idPengadaan}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    return unwrap(response);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  }
+
+
 };

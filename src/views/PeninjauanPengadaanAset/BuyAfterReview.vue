@@ -64,20 +64,34 @@
     </div>
   </div>
 </template>
-
 <script setup>
-import { reactive, ref } from "vue";
+import { reactive, ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
+
+const route = useRoute();
+const router = useRouter();
+const store = useTinjauPengadaanStore();
+
+const pengadaanId = route.params.pengadaanId;
 
 const form = reactive({ harga: "" });
-
 const fotoFile = ref(null);
 const previewUrl = ref("");
 
+onMounted(async () => {
+  if (pengadaanId) {
+    try {
+      await store.fetchByPengadaanId(pengadaanId);
+    } catch (error) {
+      console.error("Gagal mengambil detail pengadaan:", error);
+    }
+  }
+});
+
 function onFileChange(e) {
   const file = e.target.files?.[0] || null;
-
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
-
   fotoFile.value = file;
   previewUrl.value = file ? URL.createObjectURL(file) : "";
 }
@@ -89,26 +103,23 @@ function removeFile() {
 }
 
 function onCancel() {
-  form.harga = "";
-  removeFile();
+  router.back();
 }
 
-function onSave() {
-  if (!form.harga) {
+async function onSave() {
+  if (form.harga === undefined || form.harga === null || form.harga === "") {
     alert("Harga wajib diisi.");
     return;
   }
-  if (!fotoFile.value) {
-    alert("Foto wajib diupload.");
-    return;
+
+  const formData = new FormData();
+  formData.append("harga", String(form.harga));
+
+  if (fotoFile.value) {
+    formData.append("buktiPembelian", fotoFile.value);
   }
 
-  const fd = new FormData();
-  fd.append("harga", form.harga);
-  fd.append("foto", fotoFile.value);
-
-  console.log("ready submit", { harga: form.harga, foto: fotoFile.value });
-  alert("Tersimpan!");
+  await store.prosesBeli(pengadaanId, form.harga, fotoFile.value);
 }
 </script>
 
@@ -197,7 +208,6 @@ function onSave() {
   color: #6b7280;
 }
 
-/* Upload */
 .file-hidden {
   display: none;
 }

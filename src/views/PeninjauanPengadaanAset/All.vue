@@ -1,153 +1,3 @@
-<template>
-  <main class="page">
-    <h1 class="title">
-      Peninjauan Pengajuan Pengadaan Aset
-    </h1>
-
-    <!-- FILTER -->
-    <div class="filter-wrapper">
-      <div class="search-box">
-        <SearchIcon class="search-icon" />
-
-        <input
-          v-model="q"
-          type="text"
-          placeholder="Cari nama pengaju, nama aset, atau merk"
-        />
-      </div>
-
-      <!-- CUSTOM STATUS DROPDOWN -->
-      <div class="status-dd" :class="{ open: statusOpen }">
-        <button type="button" class="status-dd-btn" @click="statusOpen = !statusOpen">
-          <span :class="{ placeholder: statusFilter === 'ALL' }">
-            {{ statusFilterLabel }}
-          </span>
-
-          <svg class="status-dd-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
-            />
-          </svg>
-        </button>
-
-        <div v-if="statusOpen" class="status-dd-menu">
-          <button type="button" class="status-dd-item" @click="pickStatus('ALL')">
-            Semua Status
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DIAJUKAN')">
-            Diajukan
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_KEPSEK')">
-            Disetujui oleh Kepsek
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_YAYASAN')">
-            Disetujui oleh Yayasan
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DITOLAK')">
-            Ditolak
-          </button>
-        </div>
-      </div>
-    </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Pengaju</th>
-              <th>Gambar</th>
-              <th @click="sortBy('nama')" class="sortable">
-                <div class="th-inner">
-                  <span class="th-text">Nama</span>
-                  <i class="sort-icon pi" :class="getSortIcon('nama')"></i>
-                </div>
-              </th>
-              <th>Merk</th>
-              <th>Qty</th>
-              <th @click="sortBy('tanggal')" class="sortable">
-                <div class="th-inner">
-                  <span class="th-text">Tanggal</span>
-                  <i class="sort-icon pi" :class="getSortIcon('tanggal')"></i>
-                </div>
-              </th>
-              <th @click="sortBy('harga')" class="sortable">
-                <div class="th-inner">
-                  <span class="th-text">Harga</span>
-                  <i class="sort-icon pi" :class="getSortIcon('harga')"></i>
-                </div>
-              </th>
-              <th>Alasan & Riwayat Review</th>
-              <th @click="sortBy('statusPengadaan')">Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-for="row in filteredRows" :key="row.idPengadaan">
-              <td>{{ row.namaPengaju }}</td>
-              <td>
-                <div class="img-box">
-                  <img :src="row.gambar" />
-                </div>
-              </td>
-              <td class="bold">{{ row.nama }}</td>
-              <td>{{ row.merk }}</td>
-              <td class="center">{{ row.qty }}</td>
-              <td class="date-column">
-                <span>{{ formatDate(row.tanggal) }}</span>
-              </td>
-              <td>{{ formatRupiah(row.harga) }}</td>
-
-              <td>
-                <div class="alasan-wrapper">
-                  <div class="alasan-main">{{ row.alasan }}</div>
-
-                  <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
-                    Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span>
-                    ({{ formatRole(row.reviewerRole) }})
-                    pada <span class="highlight">{{ formatDate(row.tanggalReview) }}</span>
-                  </div>
-                </div>
-              </td>
-
-              <td class="center">
-                <span :class="['badge', getStatusClass(row.statusPengadaan)]">
-                  {{ formatStatus(row.statusPengadaan) }}
-                </span>
-              </td>
-
-              <td class="center">
-                <button
-                  v-if="getActionType(row) === 'CREATE'"
-                  type="button"
-                  class="btn-circle review-btn"
-                  @click.stop="selectAndGoCreate(row)"
-                >
-                  <i class="pi pi-comments"></i>
-                </button>
-
-                <button
-                  v-else-if="getActionType(row) === 'EDIT'"
-                  type="button"
-                  class="btn-circle edit-btn"
-                  @click.stop="selectAndGoEdit(row)"
-                >
-                  <EditIcon />
-                </button>
-
-                <span v-else class="no-action-text">Tidak ada aksi</span>
-              </td>
-            </tr>
-
-            <tr v-if="filteredRows.length === 0">
-              <td colspan="10" class="empty">Tidak ada data ditemukan</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-  </main>
-</template>
-
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import { useRouter } from "vue-router";
@@ -334,50 +184,6 @@ function firstTs(role, row) {
   return null;
 }
 
-function getActionType(row) {
-  const r = role.value;
-  const status = row.statusPengadaan;
-
-  const kepsekSudahReview = !!row.kepsekFirstReviewedAt;
-  const yayasanSudahReview = !!row.yayasanFirstReviewedAt;
-
-  if (r === "KEPSEK") {
-    // CREATE: Muncul jika status masih DIAJUKAN
-    if (status === "DIAJUKAN" && !kepsekSudahReview) return "CREATE";
-
-    // UPDATE: Kepsek bisa edit balik jika dia yang terakhir review
-    // Syarat: Status DITOLAK atau DISETUJUI_KEPSEK, Yayasan BELUM review, dan masih < 2 hari
-    if (!yayasanSudahReview && kepsekSudahReview) {
-      if (status === "DITOLAK" || status === "DISETUJUI_KEPSEK") {
-        return withinDays(row.kepsekFirstReviewedAt, 2) ? "EDIT" : "NONE";
-      }
-    }
-
-    // Jika sudah ditolak/disetujui Yayasan, Kepsek terkunci total
-    return "NONE";
-  }
-
-  if (r === "YAYASAN") {
-    // CREATE: Yayasan hanya bisa review jika sudah direview Kepsek (DISETUJUI_KEPSEK)
-    if (status === "DISETUJUI_KEPSEK" && !yayasanSudahReview) return "CREATE";
-
-    // UPDATE: Yayasan bisa edit balik jika dia yang membuat status DITOLAK tersebut
-    // Syarat: Yayasan sudah pernah review, status belum DIBELI, dan masih < 2 hari
-    if (yayasanSudahReview) {
-      const masaGaransi = withinDays(row.yayasanFirstReviewedAt, 2);
-      const belumFinal = status !== "DIBELI";
-
-      // Jika status DITOLAK, pastikan itu ditolak oleh Yayasan (bukan dari Kepsek)
-      // Kita tahu itu milik Yayasan jika yayasanFirstReviewedAt sudah terisi
-      return (masaGaransi && belumFinal) ? "EDIT" : "NONE";
-    }
-
-    // Jika status DITOLAK (oleh Kepsek), Yayasan tidak punya tombol apa-apa
-    return "NONE";
-  }
-
-  return "NONE";
-}
 
 function selectAndGoCreate(row) {
   const id = row.idPengadaan;
@@ -393,7 +199,220 @@ function selectAndGoEdit(row) {
   router.push(`/pengadaan/tinjau/update/${id}`);
 }
 
+function selectAndGoBeli(row) {
+  const id = row.idPengadaan;
+  if (!id) return;
+  store.selectPengadaan(id);
+  router.push(`/pengadaan/bukti/${id}`);
+}
+function getActionType(row) {
+  const r = role.value;
+  const status = row.statusPengadaan;
+  const yayasanSudahReview = !!row.yayasanFirstReviewedAt;
+  const kepsekSudahReview = !!row.kepsekFirstReviewedAt;
+
+  // Logika khusus Yayasan
+  if (r === "YAYASAN") {
+    const actions = [];
+
+    // Jika status disetujui kepsek & yayasan belum sentuh -> Muncul tombol Review (Create)
+    if (status === "DISETUJUI_KEPSEK" && !yayasanSudahReview) {
+      actions.push("CREATE");
+    }
+
+    // Jika sudah disetujui yayasan -> Muncul tombol Beli
+    if (status === "DISETUJUI_YAYASAN") {
+      actions.push("BELI");
+    }
+
+    // Jika sudah pernah direview, bukan status DIBELI, dan masih < 2 hari -> Muncul tombol Edit
+    if (yayasanSudahReview && status !== "DIBELI") {
+      if (withinDays(row.yayasanFirstReviewedAt, 2)) {
+        actions.push("EDIT");
+      }
+    }
+
+    return actions.length > 0 ? actions : ["NONE"];
+  }
+
+  if (r === "KEPSEK") {
+    if (status === "DIAJUKAN" && !kepsekSudahReview) return ["CREATE"];
+    if (!yayasanSudahReview && kepsekSudahReview) {
+      if ((status === "DITOLAK" || status === "DISETUJUI_KEPSEK") && withinDays(row.kepsekFirstReviewedAt, 2)) {
+        return ["EDIT"];
+      }
+    }
+  }
+
+  return ["NONE"];
+}
 </script>
+
+<template>
+  <main class="page">
+    <h1 class="title">
+      Peninjauan Pengajuan Pengadaan Aset
+    </h1>
+
+    <!-- FILTER -->
+    <div class="filter-wrapper">
+      <div class="search-box">
+        <SearchIcon class="search-icon" />
+
+        <input
+          v-model="q"
+          type="text"
+          placeholder="Cari nama pengaju, nama aset, atau merk"
+        />
+      </div>
+
+      <!-- CUSTOM STATUS DROPDOWN -->
+      <div class="status-dd" :class="{ open: statusOpen }">
+        <button type="button" class="status-dd-btn" @click="statusOpen = !statusOpen">
+          <span :class="{ placeholder: statusFilter === 'ALL' }">
+            {{ statusFilterLabel }}
+          </span>
+
+          <svg class="status-dd-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
+            />
+          </svg>
+        </button>
+
+        <div v-if="statusOpen" class="status-dd-menu">
+          <button type="button" class="status-dd-item" @click="pickStatus('ALL')">
+            Semua Status
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DIAJUKAN')">
+            Diajukan
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_KEPSEK')">
+            Disetujui oleh Kepsek
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_YAYASAN')">
+            Disetujui oleh Yayasan
+          </button>
+          <button type="button" class="status-dd-item" @click="pickStatus('DITOLAK')">
+            Ditolak
+          </button>
+        </div>
+      </div>
+    </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Pengaju</th>
+              <th>Gambar</th>
+              <th @click="sortBy('nama')" class="sortable">
+                <div class="th-inner">
+                  <span class="th-text">Nama</span>
+                  <i class="sort-icon pi" :class="getSortIcon('nama')"></i>
+                </div>
+              </th>
+              <th>Merk</th>
+              <th>Qty</th>
+              <th @click="sortBy('tanggal')" class="sortable">
+                <div class="th-inner">
+                  <span class="th-text">Tanggal</span>
+                  <i class="sort-icon pi" :class="getSortIcon('tanggal')"></i>
+                </div>
+              </th>
+              <th @click="sortBy('harga')" class="sortable">
+                <div class="th-inner">
+                  <span class="th-text">Harga</span>
+                  <i class="sort-icon pi" :class="getSortIcon('harga')"></i>
+                </div>
+              </th>
+              <th>Alasan & Riwayat Review</th>
+              <th @click="sortBy('statusPengadaan')">Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr v-for="row in filteredRows" :key="row.idPengadaan">
+              <td>{{ row.namaPengaju }}</td>
+              <td>
+                <div class="img-box">
+                  <img :src="row.gambar" />
+                </div>
+              </td>
+              <td class="bold">{{ row.nama }}</td>
+              <td>{{ row.merk }}</td>
+              <td class="center">{{ row.qty }}</td>
+              <td class="date-column">
+                <span>{{ formatDate(row.tanggal) }}</span>
+              </td>
+              <td>{{ formatRupiah(row.harga) }}</td>
+
+              <td>
+                <div class="alasan-wrapper">
+                  <div class="alasan-main">{{ row.alasan }}</div>
+
+                  <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
+                    Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span>
+                    ({{ formatRole(row.reviewerRole) }})
+                    pada <span class="highlight">{{ formatDate(row.tanggalReview) }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <td class="center">
+                <span :class="['badge', getStatusClass(row.statusPengadaan)]">
+                  {{ formatStatus(row.statusPengadaan) }}
+                </span>
+              </td>
+
+              <td class="center">
+                <div class="action-buttons">
+                  <button
+                    v-if="getActionType(row).includes('CREATE')"
+                    type="button"
+                    class="btn-circle review-btn"
+                    @click.stop="selectAndGoCreate(row)"
+                    title="Berikan Peninjauan"
+                  >
+                    <i class="pi pi-comments"></i>
+                  </button>
+
+                  <button
+                    v-if="getActionType(row).includes('BELI')"
+                    type="button"
+                    class="btn-circle buy-btn"
+                    @click.stop="selectAndGoBeli(row)"
+                    title="Proses Pembelian"
+                  >
+                    <i class="pi pi-shopping-cart"></i>
+                  </button>
+
+                  <button
+                    v-if="getActionType(row).includes('EDIT')"
+                    type="button"
+                    class="btn-circle edit-btn"
+                    @click.stop="selectAndGoEdit(row)"
+                    title="Ubah Peninjauan"
+                  >
+                    <EditIcon />
+                  </button>
+
+                  <span v-if="getActionType(row).includes('NONE')" class="no-action-text">
+                    Tidak ada aksi
+                  </span>
+                </div>
+              </td>
+            </tr>
+
+            <tr v-if="filteredRows.length === 0">
+              <td colspan="10" class="empty">Tidak ada data ditemukan</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  </main>
+</template>
 
 <style scoped>
 .page {
@@ -680,6 +699,34 @@ th {
 .review-btn {
   background: #198754;
   color: white;
+}
+
+.buy-btn {
+  background: #FF9800;
+  color: white;
+  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+  margin-right: 4px;
+}
+
+.buy-btn:hover {
+  background: #e68a00;
+  transform: translateY(-1px);
+}
+
+.buy-btn i {
+  font-size: 14px;
+}
+
+th:nth-child(10),
+td:nth-child(10) {
+  width: 90px;
+  text-align: center;
+}
+
+.no-action-text {
+  color: #9ca3af;
+  font-size: 11px;
+  font-style: italic;
 }
 
 .sortable {

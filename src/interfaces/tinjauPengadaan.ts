@@ -10,6 +10,11 @@ export interface TinjauPengadaanRequestDTO {
   alasan: string;
 }
 
+export interface PembelianRequestDTO {
+  harga: number;
+  buktiPembelian: File;
+}
+
 export interface TinjauPengadaanResponseDTO {
   id: number;
   idPengadaan: number;
@@ -20,7 +25,7 @@ export interface TinjauPengadaanResponseDTO {
   merk: string;
   qty: number;
   estimasiHarga: number;
-  waktuPengadaan: string; 
+  waktuPengadaan: string;
   namaPengaju: string;
 
   statusPengadaan?: Status;
