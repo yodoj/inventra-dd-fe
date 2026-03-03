@@ -101,26 +101,21 @@ async function createTinjauan(pengadaanId: number, payload: TinjauPengadaanReque
     }
   }
 
-  async function prosesBeli(pengadaanId: string, harga: number, file: File) {
-    loading.value = true;
+  // Di tinjauPengadaanStore.ts
+  // tinjauPengadaanStore.ts
+  // Di dalam tinjauPengadaanStore.ts
+  async function prosesBeli(idPengadaan: string, harga: number, file: File) {
     try {
-      const formData = new FormData();
-      formData.append('harga', String(harga || 0));
-      formData.append('buktiPembelian', file);
+      // Panggil service dengan pola payload objek
+      const result = await tinjauPengadaanService.beliPengadaan(idPengadaan, {
+        harga: harga,
+        buktiPembelian: file
+      });
 
-      const result = await tinjauPengadaanService.beliPengadaan(pengadaanId, formData);
-      const index = items.value.findIndex(item => item.idPengadaan === pengadaanId);
-      if (index !== -1) {
-        items.value.splice(index, 1);
-      }
-
-      current.value = result;
       return result;
-    } catch (e: any) {
-      errorMessage.value = e.response?.data?.message || e.message || "Gagal memproses pembelian";
-      throw e;
-    } finally {
-      loading.value = false;
+    } catch (error: any) {
+      console.error("Error di Store:", error.message);
+      throw error;
     }
   }
 

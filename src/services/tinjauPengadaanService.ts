@@ -82,29 +82,60 @@ export const tinjauPengadaanService = {
     }
   },
 
-  async beliPengadaan(idPengadaan: string, data: PembelianRequestDTO) {
-    try{
-    const formData = new FormData();
+  // async beliPengadaan(idPengadaan: number, data: PembelianRequestDTO) {
+  //   try{
+  //   const formData = new FormData();
 
-    const hargaAman = data?.harga !== undefined ? data.harga : 0;
-    formData.append('harga', hargaAman.toString());
-    if (data?.buktiPembelian) {
-        formData.append('buktiPembelian', data.buktiPembelian);
+  //   const hargaAman = data?.harga !== undefined ? data.harga : 0;
+  //   formData.append('harga', hargaAman.toString());
+  //   if (data?.buktiPembelian) {
+  //       formData.append('buktiPembelian', data.buktiPembelian);
+  //     }
+  //   const response = await api.post<BaseResponseDTO<TinjauPengadaanResponseDTO>>(
+  //     `/api/pengadaan/tinjau/bukti/${idPengadaan}`,
+  //     formData,
+  //     {
+  //       headers: {
+  //         'Content-Type': 'multipart/form-data'
+  //       }
+  //     }
+  //   );
+  //   return unwrap(response);
+  //   } catch (err) {
+  //     throw new Error(getErrorMessage(err));
+  //   }
+  // }
+  async beliPengadaan(
+    pengadaanId: string | number,
+    payload: { harga: number | string; buktiPembelian: File }
+  ): Promise<TinjauPengadaanResponseDTO> {
+    try {
+      const formData = new FormData();
+
+      // Pastikan harga dikonversi ke string untuk append FormData
+      formData.append("harga", payload.harga.toString());
+
+      // Pastikan file ada sebelum di-append
+      if (payload.buktiPembelian) {
+        formData.append("buktiPembelian", payload.buktiPembelian);
       }
-    const response = await api.post<BaseResponseDTO<TinjauPengadaanResponseDTO>>(
-      `/api/pengadaan/tinjau/bukti/${idPengadaan}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+
+      const res = await api.post<BaseResponseDTO<TinjauPengadaanResponseDTO>>(
+        `/api/pengadaan/tinjau/bukti/${pengadaanId}`,
+        formData,
+        {
+          headers: {
+            // Kita biarkan kosong agar browser otomatis menentukan boundary
+            // 'Content-Type': 'multipart/form-data'
+          },
         }
-      }
-    );
-    return unwrap(response);
+      );
+
+      return unwrap(res);
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }
-  }
+  },
 
 
 };

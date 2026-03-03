@@ -65,7 +65,7 @@
   </div>
 </template>
 <script setup>
-import { reactive, ref, onMounted } from "vue";
+import { reactive, ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
 
@@ -73,16 +73,19 @@ const route = useRoute();
 const router = useRouter();
 const store = useTinjauPengadaanStore();
 
-const pengadaanId = route.params.pengadaanId;
+const pengadaanId = computed(() => {
+  console.log("Isi Route Params:", route.params); // Debug: Lihat apa isinya di console
+  return route.params.idPengadaan;
+});
 
 const form = reactive({ harga: "" });
 const fotoFile = ref(null);
 const previewUrl = ref("");
 
 onMounted(async () => {
-  if (pengadaanId) {
+  if (pengadaanId.value) {
     try {
-      await store.fetchByPengadaanId(pengadaanId);
+      await store.fetchByPengadaanId(pengadaanId.value);
     } catch (error) {
       console.error("Gagal mengambil detail pengadaan:", error);
     }
@@ -119,7 +122,7 @@ async function onSave() {
     formData.append("buktiPembelian", fotoFile.value);
   }
 
-  await store.prosesBeli(pengadaanId, form.harga, fotoFile.value);
+  await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
 }
 </script>
 
