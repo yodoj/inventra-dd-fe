@@ -240,7 +240,7 @@ const handleEdit = (asset: any) => {
 
       <!-- Filter Section -->
       <div class="filter-card mb-20">
-        <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Aset</h3>
+        <h3 class="s2-subtitle" style="margin-bottom: 20px;">Filter Aset</h3>
         <div class="filter-grid">
           <div class="filter-item">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
@@ -288,7 +288,7 @@ const handleEdit = (asset: any) => {
             </div>
           </div>
         </div>
-        <div class="filter-actions" style="margin-top: 10px;">
+        <div class="filter-actions" style="margin-top: 20px;">
           <button @click="handleFilter" class="btn-apply btn-medium">Terapkan Filter</button>
           <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
         </div>
@@ -460,7 +460,7 @@ const handleEdit = (asset: any) => {
 
 .filter-card {
   background: white;
-  padding: 24px 28px 20px;
+  padding: 32px 36px 24px;
   border-radius: 16px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -468,7 +468,7 @@ const handleEdit = (asset: any) => {
 
 .filter-grid {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -547,26 +547,57 @@ select option {
 .filter-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 10px;
+  gap: 16px;
+  padding-top: 20px;
 }
 
 .btn-apply {
   background-color: #00588F;
   color: white;
   border: none;
-  padding: 10px 24px;
+  padding: 12px 32px;
   border-radius: 40px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-apply:hover {
+  background-color: #004470;
 }
 
 .btn-reset {
   background-color: white;
   color: var(--text-primary);
   border: 1px solid #D1D5DB;
-  padding: 10px 24px;
+  padding: 12px 32px;
   border-radius: 40px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset:hover {
+  background-color: #F9FAFB;
+  border-color: #6B7280;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #00588F;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: #004470;
 }
 
 .table-container {
