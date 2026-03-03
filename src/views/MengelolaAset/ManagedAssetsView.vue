@@ -40,7 +40,6 @@ const categoriesRuangan = [
   { label: 'Ruang Kelas', value: 'RUANG_KELAS' },
   { label: 'Ruang Non Kelas', value: 'RUANG_NON_KELAS' }
 ];
-
 const statuses = [
   { label: 'Tersedia', value: 'TERSEDIA' },
   { label: 'Habis', value: 'HABIS' },
@@ -239,8 +238,8 @@ const handleEdit = (asset: any) => {
       </div>
 
       <!-- Filter Section -->
-      <div class="filter-card mb-32">
-        <h3 class="s2-subtitle" style="margin-bottom: 20px;">Filter Aset</h3>
+      <div class="filter-card mb-20">
+        <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Aset</h3>
         <div class="filter-grid">
           <div class="filter-item">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
@@ -288,14 +287,14 @@ const handleEdit = (asset: any) => {
             </div>
           </div>
         </div>
-        <div class="filter-actions" style="margin-top: 20px;">
+        <div class="filter-actions" style="margin-top: 10px;">
           <button @click="handleFilter" class="btn-apply btn-medium">Terapkan Filter</button>
           <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
         </div>
       </div>
       
       <!-- Add Button Positioned Above Table -->
-      <div v-if="isSarprasOrYayasan" class="flex justify-end mb-24">
+      <div v-if="isSarprasOrYayasan" class="flex justify-end mb-16">
         <button 
           @click="router.push(activeTab === 'barang' ? '/assets/tambah-barang' : '/assets/tambah-ruangan')" 
           class="btn-add"
@@ -460,15 +459,15 @@ const handleEdit = (asset: any) => {
 
 .filter-card {
   background: white;
-  padding: 40px 48px;
-  border-radius: 20px;
+  padding: 24px 28px 20px;
+  border-radius: 16px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .filter-grid {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -547,60 +546,26 @@ select option {
 .filter-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  padding-top: 32px;
+  gap: 12px;
+  padding-top: 10px;
 }
 
 .btn-apply {
   background-color: #00588F;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 10px 24px;
   border-radius: 40px;
-  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-apply:hover {
-  background-color: #004470;
 }
 
 .btn-reset {
   background-color: white;
   color: var(--text-primary);
   border: 1px solid #D1D5DB;
-  padding: 12px 32px;
+  padding: 10px 24px;
   border-radius: 40px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-reset:hover {
-  background-color: #F9FAFB;
-  border-color: #6B7280;
-}
-
-.btn-add {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: #00588F;
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 88, 143, 0.2);
-}
-
-.btn-add:hover {
-  background-color: #004470;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 88, 143, 0.3);
 }
 
 .table-container {
@@ -749,5 +714,62 @@ td:last-child {
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
+  color: #374151;
+  font-weight: 500;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
+
+.page-size-wrapper .select-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.page-size-select:hover {
+  border-color: #00588F;
+}
+
+.page-size-select:focus {
+  border-color: #00588F;
+  box-shadow: 0 0 0 2px rgba(0, 88, 143, 0.1);
+}
+
+.btn-add {
+  background-color: #00588F;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 88, 143, 0.2);
+}
+
+.btn-add:hover {
+  background-color: #004470;
+}
+
+.py-16 {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.mb-16 {
+  margin-bottom: 32px;
+}
+
+.mb-20 {
+  margin-bottom: 40px;
+}
+
+.mt-20 {
+  margin-top: 40px;
+}
+
+
 </style>
