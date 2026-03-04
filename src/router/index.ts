@@ -36,44 +36,24 @@ const router = createRouter({
       component: () => import('../views/ChangePasswordView.vue'),
     },
     {
-      path: '/pengadaan/tinjau/all',
+      path: '/pengadaan/pengajuan',
       name: 'peninjauan-pengadaan-aset-all',
       component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
     },
     {
-      path: '/pengadaan/tinjau/PG0001',
-      // path: '/pengadaan/tinjau/{kode_pengadaan}',
+      path: '/pengadaan/tinjau/:pengadaanId',
       name: 'peninjauan-pengadaan-aset-create-review',
       component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
     },
+
     {
-      path: '/assets/kelola',
-      name: 'managed-assets',
-      component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
+      path: '/pengadaan/tinjau/update/:pengadaanId',
+      name: 'peninjauan-pengadaan-aset-update-review',
+      component: () => import('../views/PeninjauanPengadaanAset/UpdateReview.vue'),
     },
+
     {
-      path: '/assets/tambah-barang',
-      name: 'add-asset-barang',
-      component: () => import('../views/MengelolaAset/AddAssetBarangView.vue'),
-    },
-    {
-      path: '/assets/tambah-ruangan',
-      name: 'add-asset-ruangan',
-      component: () => import('../views/MengelolaAset/AddAssetRuanganView.vue'),
-    },
-    {
-      path: '/assets/ubah-barang/:id',
-      name: 'update-asset-barang',
-      component: () => import('../views/MengelolaAset/UpdateAssetBarangView.vue'),
-    },
-    {
-      path: '/assets/ubah-ruangan/:id',
-      name: 'update-asset-ruangan',
-      component: () => import('../views/MengelolaAset/UpdateAssetRuanganView.vue'),
-    },
-    {
-      path: '/pengadaan/bukti/PG0001',
-      // path: '/pengadaan/bukti/{kode_pengadaan}',
+      path: '/pengadaan/bukti/:idPengadaan',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
     }
