@@ -146,7 +146,6 @@ function onDocClick(e) {
 
 onMounted(() => document.addEventListener("click", onDocClick));
 onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
-
 const allowedNextStatuses = computed(() => {
   switch (statusSebelumnya.value) {
     case "DIAJUKAN":
