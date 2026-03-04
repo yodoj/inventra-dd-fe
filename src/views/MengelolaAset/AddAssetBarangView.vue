@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, markRaw } from 'vue';
+import { ref, computed, watch, markRaw } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
@@ -31,8 +31,6 @@ watch(() => authStore.user, (newUser) => {
   }
 }, { immediate: true });
 
-// Initialized in ref and watch above
-
 const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
 
@@ -63,7 +61,7 @@ watch(() => form.value.kategoriAset, (newCat) => {
   }
 });
 
-const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'superadmin', 'yayasan'];
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
@@ -330,10 +328,6 @@ select option {
 .py-16 {
   padding-top: 32px;
   padding-bottom: 32px;
-}
-
-.mb-16 {
-  margin-bottom: 32px;
 }
 
 .mb-20 {

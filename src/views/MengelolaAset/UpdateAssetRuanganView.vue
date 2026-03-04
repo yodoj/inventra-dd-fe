@@ -39,9 +39,7 @@ const statuses = [
   { label: 'Sedang Dipinjam', value: 'SEDANG_DIPINJAM' }
 ];
 
-const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'superadmin', 'yayasan'];
-
-
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
@@ -60,7 +58,7 @@ onMounted(async () => {
     };
   } catch (error) {
     console.error('Failed to fetch asset data:', error);
-    alert('Gagal mengambil data aset');
+    toastStore.error('Error', 'Gagal mengambil data aset');
     router.push('/assets/kelola');
   } finally {
     isLoading.value = false;
