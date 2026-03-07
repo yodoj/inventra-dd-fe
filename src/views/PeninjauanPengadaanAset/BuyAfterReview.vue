@@ -166,7 +166,7 @@ async function confirmSave() {
     showConfirmModal.value = false;
     await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
     alert("Berhasil memperbarui pembelian!");
-    router.push("/pengadaan/pengajuan");
+    router.push("/pengadaan/pengajuan/tinjau");
   } catch (err) {
     console.error("Gagal simpan pembelian:", err);
   }

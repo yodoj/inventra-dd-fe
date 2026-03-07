@@ -287,7 +287,7 @@ async function confirmSave() {
       alasan: form.alasan,
     });
     alert("Berhasil memperbarui peninjauan!");
-    router.push("/pengadaan/pengajuan");
+    router.push("/pengadaan/pengajuan/tinjau");
   } catch (err) {
   }
 }

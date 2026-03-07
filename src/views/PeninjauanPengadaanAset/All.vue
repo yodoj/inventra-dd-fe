@@ -190,21 +190,21 @@ function selectAndGoCreate(row) {
   const id = row.idPengadaan;
   if (!id) return;
   store.selectPengadaan(id);
-  router.push(`/pengadaan/tinjau/${id}`);
+  router.push(`/pengadaan/pengajuan/tinjau/${id}`);
 }
 
 function selectAndGoEdit(row) {
   const id = row.idPengadaan;
   if (!id) return;
   store.selectPengadaan(id);
-  router.push(`/pengadaan/tinjau/update/${id}`);
+  router.push(`/pengadaan/pengajuan/tinjau/update/${id}`);
 }
 
 function selectAndGoBeli(row) {
   const id = row.idPengadaan;
   if (!id) return;
   store.selectPengadaan(id);
-  router.push(`/pengadaan/bukti/${id}`);
+  router.push(`/pengadaan/pengajuan/tinjau/bukti/${id}`);
 }
 function getActionType(row) {
   const r = role.value;
