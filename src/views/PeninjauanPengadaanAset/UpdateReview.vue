@@ -11,7 +11,7 @@
             <button
               type="button"
               class="dd-btn"
-              :disabled="isLocked || store.isLoading"
+              :disabled="isLocked"
               @click="ddOpen = !ddOpen"
             >
               <span :class="{ placeholder: !form.statusPengadaan }">
@@ -19,9 +19,7 @@
               </span>
 
               <svg class="dd-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
-                />
+                <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
               </svg>
             </button>
 
@@ -34,10 +32,12 @@
                 @click="selectStatus(s)"
               >
                 {{ STATUS_LABEL[s] }}
+                <span v-if="s === store.current?.statusPengadaan"></span>
               </button>
             </div>
           </div>
         </div>
+
 
         <div class="field">
           <label class="label">Alasan</label>
@@ -46,44 +46,31 @@
             class="textarea"
             placeholder="Masukkan alasan anda"
             rows="3"
-            :disabled="store.isLoading"
           />
         </div>
-           <p v-if="store.errorMessage" class="err">{{ store.errorMessage }}</p>
-           <p v-if="statusError" class="err">{{ statusError }}</p>
-            <div v-if="isLocked && lockMessage" class="lock-banner">
-              <svg class="lock-icon" viewBox="0 0 24 24">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-              </svg>
-              <span>{{ lockMessage }}</span>
-          </div>
+        <p v-if="store.errorMessage" class="err">{{ store.errorMessage }}</p>
+        <div v-if="isLocked && lockMessage" class="lock-banner">
+          <svg class="lock-icon" viewBox="0 0 24 24">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+          </svg>
+          <span>{{ lockMessage }}</span>
+        </div>
       </div>
 
       <div class="actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="onCancel"
-          :disabled="store.isLoading"
-        >
+        <button type="button" class="btn btn-secondary" @click="onCancel">
           Batal
         </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          @click="triggerConfirm"
-          :disabled="store.isLoading"
-        >
-          {{ store.isLoading ? "Menyimpan..." : "Simpan" }}
+        <button type="button" class="btn btn-primary" @click="triggerConfirm">
+          Simpan
         </button>
       </div>
     </div>
   </div>
-
   <div v-if="showConfirmModal" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Konfirmasi Peninjauan</h3>
+      <h3>Konfirmasi Ubah Peninjauan</h3>
       <button class="close-btn" @click="showConfirmModal = false">×</button>
     </div>
 
@@ -107,22 +94,57 @@
 </template>
 
 <script setup lang="ts">
-
 import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
 import { useAuthStore } from "@/stores/auth";
 
-const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+
 const store = useTinjauPengadaanStore();
-const statusError = ref("");
-const ALL_ROUTE = "/pengadaan/pengajuan";
+const auth = useAuthStore();
+
 const pengadaanId = computed(() => (route.params.pengadaanId));
-const form = reactive({ statusPengadaan: "", alasan: "" });
+const role = computed(() => auth.userRole);
 const showConfirmModal = ref(false);
-const loading = ref(true);
+const statusError = ref("");
+
+const form = reactive({
+  statusPengadaan: "",
+  alasan: "",
+});
+
+
+async function load() {
+  if (!pengadaanId.value) return;
+
+  try {
+    await store.fetchByPengadaanId((pengadaanId.value));
+
+    if (store.current) {
+      const curr = store.current;
+      const userRole = auth.userRole;
+
+      // Cek apakah role sekarang sudah pernah mengisi review ini sebelumnya
+      const hasReviewed = (userRole === 'KEPSEK' && curr.kepsekFirstReviewedAt) ||
+                          (userRole === 'YAYASAN' && curr.yayasanFirstReviewedAt);
+
+      if (hasReviewed) {
+        form.statusPengadaan = curr.statusPengadaan || "";
+        form.alasan = curr.alasan || "";
+      } else {
+        // Jika belum (mode create untuk role ini), biarkan form kosong
+        form.statusPengadaan = "";
+        form.alasan = "";
+      }
+    }
+  } catch (err) {
+    console.error("Gagal memuat data peninjauan", err);
+  }
+}
+
+onMounted(load);
 
 const STATUS_LABEL = {
   DIAJUKAN: "Diajukan",
@@ -132,122 +154,120 @@ const STATUS_LABEL = {
   DIBELI: "Dibeli",
 };
 
+
 const ddOpen = ref(false);
-const statusSebelumnya = computed(() => store.statusSebelumnya);
 
 function selectStatus(s) {
+  if (isLocked.value) return;
   form.statusPengadaan = s;
   ddOpen.value = false;
 }
 
-function onDocClick(e) {
-  if (!e.target.closest(".dd")) ddOpen.value = false;
-}
+const ddRef = ref(null);
 
+function onDocClick(e) {
+  if (!ddRef.value) return;
+  if (!ddRef.value.contains(e.target)) ddOpen.value = false;
+}
 onMounted(() => document.addEventListener("click", onDocClick));
 onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
-const allowedNextStatuses = computed(() => {
-  switch (statusSebelumnya.value) {
-    case "DIAJUKAN":
-      return ["DISETUJUI_KEPSEK", "DITOLAK"];
-    case "DISETUJUI_KEPSEK":
-      return ["DISETUJUI_YAYASAN", "DITOLAK"];
-    case "DISETUJUI_YAYASAN":
-      return [];
-    default:
-      return [];
+
+function withinDays(fromISO, days = 2) {
+  if (!fromISO) return false;
+
+  const from = new Date(fromISO).getTime();
+  const now = Date.now();
+  const diffDays = (now - from) / (1000 * 60 * 60 * 24);
+
+  return diffDays <= days;
+}
+
+const canUpdate = computed(() => {
+  if (!store.current) return false;
+
+  const curr = store.current;
+  const r = role.value;
+
+  if (r === "KEPSEK") {
+    if (!curr.kepsekFirstReviewedAt) return false;
+
+    const masaGaransi = withinDays(curr.kepsekFirstReviewedAt, 2);
+    // Kepsek boleh update jika:
+    //    Masih dalam 2 hari DAN Yayasan belum menyetujui/menolak (melangkah ke tahap berikutnya)
+    const yayasanBelumReview = !curr.yayasanFirstReviewedAt;
+
+    return masaGaransi && yayasanBelumReview;
   }
+
+  if (r === "YAYASAN") {
+    if (!curr.yayasanFirstReviewedAt) return false;
+
+    const masaGaransi = withinDays(curr.yayasanFirstReviewedAt, 2);
+    // Yayasan boleh update status (termasuk mengubah Ditolak jadi Setuju)
+    //    asalkan masih dalam 2 hari dan aset belum dibeli (final)
+    const belumDibeli = curr.statusPengadaan !== "DIBELI";
+
+    return masaGaransi && belumDibeli;
+  }
+
+  return false;
 });
+
+const isLocked = computed(() => store.isLoading || !canUpdate.value);
 
 const lockMessage = computed(() => {
+  if (!store.current) return "";
+  const curr = store.current;
+  const r = role.value;
+
   if (store.isLoading) return "";
 
-  const curr = store.current;
-  const userRole = auth.userRole;
-  const status = statusSebelumnya.value;
+  // Pesan spesifik berdasarkan Rule
+  if (r === "KEPSEK") {
+    if (!curr.kepsekFirstReviewedAt) return "Tidak bisa mengubah hasil tinjau. Data belum pernah ditinjau oleh Kepala Sekolah.";
 
-  // RULE: Yayasan tidak bisa review jika Kepsek belum review
-  if (userRole === 'YAYASAN' && status === 'DIAJUKAN') {
-    return "Menunggu persetujuan Kepala Sekolah sebelum dapat ditinjau oleh Yayasan.";
-  }
-
-  // RULE: Jika role tersebut sudah pernah review (Double Create Prevention)
-  if (userRole === 'KEPSEK' && curr?.kepsekFirstReviewedAt) {
-    return "Anda sudah memberikan penilaian untuk pengajuan ini.";
-  }
-  if (userRole === 'YAYASAN' && curr?.yayasanFirstReviewedAt) {
-    return "Pihak Yayasan sudah memberikan penilaian untuk pengajuan ini.";
-  }
-
-  // RULE: Berdasarkan alur status (Case Locked)
-  if (isLocked.value) {
-    switch (status) {
-      case "DISETUJUI_YAYASAN":
-        return "Pengajuan sudah disetujui oleh Yayasan (Tahap Akhir).";
-      case "DITOLAK":
-        return "Pengajuan ini telah ditolak.";
-      case "DIBELI":
-        return "Aset sudah dibeli, data tidak dapat diubah lagi.";
-      default:
-        // Jika Kepsek mencoba masuk saat status sudah disetujui kepsek (menunggu yayasan)
-        if (userRole === 'KEPSEK' && status === 'DISETUJUI_KEPSEK') {
-          return "Pengajuan sudah Anda setujui dan sedang menunggu verifikasi Yayasan.";
-        }
-        return "Status saat ini tidak memungkinkan untuk dilakukan peninjauan.";
+    if (!withinDays(curr.kepsekFirstReviewedAt, 2)) {
+      return "Batas waktu perubahan (2 hari) telah berakhir.";
+    }
+    if (curr.yayasanFirstReviewedAt) {
+      return "Data sudah diproses oleh Yayasan dan tidak dapat diubah lagi.";
     }
   }
-  return "";
-});
 
-const isLocked = computed(() => {
-  const curr = store.current;
-  const userRole = auth.userRole;
-  const status = statusSebelumnya.value;
+  if (r === "YAYASAN") {
+    if (!curr.yayasanFirstReviewedAt) return "Tidak bisa mengubah hasil tinjau. Data belum pernah ditinjau oleh Yayasan.";
 
-  // Cek apakah Yayasan mencoba create sebelum kepsek
-  const yayasanCuriStart = (userRole === 'YAYASAN' && status === 'DIAJUKAN');
-
-  // Cek apakah sudah pernah review
-  const alreadyReviewed = (userRole === 'KEPSEK' && curr?.kepsekFirstReviewedAt) ||
-                          (userRole === 'YAYASAN' && curr?.yayasanFirstReviewedAt);
-
-  return allowedNextStatuses.value.length === 0 || alreadyReviewed || yayasanCuriStart;
-});
-
-
-watch(
-  () => statusSebelumnya.value,
-  () => {
-    if (!allowedNextStatuses.value.includes(form.statusPengadaan)) form.statusPengadaan = "";
-    if (store.current?.alasan != null) form.alasan = store.current.alasan || "";
-  },
-  { immediate: true }
-);
-
-async function load() {
-  try {
-    await store.fetchByPengadaanId(pengadaanId.value);
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || "Request gagal";
-    throw new Error(msg);
-  } finally {
-    loading.value = false;
+    if (!withinDays(curr.yayasanFirstReviewedAt, 2)) {
+      return "Batas waktu perubahan (2 hari) telah berakhir.";
+    }
+    if (curr.statusPengadaan === "DIBELI") {
+      return "Aset sudah dalam status DIBELI dan tidak dapat diubah.";
+    }
   }
 
+  if (!canUpdate.value && (curr.kepsekFirstReviewedAt || curr.yayasanFirstReviewedAt)) {
+    return "Akses pengeditan dikunci.";
+  }
 
-  form.alasan = "";
-  form.statusPengadaan = "";
-}
+  return "";
+});
+const allowedNextStatuses = computed(() => {
+  if (!store.current) return [];
 
-onMounted(load);
+  const r = role.value;
+  if (r === "KEPSEK") return ["DISETUJUI_KEPSEK", "DITOLAK"];
+  if (r === "YAYASAN") return ["DISETUJUI_YAYASAN", "DITOLAK"];
 
-function goToAll() {
-  router.push(ALL_ROUTE);
-}
+  return ["DITOLAK"];
+});
+
 
 function onCancel() {
-  goToAll();
+  if (!store.current) return;
+  form.statusPengadaan = store.current.statusPengadaan || "";
+  form.alasan = store.current.alasan || "";
 }
+
 
 function triggerConfirm() {
   statusError.value = "";
@@ -262,17 +282,18 @@ function triggerConfirm() {
 async function confirmSave() {
   try {
     showConfirmModal.value = false;
-    await store.createTinjauan((pengadaanId.value), {
+    await store.updateTinjauan((pengadaanId.value), {
       statusPengadaan: form.statusPengadaan,
       alasan: form.alasan,
     });
-    alert("Berhasil membuat peninjauan!");
+    alert("Berhasil memperbarui peninjauan!");
     router.push("/pengadaan/pengajuan");
   } catch (err) {
   }
 }
 
 </script>
+
 
 <style scoped>
 .page {
@@ -462,26 +483,6 @@ async function confirmSave() {
   color:#9ca3af;
   cursor:not-allowed;
 }
-.lock-banner {
-  grid-column: span 2;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #b91c1c;
-  padding: 14px 18px;
-  border-radius: 12px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-.lock-icon {
-  width: 20px;
-  height: 20px;
-  fill: #b91c1c;
-  flex-shrink: 0;
-}
 
 @media (max-width: 860px) {
   .review-grid {
@@ -502,6 +503,26 @@ async function confirmSave() {
     font-size: 14px;
   }
 }
+  .lock-banner {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.lock-icon {
+  width: 20px;
+  height: 20px;
+  fill: #b91c1c;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -603,5 +624,12 @@ async function confirmSave() {
 
 .btn-confirm:hover {
   background: #1e3a5f;
+}
+
+@media (max-width: 860px) {
+  .lock-banner {
+    grid-column: span 1;
+  }
+
 }
 </style>

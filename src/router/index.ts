@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
 import LoginPage from '../views/LoginPage.vue'
+import PengadaanAsetView from '@/views/PengadaanAset/PengadaanAsetView.vue';
+import AddPengadaanAsetView from '@/views/PengadaanAset/AddPengadaanAsetView.vue';
+import DetailPengadaanAsetView from '@/views/PengadaanAset/DetailPengadaanAsetView.vue';
+import UpdatePengadaanAsetView from '@/views/PengadaanAset/UpdatePengadaanAsetView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,21 +40,11 @@ const router = createRouter({
       component: () => import('../views/ChangePasswordView.vue'),
     },
     {
-      path: '/pengadaan/tinjau/all',
-      name: 'peninjauan-pengadaan-aset-all',
-      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
-    },
-    {
-      path: '/pengadaan/tinjau/PG0001',
-      // path: '/pengadaan/tinjau/{kode_pengadaan}',
-      name: 'peninjauan-pengadaan-aset-create-review',
-      component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
-    },
-    {
       path: '/assets/kelola',
       name: 'managed-assets',
       component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
     },
+
     {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
@@ -72,10 +66,49 @@ const router = createRouter({
       component: () => import('../views/MengelolaAset/UpdateAssetRuanganView.vue'),
     },
     {
-      path: '/pengadaan/bukti/PG0001',
-      // path: '/pengadaan/bukti/{kode_pengadaan}',
+      path: '/pengadaan/pengajuan',
+      name: 'pengadaan-list',
+      component: PengadaanAsetView,
+    },
+    {
+      path: '/pengadaan/ajukan-pengadaan',
+      name: 'pengadaan-add',
+      component: AddPengadaanAsetView,
+    },
+
+    {
+      path: '/pengadaan/pengajuan/detail/:idPengadaan',
+      name: 'pengadaan-detail',
+      component: DetailPengadaanAsetView,
+    },
+
+    {
+      path: '/pengadaan/pengajuan/update/:idPengadaan',
+      name: 'pengadaan-update',
+      component: UpdatePengadaanAsetView,
+    },
+
+    {
+      path: '/pengadaan/bukti/:idPengadaan',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
+    },
+
+    {
+      path: '/pengadaan/pengajuan/tinjau',
+      name: 'peninjauan-pengadaan-aset-all',
+      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+    },
+    {
+      path: '/pengadaan/tinjau/:pengadaanId',
+      name: 'peninjauan-pengadaan-aset-create-review',
+      component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
+    },
+
+    {
+      path: '/pengadaan/tinjau/update/:pengadaanId',
+      name: 'peninjauan-pengadaan-aset-update-review',
+      component: () => import('../views/PeninjauanPengadaanAset/UpdateReview.vue'),
     }
   ],
 })

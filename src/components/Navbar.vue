@@ -100,6 +100,14 @@ const canSeeRusak = () => {
   // Siswa, Guru, Sarpras, and Admin can see "Penggantian Barang Rusak"
   return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
 };
+
+const canApprovePengadaan = () => {
+  return ['ADMIN', 'KEPSEK', 'YAYASAN'].includes(authStore.userRole || '');
+};
+
+const canRequestPengadaan = () => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+};
 </script>
 
 <template>
@@ -168,11 +176,14 @@ const canSeeRusak = () => {
             <div v-if="openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan')" class="active-indicator"></div>
           </div>
           <div v-if="openDropdown === 'pengadaan'" class="dropdown-menu fade-in">
-            <div @click="protectedNavigate('/pengadaan/pengajuan')" class="dropdown-item" style="cursor: pointer;">
+            <div v-if="canRequestPengadaan()" @click="protectedNavigate('/pengadaan/pengajuan')" class="dropdown-item" style="cursor: pointer;">
               <ClipboardCheck class="icon-sm" /> Pengajuan Pengadaan Aset
             </div>
             <div v-if="canSeeRusak()" @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
               <RefreshCw class="icon-sm" /> Penggantian Barang Rusak
+            </div>
+            <div v-if="canApprovePengadaan()" @click="protectedNavigate('/pengadaan/pengajuan/tinjau')" class="dropdown-item" style="cursor: pointer;">
+              <ClipboardCheck class="icon-sm" /> Persetujuan Pengadaan Barang
             </div>
             <template v-if="canSeeReports()">
               <div @click="protectedNavigate('/pengadaan/laporan')" class="dropdown-item" style="cursor: pointer;">

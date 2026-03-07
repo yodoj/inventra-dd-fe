@@ -1,29 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, markRaw } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAssetStore } from '@/stores/asset';
+import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
-const assetStore = useAssetStore();
+const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
 
 const form = ref({
   namaAset: '',
-  statusAset: '',
+  merk: '',
+  qty: 1,
+  estimasiHarga: null,
+  waktuPengadaan: '',
   kategoriAset: '',
-  unit: authStore.user?.unit || '',
-  gambarUrlAset: '',
-  keteranganAset: ''
+  unit: authStore.userRole === 'ADMIN' ? '' : (authStore.user?.unit || ''),
+  linkGambar: ''
 });
 
-// Watch for user changes to ensure unit is set if auth loads late
 watch(() => authStore.user, (newUser) => {
-  if (newUser?.unit && !form.value.unit) {
+  if (newUser?.unit && !form.value.unit && authStore.userRole !== 'ADMIN') {
     form.value.unit = newUser.unit;
   }
 }, { immediate: true });
@@ -32,23 +33,26 @@ const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
 
 const categories = [
-  { label: 'Ruang Kelas', value: 'RUANG_KELAS' },
-  { label: 'Ruang Non Kelas', value: 'RUANG_NON_KELAS' }
-];
-
-const statuses = [
-  { label: 'Tersedia', value: 'TERSEDIA' },
-  { label: 'Sedang Perbaikan', value: 'SEDANG_PERBAIKAN' },
-  { label: 'Sedang Dipinjam', value: 'SEDANG_DIPINJAM' }
+  { label: 'Barang Habis Pakai', value: 'BARANG_HABIS_PAKAI' },
+  { label: 'Barang Tidak Habis Pakai', value: 'BARANG_TIDAK_HABIS_PAKAI' }
 ];
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
-const isYayasanOrAdmin = computed(() => {
-  return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
-});
+const isSuperadmin = computed(() => authStore.userRole === 'ADMIN');
 
 const confirmSubmit = () => {
+  if (form.value.qty <= 0 || (form.value.estimasiHarga && form.value.estimasiHarga <= 0)) {
+    toastStore.error('Error', 'Kuantitas dan Estimasi Harga harus lebih dari 0');
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0] ?? ''; 
+  
+  if (form.value.waktuPengadaan <= today) {
+    toastStore.error('Error', 'Tanggal pengadaan tidak boleh hari ini atau lampau');
+    return;
+  }
   showConfirmModal.value = true;
 };
 
@@ -56,11 +60,11 @@ const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
   try {
-    await assetStore.createAssetRuangan(form.value);
-    toastStore.success('Success', 'Aset ruangan berhasil ditambahkan');
-    router.push('/assets/kelola');
-  } catch (error) {
-    console.error('Failed to create asset:', error);
+    await pengadaanStore.createPengadaan(form.value);
+    toastStore.success('Success', 'Pengajuan pengadaan berhasil diajukan');
+    router.push('/pengadaan/pengajuan');
+  } catch (error: any) {
+    toastStore.error('Gagal', error || 'Gagal mengirim pengajuan');
   } finally {
     isSubmitting.value = false;
   }
@@ -68,23 +72,44 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="add-asset-page">
+  <div class="add-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">
           <ArrowLeft class="w-6 h-6" />
         </button>
-        <h1 class="h2-headline">Tambah Aset Ruangan</h1>
+        <h1 class="h2-headline">Buat Pengajuan Pengadaan</h1>
       </div>
 
       <div class="form-card card-shadow">
-        <form @submit.prevent="confirmSubmit" class="asset-form">
+        <form @submit.prevent="confirmSubmit" class="pengadaan-form">
           <div class="form-grid">
-            <!-- Left Column -->
             <div class="form-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
-                <input v-model="form.namaAset" type="text" placeholder="Contoh: Lab Komputer" class="form-input" required />
+                <input v-model="form.namaAset" type="text" placeholder="Contoh: Proyektor Kelas" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Merk <span class="required-star">*</span></label>
+                <input v-model="form.merk" type="text" placeholder="Contoh: Epson" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
+                <input v-model.number="form.qty" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
+              </div>
+            </div>
+
+            <div class="form-column">
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Estimasi Harga (Rp) <span class="required-star">*</span></label>
+                <input v-model.number="form.estimasiHarga" type="number" placeholder="Contoh: 5000000" class="form-input" min="1" required />
+              </div>
+
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Waktu Pengadaan <span class="required-star">*</span></label>
+                <input v-model="form.waktuPengadaan" type="date" class="form-input" :class="{ 'placeholder-color': !form.waktuPengadaan }" required />
               </div>
 
               <div class="form-group">
@@ -97,10 +122,12 @@ const handleSubmit = async () => {
                   <ChevronDown class="select-icon" />
                 </div>
               </div>
+            </div>
 
+            <div class="form-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
-                <div v-if="!isYayasanOrAdmin">
+                <div v-if="!isSuperadmin">
                   <input :value="form.unit" type="text" class="form-input bg-gray-50 cursor-not-allowed" disabled />
                 </div>
                 <div v-else class="custom-select">
@@ -111,30 +138,11 @@ const handleSubmit = async () => {
                   <ChevronDown class="select-icon" />
                 </div>
               </div>
+
+              <div class="form-group-full mt-6">
+              <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
+              <input v-model="form.linkGambar" type="url" placeholder="Masukkan link URL gambar" class="form-input full-width" required />
             </div>
-
-            <!-- Right Column -->
-            <div class="form-column">
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
-                <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
-                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" :disabled="!form.kategoriAset" required>
-                    <option value="" disabled>{{ form.kategoriAset ? 'Pilih Status' : 'Pilih kategori terlebih dahulu' }}</option>
-                    <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
-                <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan URL gambar" class="form-input" required />
-              </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
-              </div>
             </div>
           </div>
 
@@ -151,8 +159,8 @@ const handleSubmit = async () => {
 
   <ConfirmationModal
     :show="showConfirmModal"
-    title="Konfirmasi Tambah Aset"
-    message="Apakah Anda yakin data yang dimasukkan sudah benar?"
+    title="Konfirmasi Pengajuan"
+    message="Apakah Anda yakin ingin mengajukan pengadaan aset ini?"
     confirm-text="Ya, Simpan"
     cancel-text="Batal"
     :is-loading="isSubmitting"
@@ -162,14 +170,14 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-.add-asset-page {
+.add-pengadaan-page {
   background-color: #FAFAFA;
   min-height: calc(100vh - 80px);
 }
 
 .form-card {
   background: white;
-  padding: 40px;
+  padding: 40px; 
   border-radius: 24px;
   max-width: 1200px;
   margin: 0 auto;
@@ -177,7 +185,7 @@ const handleSubmit = async () => {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 32px;
 }
 
@@ -188,47 +196,26 @@ const handleSubmit = async () => {
 .form-input, .custom-select select {
   width: 100%;
   padding: 12px 16px;
-  padding-right: 40px;
   border: 1px solid #D1D5DB;
   border-radius: 12px;
   background: white;
   font-size: 14px;
   outline: none;
-  appearance: none;
+  appearance: none; 
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: none !important;
 }
 
-.custom-select select::-ms-expand {
-  display: none;
-}
-
-.form-input:focus, .custom-select select:focus, .form-textarea:focus {
+.form-input:focus {
   border-color: #00588F;
 }
 
-.form-input::placeholder, .form-textarea::placeholder {
-  color: #9CA3AF;
+.form-input::placeholder {
+  color: #9CA3AF !important;
 }
 
 .placeholder-color {
   color: #9CA3AF !important;
-}
-
-select option {
-  color: #374151;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #D1D5DB;
-  border-radius: 12px;
-  font-size: 14px;
-  outline: none;
-  resize: vertical;
-  min-height: 120px;
 }
 
 .custom-select {
@@ -293,12 +280,16 @@ select option {
   padding-bottom: 32px;
 }
 
-.mb-16 {
-  margin-bottom: 32px;
-}
-
 .mb-20 {
   margin-bottom: 40px;
+}
+
+.mt-12 {
+  margin-top: 48px;
+}
+
+.required-star {
+  color: #DC3545;
 }
 
 @media (max-width: 1024px) {
@@ -311,8 +302,5 @@ select option {
   .form-grid {
     grid-template-columns: 1fr;
   }
-}
-.required-star {
-  color: var(--error);
 }
 </style>
