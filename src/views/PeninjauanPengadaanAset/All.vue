@@ -204,7 +204,7 @@ function selectAndGoBeli(row) {
   const id = row.idPengadaan;
   if (!id) return;
   store.selectPengadaan(id);
-  router.push(`/pengadaan/pengajuan/bukti/${id}`);
+  router.push(`/pengadaan/pengajuan/tinjau/bukti/${id}`);
 }
 function getActionType(row) {
   const r = role.value;

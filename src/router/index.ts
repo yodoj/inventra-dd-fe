@@ -112,7 +112,7 @@ const router = createRouter({
     },
 
     {
-      path: '/pengadaan/bukti/:idPengadaan',
+      path: '/pengadaan/pengajuan/tinjau/bukti/:idPengadaan',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
     }
