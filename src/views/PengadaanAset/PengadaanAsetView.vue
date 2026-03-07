@@ -198,7 +198,7 @@ const handleDelete = async () => {
                 <td>
                   <div class="flex justify-center gap-2">
                     <template v-if="canEditDelete(item.status_pengadaan)">
-                      <button @click="router.push(`/pengadaan/update/${item.id_pengadaan}`)" class="btn-icon btn-edit">
+                      <button @click="router.push(`/pengadaan/pengajuan/update/${item.id_pengadaan}`)" class="btn-icon btn-edit">
                         <EditIcon class="w-4 h-4" />
                       </button>
                       <button @click="confirmDelete(item.id_pengadaan)" class="btn-icon btn-delete">

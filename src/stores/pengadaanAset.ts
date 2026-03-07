@@ -85,6 +85,18 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         }
     }
 
+    async function updatePengadaan(id: string, payload: any) {
+        isLoading.value = true;
+        try {
+            const response = await api.put(`/api/pengadaan/${id}`, payload);
+            return response.data;
+        } catch (err: any) {
+            throw err.response?.data?.message || 'Gagal mengupdate pengajuan';
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     return {
         listPengadaan,
         isLoading,
@@ -93,5 +105,6 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         createPengadaan,
         deletePengadaan,
         fetchPengadaanById,
+        updatePengadaan
     };
 });

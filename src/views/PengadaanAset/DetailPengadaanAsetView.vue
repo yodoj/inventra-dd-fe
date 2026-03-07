@@ -90,7 +90,7 @@ const handleDelete = async () => {
             </span>
             
             <div v-if="canEditDelete" class="header-actions">
-              <button @click="router.push(`/pengadaan/ubah-pengadaan/${id_pengadaan}`)" class="action-icon edit-bg" title="Ubah">
+              <button @click="router.push(`/pengadaan/pengajuan/update/${id_pengadaan}`)" class="action-icon edit-bg" title="Ubah">
                 <EditIcon class="w-4 h-4" />
               </button>
               <button @click="showDeleteModal = true" class="action-icon delete-bg" title="Hapus">
@@ -139,6 +139,10 @@ const handleDelete = async () => {
               <div class="row-data">
                 <span class="label">Tanggal Pengadaan</span>
                 <span class="value">: {{ pengadaan.tanggal_pengadaan }}</span>
+              </div>
+              <div class="row-data">
+                <span class="label">Unit</span>
+                <span class="value">: {{ pengadaan.unit || '-' }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Kategori</span>
@@ -218,7 +222,6 @@ const handleDelete = async () => {
   margin-bottom: 32px;
 }
 
-/* Header Rata Kiri */
 .header-left {
   flex: 1;
 }
@@ -286,7 +289,6 @@ const handleDelete = async () => {
   border-radius: 4px;
 }
 
-/* Info Section */
 .info-section {
   border-top: 1px solid #F0F0F0;
   padding-top: 32px;
@@ -363,7 +365,6 @@ const handleDelete = async () => {
   background-color: #E5E7EB;
 }
 
-/* Status Colors */
 .status-diajukan { background-color: #D1D5DB; color: #4B5563; }
 .status-ditolak { background-color: #FEE2E2; color: #DC2626; }
 .status-setuju-kepsek { background-color: #ECF8FD; color: #1FA2FF; }

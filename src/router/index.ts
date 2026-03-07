@@ -4,6 +4,7 @@ import LoginPage from '../views/LoginPage.vue'
 import PengadaanAsetView from '@/views/PengadaanAset/PengadaanAsetView.vue';
 import AddPengadaanAsetView from '@/views/PengadaanAset/AddPengadaanAsetView.vue';
 import DetailPengadaanAsetView from '@/views/PengadaanAset/DetailPengadaanAsetView.vue';
+import UpdatePengadaanAsetView from '@/views/PengadaanAset/UpdatePengadaanAsetView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -75,10 +76,16 @@ const router = createRouter({
       component: AddPengadaanAsetView,
     },
 
-     {
+    {
       path: '/pengadaan/pengajuan/detail/:idPengadaan',
       name: 'pengadaan-detail',
       component: DetailPengadaanAsetView,
+    },
+
+    {
+      path: '/pengadaan/pengajuan/update/:idPengadaan',
+      name: 'pengadaan-update',
+      component: UpdatePengadaanAsetView,
     },
 
     {
