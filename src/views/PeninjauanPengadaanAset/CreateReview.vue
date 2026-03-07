@@ -118,7 +118,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useTinjauPengadaanStore();
 const statusError = ref("");
-const ALL_ROUTE = "/pengadaan/pengajuan";
+const ALL_ROUTE = "/pengadaan/pengajuan/tinjau";
 const pengadaanId = computed(() => (route.params.pengadaanId));
 const form = reactive({ statusPengadaan: "", alasan: "" });
 const showConfirmModal = ref(false);
@@ -267,7 +267,7 @@ async function confirmSave() {
       alasan: form.alasan,
     });
     alert("Berhasil membuat peninjauan!");
-    router.push("/pengadaan/pengajuan");
+    router.push("/pengadaan/pengajuan/tinjau");
   } catch (err) {
   }
 }
