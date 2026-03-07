@@ -28,6 +28,9 @@ const isDeleting = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const categoryFilter = ref('');
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
 
 const categories = [
   { label: 'Barang Habis Pakai', value: 'BARANG_HABIS_PAKAI' },
@@ -97,7 +100,7 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <div class="managed-pengadaan-page">
+  <div v-if="isAuthorized" class="managed-pengadaan-page">
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">Pengajuan Pengadaan Aset</h1>
