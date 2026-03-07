@@ -198,14 +198,14 @@ const handleDelete = async () => {
                 <td>
                   <div class="flex justify-center gap-2">
                     <template v-if="canEditDelete(item.status_pengadaan)">
-                      <button @click="router.push(`/pengadaan/ubah-pengadaan/${item.id_pengadaan}`)" class="btn-icon btn-edit">
+                      <button @click="router.push(`/pengadaan/update/${item.id_pengadaan}`)" class="btn-icon btn-edit">
                         <EditIcon class="w-4 h-4" />
                       </button>
                       <button @click="confirmDelete(item.id_pengadaan)" class="btn-icon btn-delete">
                         <Trash2 class="w-4 h-4" />
                       </button>
                     </template>
-                    <button class="btn-icon btn-detail">
+                    <button @click="router.push(`/pengadaan/pengajuan/detail/${item.id_pengadaan}`)" class="btn-icon btn-detail">
                       <Eye class="w-4 h-4" />
                     </button>
                   </div>
@@ -219,8 +219,8 @@ const handleDelete = async () => {
   </div>
   <ConfirmationModal
     :show="showDeleteModal"
-    title="Konfirmasi Pembatalan Pengadaan"
-    message="Apakah Anda yakin ingin menghapus pengajuan pengadaan ini? Data yang dihapus tidak dapat dikembalikan."
+    title="Konfirmasi Penghapusan Pengajuan Pengadaan"
+    message="Apakah Anda yakin ingin menghapus pengajuan ini?"
     confirm-text="Ya, Hapus"
     cancel-text="Batal"
     type="danger"

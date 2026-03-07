@@ -58,19 +58,32 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
     }
 
     async function deletePengadaan(id: string) {
-    isLoading.value = true;
-    error.value = null;
-    try {
-        const response = await api.delete(`/api/pengadaan/${id}`);
-        await fetchMyPengadaan();
-        return response.data;
-    } catch (err: any) {
-        error.value = err.response?.data?.message || 'Gagal menghapus pengajuan pengadaan';
-        throw err;
-    } finally {
-        isLoading.value = false;
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const response = await api.delete(`/api/pengadaan/${id}`);
+            await fetchMyPengadaan();
+            return response.data;
+        } catch (err: any) {
+            error.value = err.response?.data?.message || 'Gagal menghapus pengajuan pengadaan';
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
     }
-}
+
+    async function fetchPengadaanById(id: string) {
+        isLoading.value = true;
+        try {
+            const response = await api.get(`/api/pengadaan/${id}`);
+            return response.data.data; 
+        } catch (err: any) {
+            error.value = err.response?.data?.message || 'Gagal mengambil detail pengadaan';
+            throw err;
+        } finally {
+            isLoading.value = false;
+        }
+    }
 
     return {
         listPengadaan,
@@ -79,5 +92,6 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         fetchMyPengadaan,
         createPengadaan,
         deletePengadaan,
+        fetchPengadaanById,
     };
 });
