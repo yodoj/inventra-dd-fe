@@ -15,7 +15,10 @@ import {
   ChevronRight, 
   Trash2, 
   Plus, 
-  Eye 
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -28,6 +31,8 @@ const isDeleting = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const categoryFilter = ref('');
+const sortBy = ref('waktuPengajuan');
+const sortDirection = ref('DESC');
 
 const categories = [
   { label: 'Barang Habis Pakai', value: 'BARANG_HABIS_PAKAI' },
@@ -45,6 +50,18 @@ const statuses = [
 onMounted(() => {
   pengadaanStore.fetchMyPengadaan();
 });
+
+const handleApplyFilter = () => {
+  const params: any = {};
+  if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
+  if (statusFilter.value) params.status = statusFilter.value;
+  if (categoryFilter.value) params.kategori = categoryFilter.value;
+  
+  params.sortBy = sortBy.value;
+  params.direction = sortDirection.value;
+  
+  pengadaanStore.fetchMyPengadaan(params);
+};
 
 const handleReset = () => {
   searchQuery.value = '';
@@ -94,6 +111,16 @@ const handleDelete = async () => {
   }
 };
 
+const toggleSort = (column: string) => {
+  if (sortBy.value === column) {
+    sortDirection.value = sortDirection.value === 'ASC' ? 'DESC' : 'ASC';
+  } else {
+    sortBy.value = column;
+    sortDirection.value = 'DESC';
+  }
+  handleApplyFilter();
+};
+
 </script>
 
 <template>
@@ -136,12 +163,13 @@ const handleDelete = async () => {
                 v-model="searchQuery" 
                 type="text" 
                 placeholder="Cari nama aset atau merk" 
+                @keyup.enter="handleApplyFilter"
               />
             </div>
           </div>
         </div>
         <div class="filter-actions" style="margin-top: 10px;">
-          <button @click="handleReset" class="btn-apply btn-medium">Terapkan Filter</button>
+          <button @click="handleApplyFilter" class="btn-apply btn-medium">Terapkan Filter</button>
           <button @click="handleReset" class="btn-reset btn-medium">Reset</button>
         </div>
       </div>
@@ -160,7 +188,14 @@ const handleDelete = async () => {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr>
-                <th class="col-waktu">Waktu Pengajuan</th>
+                <th class="col-waktu cursor-pointer" @click="toggleSort('waktuPengajuan')">
+                  <div class="flex items-center justify-center gap-1">
+                    Waktu Pengajuan
+                    <ArrowUpDown v-if="sortBy !== 'waktuPengajuan'" class="w-3 h-3" />
+                    <ArrowUp v-else-if="sortDirection === 'ASC'" class="w-3 h-3" />
+                    <ArrowDown v-else class="w-3 h-3" />
+                  </div>
+                </th>
                 <th class="col-img text-center">Foto</th>
                 <th class="col-nama">Nama</th>
                 <th class="col-merk">Merk</th>
@@ -177,7 +212,9 @@ const handleDelete = async () => {
                 <td colspan="10" class="text-center py-8">Memuat data...</td>
               </tr>
               <tr v-else-if="pengadaanStore.listPengadaan.length === 0">
-                <td colspan="10" class="text-center py-8 text-gray-500">Tidak ada pengajuan ditemukan</td>
+                <td colspan="10" class="text-center py-8 text-gray-500">
+                  {{ searchQuery ? 'Pengajuan pengadaan tidak ditemukan' : 'Tidak ada pengajuan ditemukan' }}
+                </td>
               </tr>
               <tr v-for="item in pengadaanStore.listPengadaan" :key="item.id_pengadaan">
                 <td class="b3-body">{{ item.waktu_pengajuan }}</td>
