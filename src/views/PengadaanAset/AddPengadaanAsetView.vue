@@ -72,7 +72,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="add-asset-page">
+  <div class="add-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">
@@ -82,7 +82,7 @@ const handleSubmit = async () => {
       </div>
 
       <div class="form-card card-shadow">
-        <form @submit.prevent="confirmSubmit" class="asset-form">
+        <form @submit.prevent="confirmSubmit" class="pengadaan-form">
           <div class="form-grid">
             <div class="form-column">
               <div class="form-group">
@@ -139,10 +139,10 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
-                <input v-model="form.linkGambar" type="url" placeholder="Masukkan link URL gambar" class="form-input" required />
-              </div>
+              <div class="form-group-full mt-6">
+              <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
+              <input v-model="form.linkGambar" type="url" placeholder="Masukkan link URL gambar" class="form-input full-width" required />
+            </div>
             </div>
           </div>
 
@@ -170,14 +170,14 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-.add-asset-page {
+.add-pengadaan-page {
   background-color: #FAFAFA;
   min-height: calc(100vh - 80px);
 }
 
 .form-card {
   background: white;
-  padding: 40px;
+  padding: 40px; 
   border-radius: 24px;
   max-width: 1200px;
   margin: 0 auto;
@@ -193,7 +193,7 @@ const handleSubmit = async () => {
   margin-bottom: 24px;
 }
 
-.form-input {
+.form-input, .custom-select select {
   width: 100%;
   padding: 12px 16px;
   border: 1px solid #D1D5DB;
@@ -201,7 +201,9 @@ const handleSubmit = async () => {
   background: white;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  appearance: none; 
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .form-input:focus {
@@ -226,15 +228,15 @@ const handleSubmit = async () => {
   top: 50%;
   transform: translateY(-50%);
   width: 18px;
-  color: #6B7280;
+  height: 18px;
   pointer-events: none;
+  color: #6B7280;
 }
 
 .form-actions {
   display: flex;
   justify-content: center;
   gap: 24px;
-  margin-top: 40px;
 }
 
 .btn-submit {
@@ -245,11 +247,17 @@ const handleSubmit = async () => {
   border-radius: 40px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: #004470;
 }
 
 .btn-cancel {
   background-color: #F3F4F6;
   color: #4B5563;
+  border: none;
   padding: 14px 60px;
   border-radius: 40px;
   font-weight: 700;
@@ -260,21 +268,39 @@ const handleSubmit = async () => {
   background: none;
   border: none;
   cursor: pointer;
+  color: #333;
+}
+
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.py-16 {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.mb-20 {
+  margin-bottom: 40px;
+}
+
+.mt-12 {
+  margin-top: 48px;
 }
 
 .required-star {
   color: #DC3545;
 }
 
-.card-shadow {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
 @media (max-width: 1024px) {
-  .form-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .form-grid { grid-template-columns: 1fr; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

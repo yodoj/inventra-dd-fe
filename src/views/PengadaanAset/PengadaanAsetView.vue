@@ -3,8 +3,12 @@ import { ref, onMounted, computed } from 'vue';
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import { useToastStore } from '@/stores/toast';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
+
 import SearchIcon from '@/components/icons/SearchIcon.vue';
 import EditIcon from '@/components/icons/EditIcon.vue';
+
 import { 
   ChevronDown, 
   ChevronLeft, 
@@ -17,7 +21,10 @@ import {
 const router = useRouter();
 const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
-
+const toastStore = useToastStore();
+const showDeleteModal = ref(false);
+const selectedId = ref<string | null>(null);
+const isDeleting = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const categoryFilter = ref('');
@@ -31,7 +38,8 @@ const statuses = [
   { label: 'Diajukan', value: 'DIAJUKAN' },
   { label: 'Ditolak', value: 'DITOLAK' },
   { label: 'Disetujui Oleh Kepsek', value: 'DISETUJUI_OLEH_KEPSEK' },
-  { label: 'Disetujui Oleh Yayasan', value: 'DISETUJUI_OLEH_YAYASAN' }
+  { label: 'Disetujui Oleh Yayasan', value: 'DISETUJUI_OLEH_YAYASAN' },
+  { label: 'Dibeli', value: 'DIBELI' }
 ];
 
 onMounted(() => {
@@ -51,6 +59,7 @@ const getStatusClass = (status: string) => {
     case 'DITOLAK': return 'status-ditolak';
     case 'DISETUJUI_KEPSEK': return 'status-setuju-kepsek';
     case 'DISETUJUI_YAYASAN': return 'status-setuju-yayasan';
+    case 'DIBELI': return 'status-dibeli';
     default: return '';
   }
 };
@@ -62,6 +71,29 @@ const formatDisplay = (text: string) => {
 const canEditDelete = (status: string) => {
   return ['DIAJUKAN', 'DITOLAK'].includes(status?.toUpperCase());
 };
+
+const confirmDelete = (id: string) => {
+  selectedId.value = id;
+  showDeleteModal.value = true;
+};
+
+const handleDelete = async () => {
+  if (!selectedId.value) return;
+  
+  isDeleting.value = true;
+  try {
+    await pengadaanStore.deletePengadaan(selectedId.value);
+    toastStore.success('Success', 'Pengajuan pengadaan berhasil dihapus');
+    showDeleteModal.value = false;
+    selectedId.value = null;
+    await pengadaanStore.fetchMyPengadaan();
+  } catch (error: any) {
+    toastStore.error('Error', error.response?.data?.message || 'Gagal menghapus data');
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
 </script>
 
 <template>
@@ -169,7 +201,7 @@ const canEditDelete = (status: string) => {
                       <button @click="router.push(`/pengadaan/ubah-pengadaan/${item.id_pengadaan}`)" class="btn-icon btn-edit">
                         <EditIcon class="w-4 h-4" />
                       </button>
-                      <button class="btn-icon btn-delete">
+                      <button @click="confirmDelete(item.id_pengadaan)" class="btn-icon btn-delete">
                         <Trash2 class="w-4 h-4" />
                       </button>
                     </template>
@@ -185,6 +217,17 @@ const canEditDelete = (status: string) => {
       </div>
     </div>
   </div>
+  <ConfirmationModal
+    :show="showDeleteModal"
+    title="Konfirmasi Pembatalan Pengadaan"
+    message="Apakah Anda yakin ingin menghapus pengajuan pengadaan ini? Data yang dihapus tidak dapat dikembalikan."
+    confirm-text="Ya, Hapus"
+    cancel-text="Batal"
+    type="danger"
+    :is-loading="isDeleting"
+    @confirm="handleDelete"
+    @cancel="showDeleteModal = false"
+  />
 </template>
 
 <style scoped>
@@ -359,6 +402,11 @@ table td {
   background-color: #FEF9C3;
   color: #A16207;
   border: 1px solid #FEF08A;
+}
+
+.status-dibeli {
+  background-color: #ECFDF3;
+  color: #065F46;
 }
 
 .btn-icon {

@@ -28,8 +28,6 @@ watch(() => authStore.user, (newUser) => {
   }
 }, { immediate: true });
 
-// Initialized in ref and watch above
-
 const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
 
@@ -44,9 +42,7 @@ const statuses = [
   { label: 'Sedang Dipinjam', value: 'SEDANG_DIPINJAM' }
 ];
 
-const units = ['SD', 'SMP', 'SMA', 'KB-TK', 'superadmin', 'yayasan'];
-
-
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 const isYayasanOrAdmin = computed(() => {
   return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');

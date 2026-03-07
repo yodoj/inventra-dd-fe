@@ -42,6 +42,7 @@ const router = createRouter({
       name: 'managed-assets',
       component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
     },
+
     {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
@@ -72,6 +73,29 @@ const router = createRouter({
       name: 'pengadaan-add',
       component: AddPengadaanAsetView,
     },
+
+    {
+      path: '/pengadaan/bukti/:idPengadaan',
+      name: 'peninjauan-pengadaan-aset-buy-after-review',
+      component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
+    },
+
+    {
+      path: '/pengadaan/pengajuan',
+      name: 'peninjauan-pengadaan-aset-all',
+      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+    },
+    {
+      path: '/pengadaan/tinjau/:pengadaanId',
+      name: 'peninjauan-pengadaan-aset-create-review',
+      component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
+    },
+
+    {
+      path: '/pengadaan/tinjau/update/:pengadaanId',
+      name: 'peninjauan-pengadaan-aset-update-review',
+      component: () => import('../views/PeninjauanPengadaanAset/UpdateReview.vue'),
+    }
   ],
 })
 
