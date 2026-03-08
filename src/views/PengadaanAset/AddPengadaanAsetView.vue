@@ -11,6 +11,9 @@ const router = useRouter();
 const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
 
 const form = ref({
   namaAset: '',
@@ -72,7 +75,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="add-pengadaan-page">
+  <div v-if="isAuthorized" class="add-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">

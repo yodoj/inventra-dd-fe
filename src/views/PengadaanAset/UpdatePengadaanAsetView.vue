@@ -12,6 +12,9 @@ const route = useRoute();
 const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
 
 const id_pengadaan = route.params.idPengadaan as string;
 
@@ -98,7 +101,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="update-pengadaan-page">
+  <div v-if="isAuthorized" class="update-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">

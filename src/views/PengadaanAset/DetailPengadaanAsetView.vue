@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useToastStore } from '@/stores/toast';
+import { useAuthStore } from '@/stores/auth';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { 
   EditIcon,
@@ -13,11 +14,15 @@ const route = useRoute();
 const router = useRouter();
 const pengadaanStore = usePengadaanStore();
 const toastStore = useToastStore();
+const authStore = useAuthStore();
 
 const id_pengadaan = route.params.idPengadaan as string;
 const pengadaan = ref<any>(null);
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
+const isAuthorized = computed(() => {
+  return authStore && ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
 
 onMounted(async () => {
   try {
@@ -65,7 +70,7 @@ const handleDelete = async () => {
 </script>
 
 <template>
-  <div class="detail-pengadaan-page">
+  <div v-if="isAuthorized" class="detail-pengadaan-page">
     <div class="container py-32">
       <div class="header-page-wrapper">
         <h1 class="h2-headline">Detail Pengajuan Pengadaan Aset</h1>
