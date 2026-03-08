@@ -95,20 +95,26 @@ const router = createRouter({
     },
 
     {
-      path: '/pengadaan/pengajuan',
+      path: '/pengadaan/pengajuan/tinjau',
       name: 'peninjauan-pengadaan-aset-all',
-      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+      component: () => import('../views/PeninjauanPengadaanAset/TinjauAll.vue'),
     },
     {
-      path: '/pengadaan/tinjau/:pengadaanId',
+      path: '/pengadaan/pengajuan/tinjau/:pengadaanId',
       name: 'peninjauan-pengadaan-aset-create-review',
       component: () => import('../views/PeninjauanPengadaanAset/CreateReview.vue'),
     },
 
     {
-      path: '/pengadaan/tinjau/update/:pengadaanId',
+      path: '/pengadaan/pengajuan/tinjau/update/:pengadaanId',
       name: 'peninjauan-pengadaan-aset-update-review',
       component: () => import('../views/PeninjauanPengadaanAset/UpdateReview.vue'),
+    },
+
+    {
+      path: '/pengadaan/pengajuan/tinjau/bukti/:idPengadaan',
+      name: 'peninjauan-pengadaan-aset-buy-after-review',
+      component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
     }
   ],
 })

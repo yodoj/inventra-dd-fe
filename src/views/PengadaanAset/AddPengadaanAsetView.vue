@@ -81,7 +81,7 @@ const handleSubmit = async () => {
         <button @click="router.back()" class="btn-back">
           <ArrowLeft class="w-6 h-6" />
         </button>
-        <h1 class="h2-headline">Buat Pengajuan Pengadaan</h1>
+        <h1 class="h2-headline">Buat Pengajuan Pengadaan Aset</h1>
       </div>
 
       <div class="form-card card-shadow">
@@ -158,6 +158,10 @@ const handleSubmit = async () => {
         </form>
       </div>
     </div>
+  </div>
+
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
   </div>
 
   <ConfirmationModal
@@ -276,6 +280,20 @@ const handleSubmit = async () => {
 
 .card-shadow {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
 }
 
 .py-16 {

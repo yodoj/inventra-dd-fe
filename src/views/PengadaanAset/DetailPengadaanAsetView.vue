@@ -179,6 +179,10 @@ const handleDelete = async () => {
     </div>
   </div>
 
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
+  </div>
+
   <ConfirmationModal
     :show="showDeleteModal"
     title="Konfirmasi Penghapusan Pengajuan Pengadaan"
@@ -368,6 +372,20 @@ const handleDelete = async () => {
 
 .btn-cancel-gray:hover {
   background-color: #E5E7EB;
+}
+
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
 }
 
 .status-diajukan { background-color: #D1D5DB; color: #4B5563; }

@@ -27,11 +27,13 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
     const isLoading = ref(false);
     const error = ref<string | null>(null);
 
-    async function fetchMyPengadaan() {
+    async function fetchMyPengadaan(params: any = {}) {
         isLoading.value = true;
         error.value = null;
         try {
-            const response = await api.get<BaseResponse<PengadaanAset[]>>('/api/pengadaan');
+            const response = await api.get<BaseResponse<PengadaanAset[]>>('/api/pengadaan', {
+                params
+            });
             if (response.data.status === 200) {
                 listPengadaan.value = response.data.data;
             }

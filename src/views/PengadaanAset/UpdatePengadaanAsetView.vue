@@ -184,6 +184,10 @@ const handleSubmit = async () => {
     </div>
   </div>
 
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
+  </div>
+
   <ConfirmationModal
     :show="showConfirmModal"
     title="Konfirmasi Perubahan"
@@ -258,6 +262,20 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   gap: 24px;
+}
+
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
 }
 
 .btn-submit {
