@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { EditIcon, Trash2 } from 'lucide-vue-next';
+
+// Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useToastStore } from '@/stores/toast';
 import { useAuthStore } from '@/stores/auth';
+
+// Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
-import { 
-  EditIcon,
-  Trash2 
-} from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,12 +21,21 @@ const id_pengadaan = route.params.idPengadaan as string;
 const pengadaan = ref<any>(null);
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
+
+// Mengecek apakah role user diperbolehkan melihat detail pengadaan
 const isAuthorized = computed(() => {
   return authStore && ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
 });
 
+// Mengecek apakah status pengadaan memungkinkan untuk diedit atau dihapus
+const canEditDelete = computed(() => {
+  const status = pengadaan.value?.status_pengadaan?.toUpperCase();
+  return ['DIAJUKAN', 'DITOLAK'].includes(status);
+});
+
 onMounted(async () => {
   try {
+    // Mengambil data detail berdasarkan ID dari URL parameter
     pengadaan.value = await pengadaanStore.fetchPengadaanById(id_pengadaan);
   } catch (err) {
     toastStore.error('Error', 'Gagal memuat detail pengadaan');
@@ -33,6 +43,7 @@ onMounted(async () => {
   }
 });
 
+// Fungsi untuk menentukan kelas CSS berdasarkan status pengadaan
 const getStatusClass = (status: string) => {
   switch (status?.toUpperCase()) {
     case 'DIAJUKAN': return 'status-diajukan';
@@ -44,15 +55,12 @@ const getStatusClass = (status: string) => {
   }
 };
 
+// Fungsi untuk memformat teks status agar lebih mudah dibaca
 const formatDisplay = (text: string) => {
   return text?.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const canEditDelete = computed(() => {
-  const status = pengadaan.value?.status_pengadaan?.toUpperCase();
-  return ['DIAJUKAN', 'DITOLAK'].includes(status);
-});
-
+// Fungsi untuk menangani penghapusan pengadaan
 const handleDelete = async () => {
   if (!id_pengadaan) return;
   isDeleting.value = true;
@@ -388,11 +396,32 @@ const handleDelete = async () => {
   color: #000000; 
 }
 
-.status-diajukan { background-color: #D1D5DB; color: #4B5563; }
-.status-ditolak { background-color: #FEE2E2; color: #DC2626; }
-.status-setuju-kepsek { background-color: #ECF8FD; color: #1FA2FF; }
-.status-setuju-yayasan { background-color: #FEF08A; color: #A16207; }
-.status-dibeli { background-color: #DCFCE7; color: #166534; }
+.status-diajukan {
+  background-color: #F3F4F6;
+  color: #4B5563;
+}
+
+.status-ditolak {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.status-setuju-kepsek {
+  background-color: #ECF8FD;
+  color: #1FA2FF;
+  border: 1px solid #D1E9FF;
+}
+
+.status-setuju-yayasan {
+  background-color: #FEF9C3;
+  color: #A16207;
+  border: 1px solid #FEF08A;
+}
+
+.status-dibeli {
+  background-color: #ECFDF3;
+  color: #065F46;
+}
 
 .mt-32 { margin-top: 32px; }
 </style>

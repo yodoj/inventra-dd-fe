@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
+
+// Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
-import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
+
+// Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
@@ -12,9 +16,6 @@ const route = useRoute();
 const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
-const isAuthorized = computed(() => {
-  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
-});
 
 const id_pengadaan = route.params.idPengadaan as string;
 
@@ -39,6 +40,12 @@ const categories = [
 ];
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
+
+// Otorisasi dan akses
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
+
 const isSuperadmin = computed(() => authStore.userRole === 'ADMIN');
 
 onMounted(async () => {
@@ -71,13 +78,15 @@ onMounted(async () => {
   }
 });
 
+// Validasi input form sebelum konfirmasi simpan
 const confirmSubmit = () => {
   if (form.value.qty <= 0 || form.value.estimasiHarga <= 0) {
     toastStore.error('Error', 'Kuantitas dan Estimasi Harga harus lebih dari 0');
     return;
   }
-  const today = new Date().toISOString().split('T')[0] ?? ''; 
-  
+
+// Validasi tanggal pengadaan tidak boleh hari ini atau lampau
+const today = new Date().toISOString().split('T')[0] ?? '';  
   if (form.value.waktuPengadaan <= today) {
     toastStore.error('Error', 'Tanggal pengadaan tidak boleh hari ini atau lampau');
     return;
@@ -85,6 +94,7 @@ const confirmSubmit = () => {
   showConfirmModal.value = true;
 };
 
+// Fungsi untuk mengirim data ke backend setelah konfirmasi
 const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
