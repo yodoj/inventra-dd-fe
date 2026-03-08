@@ -31,20 +31,22 @@ export const useTinjauPengadaanStore = defineStore("tinjauPengadaanStore", () =>
     statusSebelumnya.value = statusPengadaan;
   }
 
-  async function fetchAll() {
-    loading.value = true;
-    errorMessage.value = "";
-    try {
-      items.value = await tinjauPengadaanService.getAll();
-      return items.value;
-    } catch (e: any) {
-      errorMessage.value = e?.message || "Gagal mengambil data";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+async function fetchAll(params?: { status_pengadaan?: string | null; search?: string | null }) {
+  loading.value = true;
+  errorMessage.value = "";
+  try {
+    items.value = await tinjauPengadaanService.getAll({
+      status_pengadaan: params?.status_pengadaan ?? undefined,
+      search: params?.search ?? undefined,
+    });
+    return items.value;
+  } catch (e: any) {
+    errorMessage.value = e?.message || "Gagal mengambil data";
+    throw e;
+  } finally {
+    loading.value = false;
   }
-
+}
   async function fetchByPengadaanId(pengadaanId: number) {
     loading.value = true;
     errorMessage.value = "";

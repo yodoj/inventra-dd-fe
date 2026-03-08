@@ -97,7 +97,7 @@ const router = createRouter({
     {
       path: '/pengadaan/pengajuan/tinjau',
       name: 'peninjauan-pengadaan-aset-all',
-      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+      component: () => import('../views/PeninjauanPengadaanAset/TinjauAll.vue'),
     },
     {
       path: '/pengadaan/pengajuan/tinjau/:pengadaanId',
