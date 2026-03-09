@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import SearchIcon from '@/components/icons/SearchIcon.vue'
 import EditIcon from '@/components/icons/EditIcon.vue'
+import { ChevronDown } from 'lucide-vue-next'
 import 'primeicons/primeicons.css'
 
 import { useTinjauPengadaanStore } from '@/stores/tinjauPengadaanStore'
@@ -38,44 +39,14 @@ const statusFilter = ref('ALL')
 const sortKey = ref('')
 const sortOrder = ref('asc')
 
-const statusOpen = ref(false)
-
-watch([q, statusFilter], () => {
-  fetchAll()
-})
-
-function onDocClickFilter(e: MouseEvent) {
-  if (!(e.target as HTMLElement)?.closest('.status-dd')) statusOpen.value = false
-}
-onMounted(() => document.addEventListener('click', onDocClickFilter))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClickFilter))
-
-const statusFilterLabel = computed(() => {
-  const map: Record<string, string> = {
-    ALL: 'Semua Status',
-    DIAJUKAN: 'Diajukan',
-    DISETUJUI_KEPSEK: 'Disetujui oleh Kepsek',
-    DISETUJUI_YAYASAN: 'Disetujui oleh Yayasan',
-    DITOLAK: 'Tidak Disetujui',
-    DIBELI: 'Dibeli',
-  }
-  return map[statusFilter.value] || 'Semua Status'
-})
-
-function getStatusClass(statusPengadaan: string) {
-  const map: Record<string, string> = {
-    DIAJUKAN: 'status-diajukan',
-    DISETUJUI_KEPSEK: 'status-kepsek',
-    DISETUJUI_YAYASAN: 'status-yayasan',
-    DITOLAK: 'status-ditolak',
-    DIBELI: 'status-yayasan',
-  }
-  return map[statusPengadaan] || ''
-}
-
-function formatStatus(statusPengadaan: string) {
-  return String(statusPengadaan || '').replace(/_/g, ' ')
-}
+const statuses = [
+  { label: 'Semua Status', value: 'ALL' },
+  { label: 'Diajukan', value: 'DIAJUKAN' },
+  { label: 'Disetujui oleh Kepsek', value: 'DISETUJUI_KEPSEK' },
+  { label: 'Disetujui oleh Yayasan', value: 'DISETUJUI_YAYASAN' },
+  { label: 'Ditolak', value: 'DITOLAK' },
+  { label: 'Dibeli', value: 'DIBELI' },
+]
 
 function getSortIcon(column: string) {
   if (sortKey.value !== column) return 'pi-sort-alt unsorted'
@@ -93,9 +64,19 @@ function sortBy(key: string) {
   }
 }
 
-function pickStatus(v: string) {
-  statusFilter.value = v
-  statusOpen.value = false
+function getStatusClass(statusPengadaan: string) {
+  const map: Record<string, string> = {
+    DIAJUKAN: 'status-diajukan',
+    DISETUJUI_KEPSEK: 'status-kepsek',
+    DISETUJUI_YAYASAN: 'status-yayasan',
+    DITOLAK: 'status-ditolak',
+    DIBELI: 'status-yayasan',
+  }
+  return map[statusPengadaan] || ''
+}
+
+function formatStatus(statusPengadaan: string) {
+  return String(statusPengadaan || '').replace(/_/g, ' ')
 }
 
 function formatRole(role: string) {
@@ -132,6 +113,16 @@ async function fetchAll() {
   }
 }
 
+const handleApplyFilter = () => {
+  fetchAll()
+}
+
+const handleReset = () => {
+  q.value = ''
+  statusFilter.value = 'ALL'
+  fetchAll()
+}
+
 onMounted(fetchAll)
 
 const tableRows = computed(() => {
@@ -154,7 +145,6 @@ const tableRows = computed(() => {
     yayasanFirstReviewedAt: it.yayasanFirstReviewedAt ?? null,
   }))
 
-  // ✅ Tambahkan sorting di sini
   if (sortKey.value) {
     data.sort((a, b) => {
       let aVal = (a as Record<string, unknown>)[sortKey.value] ?? ''
@@ -172,47 +162,6 @@ const tableRows = computed(() => {
   return data
 })
 
-// const filteredRows = computed(() => {
-//   let data = tableRows.value.filter((row) => {
-//     const search = (q.value ?? "").toLowerCase();
-
-//     const nama = String(row.nama ?? "").toLowerCase();
-//     const kode = String(row.kode ?? "").toLowerCase();
-//     const merk = String(row.merk ?? "").toLowerCase();
-//     const namaPengaju = String(row.namaPengaju ?? "").toLowerCase();
-
-//     const matchSearch =
-//       nama.includes(search) ||
-//       kode.includes(search) ||
-//       merk.includes(search) ||
-//       namaPengaju.includes(search);
-
-//     const matchStatus =
-//       statusFilter.value === "ALL" ||
-//       String(row.statusPengadaan ?? "") === statusFilter.value;
-
-//     return matchSearch && matchStatus;
-//   });
-
-//   if (sortKey.value) {
-//     data.sort((a, b) => {
-//       let aVal = a[sortKey.value];
-//       let bVal = b[sortKey.value];
-
-//       aVal = aVal ?? "";
-//       bVal = bVal ?? "";
-
-//       if (typeof aVal === "string") aVal = aVal.toLowerCase();
-//       if (typeof bVal === "string") bVal = bVal.toLowerCase();
-
-//       if (aVal < bVal) return sortOrder.value === "asc" ? -1 : 1;
-//       if (aVal > bVal) return sortOrder.value === "asc" ? 1 : -1;
-//       return 0;
-//     });
-//   }
-
-//   return data;
-// });
 function withinDays(fromISO: string | null, days = 2) {
   if (!fromISO) return false
   const from = new Date(fromISO).getTime()
@@ -220,12 +169,6 @@ function withinDays(fromISO: string | null, days = 2) {
   const diffDays = (now - from) / (1000 * 60 * 60 * 24)
   return diffDays <= days
 }
-
-// function firstTs(role, row) {
-//   if (role === "KEPSEK") return row.kepsekFirstReviewedAt || row.createdAt || null;
-//   if (role === "YAYASAN") return row.yayasanFirstReviewedAt || row.createdAt || null;
-//   return null;
-// }
 
 function selectAndGoCreate(row: TableRow) {
   const id = row.idPengadaan
@@ -247,33 +190,20 @@ function selectAndGoBeli(row: TableRow) {
   store.selectPengadaan(Number(id))
   router.push(`/pengadaan/pengajuan/tinjau/bukti/${id}`)
 }
+
 function getActionType(row: TableRow) {
   const r = role.value
   const status = row.statusPengadaan
   const yayasanSudahReview = !!row.yayasanFirstReviewedAt
   const kepsekSudahReview = !!row.kepsekFirstReviewedAt
 
-  // Logika khusus Yayasan
   if (r === 'YAYASAN') {
     const actions = []
-
-    // Jika status disetujui kepsek & yayasan belum sentuh -> Muncul tombol Review (Create)
-    if (status === 'DISETUJUI_KEPSEK' && !yayasanSudahReview) {
-      actions.push('CREATE')
-    }
-
-    // Jika sudah disetujui yayasan -> Muncul tombol Beli
-    if (status === 'DISETUJUI_YAYASAN') {
-      actions.push('BELI')
-    }
-
-    // Jika sudah pernah direview, bukan status DIBELI, dan masih < 2 hari -> Muncul tombol Edit
+    if (status === 'DISETUJUI_KEPSEK' && !yayasanSudahReview) actions.push('CREATE')
+    if (status === 'DISETUJUI_YAYASAN') actions.push('BELI')
     if (yayasanSudahReview && status !== 'DIBELI') {
-      if (withinDays(row.yayasanFirstReviewedAt, 2)) {
-        actions.push('EDIT')
-      }
+      if (withinDays(row.yayasanFirstReviewedAt, 2)) actions.push('EDIT')
     }
-
     return actions.length > 0 ? actions : ['NONE']
   }
 
@@ -297,48 +227,43 @@ function getActionType(row: TableRow) {
   <main class="page">
     <h1 class="title">Peninjauan Pengajuan Pengadaan Aset</h1>
 
-    <!-- FILTER -->
-    <div class="filter-wrapper">
-      <div class="search-box">
-        <SearchIcon class="search-icon" />
+    <!-- FILTER CARD -->
+    <div class="filter-card mb-20">
+      <h3 class="filter-title">Filter Pengajuan</h3>
+      <div class="filter-grid">
+        <!-- Status Dropdown -->
+        <div class="filter-item">
+          <label class="filter-label">Status Pengajuan</label>
+          <div class="custom-select">
+            <select v-model="statusFilter" :class="{ 'placeholder-color': statusFilter === 'ALL' }" @keyup.enter="handleApplyFilter">
+              <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+            </select>
+            <ChevronDown class="select-icon" />
+          </div>
+        </div>
 
-        <input v-model="q" type="text" placeholder="Cari nama pengaju, nama aset, atau merk" />
+        <!-- Search Input -->
+        <div class="filter-item flex-grow">
+          <label class="filter-label">Cari Pengajuan</label>
+          <div class="search-box">
+            <SearchIcon class="search-icon" />
+            <input
+              v-model="q"
+              type="text"
+              placeholder="Cari nama pengaju, nama aset, atau merk"
+              @keyup.enter="handleApplyFilter"
+            />
+          </div>
+        </div>
       </div>
 
-      <!-- CUSTOM STATUS DROPDOWN -->
-      <div class="status-dd" :class="{ open: statusOpen }">
-        <button type="button" class="status-dd-btn" @click="statusOpen = !statusOpen">
-          <span :class="{ placeholder: statusFilter === 'ALL' }">
-            {{ statusFilterLabel }}
-          </span>
-
-          <svg class="status-dd-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
-            />
-          </svg>
-        </button>
-
-        <div v-if="statusOpen" class="status-dd-menu">
-          <button type="button" class="status-dd-item" @click="pickStatus('ALL')">
-            Semua Status
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DIAJUKAN')">
-            Diajukan
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_KEPSEK')">
-            Disetujui oleh Kepsek
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DISETUJUI_YAYASAN')">
-            Disetujui oleh Yayasan
-          </button>
-          <button type="button" class="status-dd-item" @click="pickStatus('DITOLAK')">
-            Ditolak
-          </button>
-        </div>
+      <div class="filter-actions">
+        <button @click="handleApplyFilter" class="btn-apply">Terapkan Filter</button>
+        <button @click="handleReset" class="btn-reset">Reset</button>
       </div>
     </div>
 
+    <!-- TABLE -->
     <div class="table-wrapper">
       <table>
         <thead>
@@ -365,7 +290,7 @@ function getActionType(row: TableRow) {
                 <i class="sort-icon pi" :class="getSortIcon('harga')"></i>
               </div>
             </th>
-            <th>Alasan & Riwayat Review</th>
+            <th>Alasan &amp; Riwayat Review</th>
             <th @click="sortBy('statusPengadaan')">Status</th>
             <th>Aksi</th>
           </tr>
@@ -395,7 +320,6 @@ function getActionType(row: TableRow) {
             <td>
               <div class="alasan-wrapper">
                 <div class="alasan-main">{{ row.alasan }}</div>
-
                 <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
                   Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span> ({{
                     formatRole(row.reviewerRole)
@@ -468,120 +392,177 @@ function getActionType(row: TableRow) {
 
 <style scoped>
 .page {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
 .title {
-  font-size: 36px;
+  font-size: 2rem;
   font-weight: 800;
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
 }
 
-.filter-wrapper {
+/* ── Filter Card ── */
+.filter-card {
+  background: white;
+  padding: 24px 28px 20px;
+  border-radius: 16px;
+  border: 1px solid #eeeeee;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+}
+
+.filter-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.filter-grid {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
 }
 
-.search-box {
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item.flex-grow {
   flex: 1;
+  min-width: 240px;
+}
+
+.filter-label {
+  font-size: 12px;
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* Custom Select */
+.custom-select {
+  position: relative;
+  min-width: 220px;
+}
+
+.custom-select select {
+  width: 100%;
+  padding: 11px 40px 11px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: white;
+  font-size: 14px;
+  outline: none;
+  appearance: none;
+  color: #111827;
+  cursor: pointer;
+}
+
+.custom-select select:focus {
+  border-color: rgba(0, 88, 143, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 88, 143, 0.1);
+}
+
+.placeholder-color {
+  color: #9ca3af !important;
+}
+
+.select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  pointer-events: none;
+  color: #6b7280;
+}
+
+/* Search Box */
+.search-box {
   position: relative;
 }
 
 .search-box input {
   width: 100%;
-  padding: 12px 16px 12px 40px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
+  padding: 11px 16px 11px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.search-box input:focus {
+  border-color: rgba(0, 88, 143, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 88, 143, 0.1);
+}
+
+.search-box input::placeholder {
+  color: #9ca3af;
 }
 
 .search-icon {
   position: absolute;
-  left: 14px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-}
-
-.status-dd {
-  position: relative;
-  width: 260px;
-  flex: 0 0 auto;
-}
-
-.status-dd-btn {
-  width: 100%;
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.status-dd-btn:focus {
-  outline: none;
-  border-color: rgba(0, 88, 143, 0.45);
-  box-shadow: 0 0 0 4px rgba(0, 88, 143, 0.12);
-}
-
-.status-dd-btn .placeholder {
   color: #6b7280;
 }
 
-.status-dd-icon {
-  width: 18px;
-  height: 18px;
-  fill: #6b7280;
-  flex: 0 0 auto;
+/* Filter Actions */
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.status-dd-menu {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin-top: 10px;
-
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-
-  overflow: hidden;
-  z-index: 100;
-}
-
-.status-dd-item {
-  width: 100%;
-  text-align: left;
-  padding: 12px 14px;
-  background: #fff;
-  border: 0;
+.btn-apply {
+  background-color: #00588f;
+  color: white;
+  padding: 10px 28px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 13px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 88, 143, 0.2);
+  transition: background 0.2s;
 }
 
-.status-dd-item:hover {
-  background: rgba(0, 88, 143, 0.08);
+.btn-apply:hover {
+  background-color: #004a78;
 }
 
-.table-card {
-  background: #fff;
-  border: 2px solid #eaecf0;
-  border-radius: 16px;
-  padding: 20px;
+.btn-reset {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 28px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
+.btn-reset:hover {
+  background-color: #f9fafb;
+}
+
+/* ── Table ── */
 .table-wrapper {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eeeeee;
   overflow-x: auto;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 table {
@@ -590,11 +571,6 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
-}
-
-.input::placeholder {
-  color: #9ca3af;
-  opacity: 1;
 }
 
 thead {
@@ -608,6 +584,7 @@ th {
   padding: 14px 16px;
   border-bottom: 1px solid #f1f5f9;
   text-align: center;
+  cursor: pointer;
 }
 
 td {
@@ -623,13 +600,9 @@ td {
 }
 
 tbody tr:hover {
-  background-color: #f0f7ff !important;
+  background-color: #f0f7ff;
   cursor: pointer;
   transition: background-color 0.2s ease;
-}
-
-tbody tr:hover td {
-  color: #000;
 }
 
 .img-box {
@@ -659,49 +632,22 @@ tbody tr:hover td {
   align-items: center;
   justify-content: center;
   text-align: center;
-
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.6px;
 }
 
-.badge-lg {
-  padding: 18px 26px;
-  font-size: 26px;
-  line-height: 1.15;
-  white-space: normal;
-  max-width: 260px;
-}
-
-.status-diajukan {
-  background: #efefef;
-  color: #333437;
-}
-
-.status-kepsek {
-  background: #ecf8fd;
-  color: #1fa2ff;
-}
-
-.status-yayasan {
-  background: #ffeed9;
-  color: #aa5b00;
-}
-
-.status-ditolak {
-  background: #fbe5e6;
-  color: #dc3545;
-}
+.status-diajukan { background: #efefef; color: #333437; }
+.status-kepsek   { background: #ecf8fd; color: #1fa2ff; }
+.status-yayasan  { background: #ffeed9; color: #aa5b00; }
+.status-ditolak  { background: #fbe5e6; color: #dc3545; }
 
 .empty {
   text-align: center;
   padding: 20px;
   color: #777;
-}
-
-th {
-  cursor: pointer;
 }
 
 .th-inner {
@@ -720,52 +666,23 @@ th {
 .btn-circle {
   width: 30px;
   height: 30px;
-
   min-width: 30px;
   min-height: 30px;
-
   border-radius: 50%;
   border: none;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   padding: 0;
-  box-sizing: border-box;
+  cursor: pointer;
 }
 
-.edit-btn {
-  background: #00588f;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
+.edit-btn   { background: #00588f; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.review-btn { background: #198754; color: white; }
+.buy-btn    { background: #ff9800; color: white; box-shadow: 0 2px 6px rgba(255,152,0,0.3); }
 
-.edit-btn:hover {
-  background: #244d7a;
-  transform: translateY(-1px);
-}
-
-.review-btn {
-  background: #198754;
-  color: white;
-}
-
-.buy-btn {
-  background: #ff9800;
-  color: white;
-  box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
-  margin-right: 4px;
-}
-
-.buy-btn:hover {
-  background: #e68a00;
-  transform: translateY(-1px);
-}
-
-.buy-btn i {
-  font-size: 14px;
-}
+.edit-btn:hover  { background: #244d7a; transform: translateY(-1px); }
+.buy-btn:hover   { background: #e68a00; transform: translateY(-1px); }
 
 .no-action-text {
   color: #9ca3af;
@@ -773,41 +690,15 @@ th {
   font-style: italic;
 }
 
-.sortable {
-  cursor: pointer;
-  user-select: none;
-}
+.sortable { cursor: pointer; user-select: none; }
 
-.sort-icon {
-  flex: 0 0 auto;
-  font-size: 12px;
-  transition: 0.2s ease;
-}
+.sort-icon { flex: 0 0 auto; font-size: 12px; transition: 0.2s ease; }
+.unsorted  { color: #cbd5e1; }
+.active-sort { color: #ffffff; }
 
-.unsorted {
-  color: #cbd5e1;
-}
-
-.active-sort {
-  color: #ffffff;
-}
-
-.alasan-wrapper {
-  display: flex;
-  flex-direction: column;
-  min-height: 40px;
-}
-
-.alasan-main {
-  margin-bottom: 16px;
-  word-break: normal;
-}
-
-.date-column span {
-  display: block;
-  max-width: 100%;
-  word-break: normal;
-}
+.alasan-wrapper { display: flex; flex-direction: column; min-height: 40px; }
+.alasan-main    { margin-bottom: 16px; word-break: normal; }
+.date-column span { display: block; max-width: 100%; word-break: normal; }
 
 .reviewer-info {
   font-size: 10px;
@@ -818,71 +709,19 @@ th {
   line-height: 1.4;
 }
 
-.highlight {
-  font-weight: 600;
-  color: #00588f;
-}
+.highlight { font-weight: 600; color: #00588f; }
 
-.pengaju-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.pengaju-wrapper { display: flex; flex-direction: column; gap: 2px; }
+.role-text { font-size: 10px; color: #94a3b8; font-weight: 400; text-transform: uppercase; }
 
-.role-text {
-  font-size: 10px;
-  color: #94a3b8; /* Warna abu-abu (slate-400) */
-  font-weight: 400;
-  text-transform: uppercase; /* Opsional: agar terlihat lebih rapi */
-}
-
-th:nth-child(1),
-td:nth-child(1) {
-  width: 110px;
-} /* Nama Pengaju */
-
-th:nth-child(2),
-td:nth-child(2) {
-  width: 90px;
-} /* Gambar */
-
-th:nth-child(3),
-td:nth-child(3) {
-  width: 140px;
-} /* Nama */
-
-th:nth-child(4),
-td:nth-child(4) {
-  width: 80px;
-} /* Merk */
-
-th:nth-child(5),
-td:nth-child(5) {
-  width: 45px;
-} /* Qty */
-
-th:nth-child(6),
-td:nth-child(6) {
-  width: 90px;
-} /* Tanggal */
-
-th:nth-child(7),
-td:nth-child(7) {
-  width: 110px;
-} /* Harga */
-
-th:nth-child(8),
-td:nth-child(8) {
-  width: 220px;
-} /* Alasan */
-
-th:nth-child(9),
-td:nth-child(9) {
-  width: 110px;
-} /* Status */
-
-th:nth-child(10),
-td:nth-child(10) {
-  width: 70px;
-} /* Aksi */
+th:nth-child(1), td:nth-child(1) { width: 110px; }
+th:nth-child(2), td:nth-child(2) { width: 90px; }
+th:nth-child(3), td:nth-child(3) { width: 140px; }
+th:nth-child(4), td:nth-child(4) { width: 80px; }
+th:nth-child(5), td:nth-child(5) { width: 45px; }
+th:nth-child(6), td:nth-child(6) { width: 90px; }
+th:nth-child(7), td:nth-child(7) { width: 110px; }
+th:nth-child(8), td:nth-child(8) { width: 220px; }
+th:nth-child(9), td:nth-child(9) { width: 110px; }
+th:nth-child(10), td:nth-child(10) { width: 70px; }
 </style>
