@@ -17,7 +17,6 @@ Ringkasan kebutuhan fitur & role akses mengacu pada dokumen README pada tiap bra
 - Node.js
 - npm
 - Git
-- Docker yang sudah dijalankan
 - Backend yang sudah dijalankan
 
 ## Instalasi dan Menjalankan Aplikasi
@@ -50,7 +49,7 @@ npm install lucide-vue-next
 
 **4. Jalankan Aplikasi**
 
-Pastikan backend dan docker sudah dijalankan. Lalu jalankan command ini:
+Pastikan backend sudah dijalankan. Lalu jalankan command ini:
 
 ```sh
 npm run dev
