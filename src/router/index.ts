@@ -40,6 +40,11 @@ const router = createRouter({
       component: () => import('../views/ChangePasswordView.vue'),
     },
     {
+      path: '/profile/password-history',
+      name: 'password-history',
+      component: () => import('../views/PasswordHistoryView.vue'),
+    },
+    {
       path: '/assets/kelola',
       name: 'managed-assets',
       component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
@@ -97,7 +102,7 @@ const router = createRouter({
     {
       path: '/pengadaan/pengajuan/tinjau',
       name: 'peninjauan-pengadaan-aset-all',
-      component: () => import('../views/PeninjauanPengadaanAset/All.vue'),
+      component: () => import('../views/PeninjauanPengadaanAset/TinjauAll.vue'),
     },
     {
       path: '/pengadaan/pengajuan/tinjau/:pengadaanId',

@@ -36,10 +36,16 @@ function getErrorMessage(err: unknown): string {
 }
 
 export const tinjauPengadaanService = {
-  async getAll(): Promise<TinjauPengadaanResponseDTO[]> {
+  async getAll(params?: { status_pengadaan?: string; search?: string }): Promise<TinjauPengadaanResponseDTO[]> {
     try {
       const res = await api.get<BaseResponseDTO<TinjauPengadaanResponseDTO[]>>(
-        "/api/pengadaan/tinjau/all"
+        "/api/pengadaan/tinjau/all",
+        {
+        params: {
+          status_pengadaan: params?.status_pengadaan || undefined,
+          search: params?.search || undefined,
+        }
+      }
       );
       return unwrap(res);
     } catch (err) {
@@ -101,7 +107,7 @@ export const tinjauPengadaanService = {
         formData,
         {
           headers: {
-    
+
           },
         }
       );
