@@ -40,6 +40,11 @@ const router = createRouter({
       component: () => import('../views/ChangePasswordView.vue'),
     },
     {
+      path: '/profile/password-history',
+      name: 'password-history',
+      component: () => import('../views/PasswordHistoryView.vue'),
+    },
+    {
       path: '/assets/kelola',
       name: 'managed-assets',
       component: () => import('../views/MengelolaAset/ManagedAssetsView.vue'),
