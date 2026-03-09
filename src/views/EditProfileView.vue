@@ -50,7 +50,9 @@ const fetchProfile = async () => {
       nisn: data.nisn || '',
       kelas: data.kelas || '',
     };
-  } catch (err: any) {
+    // Update auth store with complete profile data
+    authStore.setAuth(data, authStore.token!);
+  } catch {
     errorMessage.value = 'Gagal memuat data profil. Silakan coba lagi.';
   } finally {
     isLoading.value = false;
@@ -105,7 +107,7 @@ const handleSaveProfile = async () => {
   successMessage.value = '';
 
   try {
-    const payload: any = {
+    const payload: Record<string, string | undefined> = {
       name: formData.value.name,
       phoneNumber: formData.value.phoneNumber
     };
@@ -122,8 +124,9 @@ const handleSaveProfile = async () => {
 
     toast.success('Profil berhasil diperbarui!');
     setTimeout(() => router.push('/profile'), 1500);
-  } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { message?: string } } };
+    errorMessage.value = axiosErr.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
     toast.error(errorMessage.value);
   } finally {
     isSaving.value = false;
@@ -149,6 +152,10 @@ const confirmCancel = () => {
 
 const handleOpenChangePassword = () => {
   router.push('/profile/change-password');
+};
+
+const handleViewPasswordHistory = () => {
+  router.push('/profile/password-history');
 };
 
 onMounted(() => { fetchProfile(); });
@@ -264,6 +271,9 @@ onMounted(() => { fetchProfile(); });
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>
+          <a href="javascript:void(0)" @click="handleViewPasswordHistory" class="password-history-link">
+            Lihat Riwayat Perubahan Password
+          </a>
         </div>
 
         <!-- Read-only fields note -->
@@ -482,6 +492,20 @@ onMounted(() => { fetchProfile(); });
 .change-password-btn:hover {
   background: #DDE9FF;
   border-color: #1565a8;
+}
+
+/* ── PASSWORD HISTORY LINK ── */
+.password-history-link {
+  font-size: 13px;
+  color: #1565a8;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-align: center;
+}
+.password-history-link:hover {
+  color: #0d3f72;
+  text-decoration: underline;
 }
 
 /* ── ACTION BUTTONS ── */

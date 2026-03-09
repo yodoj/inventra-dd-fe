@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { toast } from 'vue-sonner';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/services/api';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -25,6 +25,20 @@ const initials = computed(() => {
 const handleEditClick = () => {
   router.push('/profile/edit');
 };
+
+const refreshProfile = async () => {
+  try {
+    const response = await api.get('/api/profile');
+    const data = response.data.data;
+    authStore.setAuth(data, authStore.token!);
+  } catch {
+    // Silently fail - use cached data if refresh fails
+  }
+};
+
+onMounted(() => {
+  refreshProfile();
+});
 </script>
 
 <template>
@@ -64,7 +78,7 @@ const handleEditClick = () => {
         <div class="info-list">
 
           <!-- NISN hanya untuk Siswa, ditampilkan pertama -->
-          <div v-if="isSiswa" class="info-row">
+          <div v-if="isSiswa && profile.nisn" class="info-row">
             <span class="info-label">NISN</span>
             <span class="info-value">{{ profile.nisn }}</span>
           </div>
@@ -90,7 +104,7 @@ const handleEditClick = () => {
           </div>
 
           <!-- Kelas hanya untuk Siswa -->
-          <div v-if="isSiswa" class="info-row">
+          <div v-if="isSiswa && profile.kelas" class="info-row">
             <span class="info-label">Kelas</span>
             <span class="info-value">{{ profile.kelas }}</span>
           </div>
