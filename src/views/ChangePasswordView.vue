@@ -16,9 +16,9 @@ const formData = ref({
   confirm_password: ''
 });
 
-const showcurrent_password = ref(false);
-const shownew_password = ref(false);
-const showconfirm_password = ref(false);
+const showCurrent_password = ref(false);
+const showNewPassword = ref(false);
+const showConfirm_password = ref(false);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
@@ -26,9 +26,9 @@ const showCancelModal = ref(false);
 const showConfirmModal = ref(false);
 
 const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-  if (field === 'current') showcurrent_password.value = !showcurrent_password.value;
-  if (field === 'new') shownew_password.value = !shownew_password.value;
-  if (field === 'confirm') showconfirm_password.value = !showconfirm_password.value;
+  if (field === 'current') showCurrent_password.value = !showCurrent_password.value;
+  if (field === 'new') showNewPassword.value = !showNewPassword.value;
+  if (field === 'confirm') showConfirm_password.value = !showConfirm_password.value;
 };
 
 const handleSavePassword = async () => {
@@ -75,7 +75,7 @@ const submitSavePassword = async () => {
   successMessage.value = '';
 
   try {
-    await api.put('/api/users/profile/password', {
+    await api.put('/api/profile/password', {
       current_password: formData.value.current_password,
       new_password: formData.value.new_password,
       confirm_password: formData.value.confirm_password
@@ -146,14 +146,14 @@ const confirmCancel = () => {
           <label class="form-label">Password Saat Ini</label>
           <div class="password-input-wrapper">
             <input
-              :type="showcurrent_password ? 'text' : 'password'"
+              :type="showCurrent_password ? 'text' : 'password'"
               v-model="formData.current_password"
               placeholder="Masukkan password saat ini"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('current')" class="toggle-btn">
-              <Eye v-if="showcurrent_password" class="icon-toggle" />
+              <Eye v-if="showCurrent_password" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
@@ -164,14 +164,14 @@ const confirmCancel = () => {
           <label class="form-label">Password Baru</label>
           <div class="password-input-wrapper">
             <input
-              :type="shownew_password ? 'text' : 'password'"
+              :type="showNewPassword ? 'text' : 'password'"
               v-model="formData.new_password"
               placeholder="Masukkan password baru"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('new')" class="toggle-btn">
-              <Eye v-if="shownew_password" class="icon-toggle" />
+              <Eye v-if="showNewPassword" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
@@ -203,14 +203,14 @@ const confirmCancel = () => {
           <label class="form-label">Konfirmasi Password Baru</label>
           <div class="password-input-wrapper">
             <input
-              :type="showconfirm_password ? 'text' : 'password'"
+              :type="showConfirm_password ? 'text' : 'password'"
               v-model="formData.confirm_password"
               placeholder="Konfirmasi password baru"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('confirm')" class="toggle-btn">
-              <Eye v-if="showconfirm_password" class="icon-toggle" />
+              <Eye v-if="showConfirm_password" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
