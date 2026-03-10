@@ -13,12 +13,12 @@ const authStore = useAuthStore();
 const formData = ref({
   currentPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmationPassword: ''
 });
 
 const showCurrentPassword = ref(false);
 const showNewPassword = ref(false);
-const showConfirmPassword = ref(false);
+const showconfirmationPassword = ref(false);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
@@ -28,7 +28,7 @@ const showConfirmModal = ref(false);
 const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
   if (field === 'current') showCurrentPassword.value = !showCurrentPassword.value;
   if (field === 'new') showNewPassword.value = !showNewPassword.value;
-  if (field === 'confirm') showConfirmPassword.value = !showConfirmPassword.value;
+  if (field === 'confirm') showconfirmationPassword.value = !showconfirmationPassword.value;
 };
 
 const handleSavePassword = async () => {
@@ -40,11 +40,11 @@ const handleSavePassword = async () => {
     errorMessage.value = 'Password baru tidak boleh kosong';
     return;
   }
-  if (!formData.value.confirmPassword) {
+  if (!formData.value.confirmationPassword) {
     errorMessage.value = 'Konfirmasi password tidak boleh kosong';
     return;
   }
-  if (formData.value.newPassword !== formData.value.confirmPassword) {
+  if (formData.value.newPassword !== formData.value.confirmationPassword) {
     errorMessage.value = 'Password baru dan konfirmasi tidak sesuai';
     return;
   }
@@ -75,10 +75,10 @@ const submitSavePassword = async () => {
   successMessage.value = '';
 
   try {
-    await api.put('/api/profile/password', {
+    await api.put('/api/users/profile/password', {
       currentPassword: formData.value.currentPassword,
       newPassword: formData.value.newPassword,
-      confirmPassword: formData.value.confirmPassword
+      confirmationPassword: formData.value.confirmationPassword
     });
 
     toast.success('Password berhasil diubah!');
@@ -96,7 +96,7 @@ const handleCancel = () => {
   const isDirty =
     formData.value.currentPassword ||
     formData.value.newPassword ||
-    formData.value.confirmPassword;
+    formData.value.confirmationPassword;
 
   if (isDirty) {
     showCancelModal.value = true;
@@ -203,14 +203,14 @@ const confirmCancel = () => {
           <label class="form-label">Konfirmasi Password Baru</label>
           <div class="password-input-wrapper">
             <input
-              :type="showConfirmPassword ? 'text' : 'password'"
-              v-model="formData.confirmPassword"
+              :type="showconfirmationPassword ? 'text' : 'password'"
+              v-model="formData.confirmationPassword"
               placeholder="Konfirmasi password baru"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('confirm')" class="toggle-btn">
-              <Eye v-if="showConfirmPassword" class="icon-toggle" />
+              <Eye v-if="showconfirmationPassword" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
