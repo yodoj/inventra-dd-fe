@@ -6,6 +6,7 @@ import { Eye, EyeOff, X } from 'lucide-vue-next';
 import axios from 'axios';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
+import api from '@/services/api';
 
 const emit = defineEmits<{
   close: [];
@@ -85,8 +86,8 @@ const submitChangePassword = async () => {
   successMessage.value = '';
 
   try {
-    await axios.put(
-      'http://localhost:8080/api/users/profile/password',
+    await api.put(
+      '/api/users/profile/password',
       {
         currentPassword: formData.value.currentPassword,
         newPassword: formData.value.newPassword,
