@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import api from '@/services/api';
 
+// Interface untuk data tunggal pengadaan aset
 export interface PengadaanAset {
     id_pengadaan: string;
     waktu_pengajuan: string;
@@ -16,6 +17,7 @@ export interface PengadaanAset {
     unit: string;
 }
 
+// Interface standar untuk response dari API backend
 export interface BaseResponse<T> {
     status: number;
     message: string;
@@ -27,6 +29,7 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
     const isLoading = ref(false);
     const error = ref<string | null>(null);
 
+    // Mengambil daftar pengadaan aset milik user
     async function fetchMyPengadaan(params: any = {}) {
         isLoading.value = true;
         error.value = null;
@@ -45,6 +48,7 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         }
     }
 
+    // Mengirimkan formulir pengajuan pengadaan aset baru
     async function createPengadaan(data: any) {
         isLoading.value = true;
         error.value = null;
@@ -59,6 +63,7 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         }
     }
 
+    // Menghapus pengajuan pengadaan berdasarkan ID
     async function deletePengadaan(id: string) {
         isLoading.value = true;
         error.value = null;
@@ -74,6 +79,7 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         }
     }
 
+    // Mengambil detail pengadaan berdasarkan ID
     async function fetchPengadaanById(id: string) {
         isLoading.value = true;
         try {
@@ -87,6 +93,7 @@ export const usePengadaanStore = defineStore('pengadaan', () => {
         }
     }
 
+    // Mengupdate pengajuan pengadaan berdasarkan ID
     async function updatePengadaan(id: string, payload: any) {
         isLoading.value = true;
         try {

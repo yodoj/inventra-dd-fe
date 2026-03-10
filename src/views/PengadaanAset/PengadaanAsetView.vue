@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+
+// Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
 import { useToastStore } from '@/stores/toast';
+
+// Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
+// Icon Import
 import SearchIcon from '@/components/icons/SearchIcon.vue';
 import EditIcon from '@/components/icons/EditIcon.vue';
-
 import { 
   ChevronDown, 
   ChevronLeft, 
@@ -25,14 +29,28 @@ const router = useRouter();
 const pengadaanStore = usePengadaanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
+
+// State management
 const showDeleteModal = ref(false);
 const selectedId = ref<string | null>(null);
 const isDeleting = ref(false);
 const searchQuery = ref('');
+
+// Filter & Sorting state
 const statusFilter = ref('');
 const categoryFilter = ref('');
 const sortBy = ref('waktuPengajuan');
 const sortDirection = ref('DESC');
+
+// Otorisasi dan akses
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
+
+// Aset hanya bisa diedit/hapus jika statusnya masih awal (Diajukan/Ditolak)
+const canEditDelete = (status: string) => {
+  return ['DIAJUKAN', 'DITOLAK'].includes(status?.toUpperCase());
+};
 
 const categories = [
   { label: 'Barang Habis Pakai', value: 'BARANG_HABIS_PAKAI' },
@@ -51,6 +69,7 @@ onMounted(() => {
   pengadaanStore.fetchMyPengadaan();
 });
 
+// Fungsi untuk menerapkan filter dan sorting
 const handleApplyFilter = () => {
   const params: any = {};
   if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
@@ -63,6 +82,7 @@ const handleApplyFilter = () => {
   pengadaanStore.fetchMyPengadaan(params);
 };
 
+// Fungsi untuk mereset filter dan menampilkan semua data kembali
 const handleReset = () => {
   searchQuery.value = '';
   statusFilter.value = '';
@@ -70,6 +90,7 @@ const handleReset = () => {
   pengadaanStore.fetchMyPengadaan();
 };
 
+// Fungsi untuk mendapatkan kelas CSS berdasarkan status pengajuan
 const getStatusClass = (status: string) => {
   switch (status?.toUpperCase()) {
     case 'DIAJUKAN': return 'status-diajukan';
@@ -81,14 +102,12 @@ const getStatusClass = (status: string) => {
   }
 };
 
+// Fungsi untuk memformat teks kategori/status agar lebih user-friendly
 const formatDisplay = (text: string) => {
   return text?.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const canEditDelete = (status: string) => {
-  return ['DIAJUKAN', 'DITOLAK'].includes(status?.toUpperCase());
-};
-
+// CRUD Actions
 const confirmDelete = (id: string) => {
   selectedId.value = id;
   showDeleteModal.value = true;
@@ -111,6 +130,7 @@ const handleDelete = async () => {
   }
 };
 
+// Fungsi untuk toggle sorting 
 const toggleSort = (column: string) => {
   if (sortBy.value === column) {
     sortDirection.value = sortDirection.value === 'ASC' ? 'DESC' : 'ASC';
@@ -124,7 +144,7 @@ const toggleSort = (column: string) => {
 </script>
 
 <template>
-  <div class="managed-pengadaan-page">
+  <div v-if="isAuthorized" class="managed-pengadaan-page">
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">Pengajuan Pengadaan Aset</h1>
@@ -254,6 +274,11 @@ const toggleSort = (column: string) => {
       </div>
     </div>
   </div>
+
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
+  </div>
+
   <ConfirmationModal
     :show="showDeleteModal"
     title="Konfirmasi Penghapusan Pengajuan Pengadaan"
@@ -531,4 +556,17 @@ table td {
   margin-bottom: 2.5rem;
 }
 
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
+}
 </style>
