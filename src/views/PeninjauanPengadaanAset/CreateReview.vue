@@ -4,6 +4,7 @@
 
     <div class="review-card">
       <div class="review-grid">
+
         <div class="field">
           <label class="label">Status</label>
 
@@ -18,10 +19,8 @@
                 {{ form.statusPengadaan ? STATUS_LABEL[form.statusPengadaan] : "Pilih status" }}
               </span>
 
-              <svg class="dd-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"
-                />
+              <svg class="dd-icon" viewBox="0 0 24 24">
+                <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
               </svg>
             </button>
 
@@ -46,17 +45,15 @@
             class="textarea"
             placeholder="Masukkan alasan anda"
             rows="3"
-            :disabled="store.isLoading"
+            :disabled="isLocked || store.isLoading"
+
           />
         </div>
-           <p v-if="store.errorMessage" class="err">{{ store.errorMessage }}</p>
-           <p v-if="statusError" class="err">{{ statusError }}</p>
-            <div v-if="isLocked && lockMessage" class="lock-banner">
-              <svg class="lock-icon" viewBox="0 0 24 24">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-              </svg>
-              <span>{{ lockMessage }}</span>
-          </div>
+
+        <div v-if="displayMessage" class="lock-banner">
+          {{ displayMessage }}
+        </div>
+
       </div>
 
       <div class="actions">
@@ -68,6 +65,7 @@
         >
           Batal
         </button>
+
         <button
           type="button"
           class="btn btn-primary"
@@ -81,48 +79,53 @@
   </div>
 
   <div v-if="showConfirmModal" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Konfirmasi Peninjauan</h3>
-      <button class="close-btn" @click="showConfirmModal = false">×</button>
-    </div>
+    <div class="modal-content">
 
-    <div class="modal-body">
-      <div class="info-icon-box">
-        <svg viewBox="0 0 24 24" class="info-svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
+      <div class="modal-header">
+        <h3>Konfirmasi Peninjauan</h3>
+        <button class="close-btn" @click="showConfirmModal=false">×</button>
       </div>
-      <p>Apakah Anda yakin data yang dimasukkan sudah benar?</p>
-    </div>
 
-    <div class="modal-footer">
-      <button class="btn-batal" @click="showConfirmModal = false">Batal</button>
-      <button class="btn-confirm" @click="confirmSave" :disabled="store.isLoading">
-        {{ store.isLoading ? 'Proses...' : 'Ya, Simpan' }}
-      </button>
+      <div class="modal-body">
+        <p>Apakah Anda yakin data yang dimasukkan sudah benar?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-batal" @click="showConfirmModal=false">Batal</button>
+        <button class="btn-confirm" @click="confirmSave">
+          {{ store.isLoading ? 'Proses...' : 'Ya, Simpan' }}
+        </button>
+      </div>
+
     </div>
   </div>
-</div>
 </template>
+
 
 <script setup lang="ts">
 
-import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
-import { useAuthStore } from "@/stores/auth";
+import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore"
+import { useAuthStore } from "@/stores/auth"
+import { useToastStore } from '@/stores/toast'
 
-const auth = useAuthStore();
-const route = useRoute();
-const router = useRouter();
-const store = useTinjauPengadaanStore();
-const statusError = ref("");
-const ALL_ROUTE = "/pengadaan/pengajuan/tinjau";
-const pengadaanId = computed(() => (route.params.pengadaanId));
-const form = reactive({ statusPengadaan: "", alasan: "" });
-const showConfirmModal = ref(false);
-const loading = ref(true);
+const toastStore = useToastStore()
+const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+const store = useTinjauPengadaanStore()
+
+const error = ref("")
+const showConfirmModal = ref(false)
+const ddOpen = ref(false)
+
+const pengadaanId = computed(() => route.params.pengadaanId)
+
+const form = reactive({
+  statusPengadaan: "",
+  alasan: ""
+})
 
 const STATUS_LABEL = {
   DIAJUKAN: "Diajukan",
@@ -130,146 +133,148 @@ const STATUS_LABEL = {
   DISETUJUI_YAYASAN: "Disetujui Yayasan",
   DITOLAK: "Ditolak",
   DIBELI: "Dibeli",
-};
-
-const ddOpen = ref(false);
-const statusSebelumnya = computed(() => store.statusSebelumnya);
-
-function selectStatus(s) {
-  form.statusPengadaan = s;
-  ddOpen.value = false;
 }
 
-function onDocClick(e) {
-  if (!e.target.closest(".dd")) ddOpen.value = false;
+function selectStatus(s){
+  form.statusPengadaan = s
+  ddOpen.value = false
 }
 
-onMounted(() => document.addEventListener("click", onDocClick));
-onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
-const allowedNextStatuses = computed(() => {
-  switch (statusSebelumnya.value) {
+function onDocClick(e){
+  if(!e.target.closest(".dd")) ddOpen.value = false
+}
+
+onMounted(()=>{
+  document.addEventListener("click",onDocClick)
+  load()
+})
+
+onBeforeUnmount(()=>{
+  document.removeEventListener("click",onDocClick)
+})
+
+const statusSebelumnya = computed(()=>store.statusSebelumnya)
+
+const allowedNextStatuses = computed(()=>{
+  switch(statusSebelumnya.value){
     case "DIAJUKAN":
-      return ["DISETUJUI_KEPSEK", "DITOLAK"];
+      return ["DISETUJUI_KEPSEK","DITOLAK"]
     case "DISETUJUI_KEPSEK":
-      return ["DISETUJUI_YAYASAN", "DITOLAK"];
-    case "DISETUJUI_YAYASAN":
-      return [];
+      return ["DISETUJUI_YAYASAN","DITOLAK"]
     default:
-      return [];
+      return []
   }
-});
+})
 
-const lockMessage = computed(() => {
-  if (store.isLoading) return "";
+const isLocked = computed(()=>{
+  const curr = store.current
+  const role = auth.userRole
+  const status = statusSebelumnya.value
 
-  const curr = store.current;
-  const userRole = auth.userRole;
-  const status = statusSebelumnya.value;
+  const yayasanCuriStart = (role==="YAYASAN" && status==="DIAJUKAN")
 
-  // RULE: Yayasan tidak bisa review jika Kepsek belum review
-  if (userRole === 'YAYASAN' && status === 'DIAJUKAN') {
-    return "Menunggu persetujuan Kepala Sekolah sebelum dapat ditinjau oleh Yayasan.";
+  const alreadyReviewed =
+    (role==="KEPSEK" && curr?.kepsekFirstReviewedAt) ||
+    (role==="YAYASAN" && curr?.yayasanFirstReviewedAt)
+
+  return allowedNextStatuses.value.length===0 || alreadyReviewed || yayasanCuriStart
+})
+
+const lockMessage = computed(()=>{
+
+  const curr = store.current
+  const role = auth.userRole
+  const status = statusSebelumnya.value
+
+  if(role==="YAYASAN" && status==="DIAJUKAN"){
+    return "Menunggu persetujuan Kepala Sekolah sebelum dapat ditinjau oleh Yayasan."
   }
 
-  // RULE: Jika role tersebut sudah pernah review (Double Create Prevention)
-  if (userRole === 'KEPSEK' && curr?.kepsekFirstReviewedAt) {
-    return "Anda sudah memberikan penilaian untuk pengajuan ini.";
-  }
-  if (userRole === 'YAYASAN' && curr?.yayasanFirstReviewedAt) {
-    return "Pihak Yayasan sudah memberikan penilaian untuk pengajuan ini.";
+  if(role==="KEPSEK" && curr?.kepsekFirstReviewedAt){
+    return "Anda sudah memberikan penilaian untuk pengajuan ini."
   }
 
-  // RULE: Berdasarkan alur status (Case Locked)
-  if (isLocked.value) {
-    switch (status) {
-      case "DISETUJUI_YAYASAN":
-        return "Pengajuan sudah disetujui oleh Yayasan (Tahap Akhir).";
-      case "DITOLAK":
-        return "Pengajuan ini telah ditolak.";
-      case "DIBELI":
-        return "Aset sudah dibeli, data tidak dapat diubah lagi.";
-      default:
-        // Jika Kepsek mencoba masuk saat status sudah disetujui kepsek (menunggu yayasan)
-        if (userRole === 'KEPSEK' && status === 'DISETUJUI_KEPSEK') {
-          return "Pengajuan sudah Anda setujui dan sedang menunggu verifikasi Yayasan.";
-        }
-        return "Status saat ini tidak memungkinkan untuk dilakukan peninjauan.";
-    }
+  if(role==="YAYASAN" && curr?.yayasanFirstReviewedAt){
+    return "Pihak Yayasan sudah memberikan penilaian untuk pengajuan ini."
   }
-  return "";
-});
 
-const isLocked = computed(() => {
-  const curr = store.current;
-  const userRole = auth.userRole;
-  const status = statusSebelumnya.value;
+  if(status==="DISETUJUI_YAYASAN"){
+    return "Pengajuan sudah disetujui oleh Yayasan."
+  }
 
-  // Cek apakah Yayasan mencoba create sebelum kepsek
-  const yayasanCuriStart = (userRole === 'YAYASAN' && status === 'DIAJUKAN');
+  if(status==="DITOLAK"){
+    return "Pengajuan ini telah ditolak."
+  }
 
-  // Cek apakah sudah pernah review
-  const alreadyReviewed = (userRole === 'KEPSEK' && curr?.kepsekFirstReviewedAt) ||
-                          (userRole === 'YAYASAN' && curr?.yayasanFirstReviewedAt);
+  if(status==="DIBELI"){
+    return "Aset sudah dibeli."
+  }
 
-  return allowedNextStatuses.value.length === 0 || alreadyReviewed || yayasanCuriStart;
-});
+  return ""
+})
 
+const displayMessage = computed(()=>{
 
-watch(
-  () => statusSebelumnya.value,
-  () => {
-    if (!allowedNextStatuses.value.includes(form.statusPengadaan)) form.statusPengadaan = "";
-    if (store.current?.alasan != null) form.alasan = store.current.alasan || "";
-  },
-  { immediate: true }
-);
+  if(error.value) return error.value
 
-async function load() {
+  if(store.errorMessage) return store.errorMessage
+
+  if(isLocked.value) return lockMessage.value
+
+  return ""
+
+})
+
+watch(()=>form.statusPengadaan,()=>{ error.value="" })
+watch(()=>form.alasan,()=>{ error.value="" })
+
+async function load(){
+  await store.fetchByPengadaanId(pengadaanId.value)
+}
+
+function onCancel(){
+  router.push("/pengadaan/pengajuan/tinjau")
+}
+
+function triggerConfirm(){
+
+  error.value=""
+
+  if(!form.statusPengadaan){
+    error.value="Pilih status terlebih dahulu!"
+    return
+  }
+
+  if(!form.alasan){
+    error.value="Masukkan alasan terlebih dahulu!"
+    return
+  }
+
+  showConfirmModal.value=true
+}
+
+async function confirmSave(){
   try {
-    await store.fetchByPengadaanId(pengadaanId.value);
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || "Request gagal";
-    throw new Error(msg);
-  } finally {
-    loading.value = false;
-  }
+  showConfirmModal.value=false
 
+  await store.createTinjauan(pengadaanId.value,{
+    statusPengadaan: form.statusPengadaan,
+    alasan: form.alasan
+  })
 
-  form.alasan = "";
-  form.statusPengadaan = "";
-}
+  toastStore.success(
+      "Success",
+      "Peninjauan pengadaan berhasil disimpan."
+    )
 
-onMounted(load);
-
-function goToAll() {
-  router.push(ALL_ROUTE);
-}
-
-function onCancel() {
-  goToAll();
-}
-
-function triggerConfirm() {
-  statusError.value = "";
-
-  if (!form.statusPengadaan) {
-    statusError.value = "Pilih status terlebih dahulu!";
-    return;
-  }
-  showConfirmModal.value = true;
-}
-
-async function confirmSave() {
-  try {
-    showConfirmModal.value = false;
-    await store.createTinjauan((pengadaanId.value), {
-      statusPengadaan: form.statusPengadaan,
-      alasan: form.alasan,
-    });
-    alert("Berhasil membuat peninjauan!");
-    router.push("/pengadaan/pengajuan/tinjau");
+  router.push("/pengadaan/pengajuan/tinjau")
   } catch (err) {
+    toastStore.error(
+      "Error",
+      "Gagal membuat peninjauan."
+    );
   }
+
 }
 
 </script>
