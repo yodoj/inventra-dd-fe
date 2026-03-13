@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
+
+// Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
-import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
-import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
+
+// Component Import
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
 const pengadaanStore = usePengadaanStore();
@@ -23,14 +27,13 @@ const form = ref({
   linkGambar: ''
 });
 
-watch(() => authStore.user, (newUser) => {
-  if (newUser?.unit && !form.value.unit && authStore.userRole !== 'ADMIN') {
-    form.value.unit = newUser.unit;
-  }
-}, { immediate: true });
-
+// Mengecek apakah role user diperbolehkan membuat pengadaan
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
 const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
+const isSuperadmin = computed(() => authStore.userRole === 'ADMIN');
 
 const categories = [
   { label: 'Barang Habis Pakai', value: 'BARANG_HABIS_PAKAI' },
@@ -39,16 +42,21 @@ const categories = [
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
-const isSuperadmin = computed(() => authStore.userRole === 'ADMIN');
+watch(() => authStore.user, (newUser) => {
+  if (newUser?.unit && !form.value.unit && authStore.userRole !== 'ADMIN') {
+    form.value.unit = newUser.unit;
+  }
+}, { immediate: true });
 
+// Validasi sebelum menampilkan modal konfirmasi
 const confirmSubmit = () => {
   if (form.value.qty <= 0 || (form.value.estimasiHarga && form.value.estimasiHarga <= 0)) {
     toastStore.error('Error', 'Kuantitas dan Estimasi Harga harus lebih dari 0');
     return;
   }
 
-  const today = new Date().toISOString().split('T')[0] ?? ''; 
-  
+// Validasi tanggal pengadaan tidak boleh hari ini atau lampau
+const today = new Date().toISOString().split('T')[0] ?? ''; 
   if (form.value.waktuPengadaan <= today) {
     toastStore.error('Error', 'Tanggal pengadaan tidak boleh hari ini atau lampau');
     return;
@@ -56,6 +64,7 @@ const confirmSubmit = () => {
   showConfirmModal.value = true;
 };
 
+// Fungsi untuk mengirim data ke backend setelah konfirmasi
 const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
@@ -72,13 +81,13 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="add-pengadaan-page">
+  <div v-if="isAuthorized" class="add-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">
           <ArrowLeft class="w-6 h-6" />
         </button>
-        <h1 class="h2-headline">Buat Pengajuan Pengadaan</h1>
+        <h1 class="h2-headline">Buat Pengajuan Pengadaan Aset</h1>
       </div>
 
       <div class="form-card card-shadow">
@@ -155,6 +164,10 @@ const handleSubmit = async () => {
         </form>
       </div>
     </div>
+  </div>
+
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
   </div>
 
   <ConfirmationModal
@@ -273,6 +286,20 @@ const handleSubmit = async () => {
 
 .card-shadow {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
 }
 
 .py-16 {

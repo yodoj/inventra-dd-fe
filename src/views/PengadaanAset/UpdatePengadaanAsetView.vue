@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
+
+// Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
-import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
+
+// Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
@@ -36,6 +40,12 @@ const categories = [
 ];
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
+
+// Otorisasi dan akses
+const isAuthorized = computed(() => {
+  return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+});
+
 const isSuperadmin = computed(() => authStore.userRole === 'ADMIN');
 
 onMounted(async () => {
@@ -68,13 +78,15 @@ onMounted(async () => {
   }
 });
 
+// Validasi input form sebelum konfirmasi simpan
 const confirmSubmit = () => {
   if (form.value.qty <= 0 || form.value.estimasiHarga <= 0) {
     toastStore.error('Error', 'Kuantitas dan Estimasi Harga harus lebih dari 0');
     return;
   }
-  const today = new Date().toISOString().split('T')[0] ?? ''; 
-  
+
+// Validasi tanggal pengadaan tidak boleh hari ini atau lampau
+const today = new Date().toISOString().split('T')[0] ?? '';  
   if (form.value.waktuPengadaan <= today) {
     toastStore.error('Error', 'Tanggal pengadaan tidak boleh hari ini atau lampau');
     return;
@@ -82,6 +94,7 @@ const confirmSubmit = () => {
   showConfirmModal.value = true;
 };
 
+// Fungsi untuk mengirim data ke backend setelah konfirmasi
 const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
@@ -98,7 +111,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="update-pengadaan-page">
+  <div v-if="isAuthorized" class="update-pengadaan-page">
     <div class="container py-16">
       <div class="flex items-center gap-4 mb-20">
         <button @click="router.back()" class="btn-back">
@@ -181,6 +194,10 @@ const handleSubmit = async () => {
     </div>
   </div>
 
+  <div v-else class="forbidden-simple-wrapper">
+    <p class="forbidden-text">Anda tidak memiliki izin untuk mengakses halaman ini</p>
+  </div>
+
   <ConfirmationModal
     :show="showConfirmModal"
     title="Konfirmasi Perubahan"
@@ -255,6 +272,20 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   gap: 24px;
+}
+
+.forbidden-simple-wrapper {
+  padding-top: 150px; 
+  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #FAFAFA; 
+}
+
+.forbidden-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000; 
 }
 
 .btn-submit {
