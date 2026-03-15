@@ -6,7 +6,7 @@
       <div class="review-grid">
 
         <div class="field">
-          <label class="label">Status</label>
+          <label class="label">Status <span class="text-red-500">*</span></label>
 
           <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
             <button
@@ -39,7 +39,7 @@
         </div>
 
         <div class="field">
-          <label class="label">Alasan</label>
+          <label class="label">Alasan <span class="text-red-500">*</span> </label>
           <textarea
             v-model="form.alasan"
             class="textarea"
@@ -288,7 +288,7 @@ async function confirmSave(){
 }
 
 .title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 800;
   margin-bottom: 24px;
 }
@@ -323,9 +323,9 @@ async function confirmSave(){
 
 .field .label {
   display: block;
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
   color: #111827;
 }
 

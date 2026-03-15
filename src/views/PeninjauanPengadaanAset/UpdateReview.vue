@@ -5,7 +5,7 @@
     <div class="review-card">
       <div class="review-grid">
         <div class="field">
-          <label class="label">Status</label>
+          <label class="label">Status <span class="text-red-500">*</span></label>
 
           <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
             <button
@@ -40,7 +40,7 @@
 
 
         <div class="field">
-          <label class="label">Alasan</label>
+          <label class="label">Alasan <span class="text-red-500">*</span></label>
           <textarea
             v-model="form.alasan"
             class="textarea"

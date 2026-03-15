@@ -6,7 +6,7 @@
 
       <div class="review-grid">
         <div class="field">
-          <label class="label">Harga</label>
+          <label class="label">Harga <span class="text-red-500">*</span> </label>
           <div class="money" :class="{ 'money-disabled': isLocked }">
             <span class="money-prefix">Rp</span>
             <input
@@ -22,7 +22,7 @@
         </div>
 
         <div class="field">
-          <label class="label">Bukti Pembelian</label>
+          <label class="label">Bukti Pembelian <span class="text-red-500">*</span> </label>
           <label class="dropzone" :class="{ 'dz-disabled': isLocked }">
             <input
               class="file-hidden"
