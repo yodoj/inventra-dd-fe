@@ -13,6 +13,7 @@ type TableRow = {
   idPengadaan: string
   namaPengaju: string
   rolePengaju: string
+  unitPengaju: string
   gambar: string
   nama: string
   merk: string
@@ -129,7 +130,8 @@ const tableRows = computed(() => {
   const data = store.items.map((it) => ({
     idPengadaan: it.idPengadaan ?? 0,
     namaPengaju: it.namaPengaju ?? '-',
-    rolePengaju: it.unit ?? '-',
+    unitPengaju: it.unitPengaju ?? '-',
+    rolePengaju: it.rolePengaju ?? '-',
     gambar: it.linkGambar ?? '',
     nama: it.namaAset ?? '',
     merk: it.merk ?? '',
@@ -301,7 +303,7 @@ function getActionType(row: TableRow) {
             <td>
               <div class="pengaju-wrapper">
                 <div class="bold">{{ row.namaPengaju }}</div>
-                <div class="role-text">{{ row.rolePengaju }}</div>
+                <div class="role-text">{{ row.rolePengaju }} {{ row.unitPengaju }}</div>
               </div>
             </td>
             <td>
@@ -639,7 +641,7 @@ tbody tr:hover {
   letter-spacing: 0.6px;
 }
 
-.status-diajukan { background: #efefef; color: #333437; }
+.status-diajukan { background: #F8FDD0; color: #9C9A23; }
 .status-kepsek   { background: #ecf8fd; color: #1fa2ff; }
 .status-yayasan  { background: #ffeed9; color: #aa5b00; }
 .status-ditolak  { background: #fbe5e6; color: #dc3545; }
