@@ -93,7 +93,7 @@ const handleDelete = async () => {
         <div class="card-header-container">
           <div class="header-left">
             <h2 class="asset-display-title">
-              {{ pengadaan.id_pengadaan }} - {{ pengadaan.nama_aset }}
+              {{ pengadaan.nama_aset }}
             </h2>
           </div>
           
