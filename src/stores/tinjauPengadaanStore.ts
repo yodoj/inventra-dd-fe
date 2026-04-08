@@ -18,6 +18,7 @@ export const useTinjauPengadaanStore = defineStore("tinjauPengadaanStore", () =>
   const isLoading = computed(() => loading.value);
   const hasData = computed(() => !!current.value);
   const selectedPengadaanId = ref<number | null>(null);
+  let fetchVersion = 0;
 
   function selectPengadaan(idPengadaan: number) {
     selectedPengadaanId.value = idPengadaan;
@@ -32,19 +33,26 @@ export const useTinjauPengadaanStore = defineStore("tinjauPengadaanStore", () =>
   }
 
 async function fetchAll(params?: { status_pengadaan?: string | null; search?: string | null }) {
+  const thisVersion = ++fetchVersion;
   loading.value = true;
   errorMessage.value = "";
   try {
-    items.value = await tinjauPengadaanService.getAll({
+    const result = await tinjauPengadaanService.getAll({
       status_pengadaan: params?.status_pengadaan ?? undefined,
       search: params?.search ?? undefined,
     });
+    // Only apply results from the latest request to prevent race conditions
+    if (thisVersion !== fetchVersion) return items.value;
+    items.value = result;
     return items.value;
   } catch (e: any) {
+    if (thisVersion !== fetchVersion) throw e;
     errorMessage.value = e?.message || "Gagal mengambil data";
     throw e;
   } finally {
-    loading.value = false;
+    if (thisVersion === fetchVersion) {
+      loading.value = false;
+    }
   }
 }
   async function fetchByPengadaanId(pengadaanId: number) {
