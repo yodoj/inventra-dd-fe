@@ -17,7 +17,7 @@ const form = ref({
   merkAset: '',
   qtyAset: 1,
   lokasiAset: '',
-  statusAset: '',
+  statusAset: 'TERSEDIA',
   kategoriAset: '',
   unit: authStore.user?.unit || '',
   gambarUrlAset: '',
@@ -56,8 +56,7 @@ const filteredStatuses = computed(() => {
 // Reset status if it's not valid for the new category
 watch(() => form.value.kategoriAset, (newCat) => {
   if (newCat) {
-    const isValid = filteredStatuses.value.some(s => s.value === form.value.statusAset);
-    if (!isValid) form.value.statusAset = '';
+    form.value.statusAset = 'TERSEDIA';
   }
 });
 
@@ -99,83 +98,77 @@ const handleSubmit = async () => {
       <div class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="asset-form">
           <div class="form-grid">
-            <!-- Left Column -->
-            <div class="form-column">
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
-                <input v-model="form.namaAset" type="text" placeholder="Contoh: Kamera DSLR" class="form-input" required />
-              </div>
+            <!-- Row 1 -->
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
+              <input v-model="form.namaAset" type="text" placeholder="Contoh: Kamera DSLR" class="form-input" required />
+            </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Merk <span class="required-star">*</span></label>
-                <input v-model="form.merkAset" type="text" placeholder="Contoh: Sony" class="form-input" required />
-              </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
-                <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
-              </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Lokasi <span class="required-star">*</span></label>
-                <input v-model="form.lokasiAset" type="text" placeholder="Contoh: Lab Komputer" class="form-input" required />
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
+              <div class="custom-select">
+                <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" required>
+                  <option value="" disabled>Pilih Status</option>
+                  <option v-for="st in (form.kategoriAset ? filteredStatuses : allStatuses)" :key="st.value" :value="st.value">{{ st.label }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
               </div>
             </div>
 
-            <!-- Middle Column -->
-            <div class="form-column">
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
-                <div class="custom-select">
-                  <select v-model="form.kategoriAset" class="form-input" :class="{ 'placeholder-color': !form.kategoriAset }" required>
-                    <option value="" disabled>Pilih Kategori</option>
-                    <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
+              <div v-if="!isYayasanOrAdmin">
+                <input :value="form.unit" type="text" class="form-input bg-gray-50 cursor-not-allowed" disabled />
               </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
-                <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
-                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" :disabled="!form.kategoriAset" required>
-                    <option value="" disabled>{{ form.kategoriAset ? 'Pilih Status' : 'Pilih kategori terlebih dahulu' }}</option>
-                    <option v-for="st in filteredStatuses" :key="st.value" :value="st.value">{{ st.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
+              <div v-else class="custom-select">
+                <select v-model="form.unit" class="form-input" :class="{ 'placeholder-color': !form.unit }" required>
+                  <option value="" disabled>Pilih Unit</option>
+                  <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
               </div>
             </div>
 
-            <!-- Right Column -->
-            <div class="form-column">
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
-                <div v-if="!isYayasanOrAdmin">
-                  <input :value="form.unit" type="text" class="form-input bg-gray-50 cursor-not-allowed" disabled />
-                </div>
-                <div v-else class="custom-select">
-                  <select v-model="form.unit" class="form-input" :class="{ 'placeholder-color': !form.unit }" required>
-                    <option value="" disabled>Pilih Unit</option>
-                    <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
-              </div>
+            <!-- Row 2 -->
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Merk <span class="required-star">*</span></label>
+              <input v-model="form.merkAset" type="text" placeholder="Contoh: Sidu" class="form-input" required />
+            </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
-                <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan link URL gambar" class="form-input" required />
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
+              <div class="custom-select">
+                <select v-model="form.kategoriAset" class="form-input" :class="{ 'placeholder-color': !form.kategoriAset }" required>
+                  <option value="" disabled>Pilih Kategori</option>
+                  <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
               </div>
+            </div>
+
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
+              <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan link URL gambar" class="form-input" required />
+            </div>
+
+            <!-- Row 3 & 4 mixed -->
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Total Kuantitas <span class="required-star">*</span></label>
+              <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
+            </div>
+
+            <div class="form-group keterangan-group">
+              <label class="s2-subtitle mb-2 block">Keterangan</label>
+              <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="s2-subtitle mb-2 block">Lokasi <span class="required-star">*</span></label>
+              <input v-model="form.lokasiAset" type="text" placeholder="Contoh: Lab Komputer" class="form-input" required />
             </div>
           </div>
 
-          <div class="form-actions mt-12">
+          <div class="form-actions mt-24">
             <button type="button" @click="router.back()" class="btn-cancel">Batal</button>
             <button type="submit" class="btn-submit" :disabled="isSubmitting">
               {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
@@ -214,12 +207,22 @@ const handleSubmit = async () => {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 32px;
+}
+
+.keterangan-group {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.keterangan-group .form-textarea {
+  height: calc(100% - 28px); /* Adjusted label height offset */
+  min-height: 120px;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 .form-input, .custom-select select {
@@ -266,6 +269,23 @@ select option {
   outline: none;
   resize: vertical;
   min-height: 120px;
+}
+
+.form-input-small {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.form-group-sub {
+  margin-bottom: 0px;
+}
+
+.form-group-sub label {
+  margin-bottom: 8px !important;
 }
 
 .custom-select {

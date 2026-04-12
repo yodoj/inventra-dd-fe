@@ -120,6 +120,21 @@ const router = createRouter({
       path: '/pengadaan/pengajuan/tinjau/bukti/:idPengadaan',
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
+    },
+    {
+      path: '/peminjaman',
+      name: 'managed-peminjaman',
+      component: () => import('../views/PeminjamanAset/ManagedPeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/tambah',
+      name: 'add-peminjaman',
+      component: () => import('../views/PeminjamanAset/AddPeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/tambah-lintas-unit',
+      name: 'add-peminjaman-lintas-unit',
+      component: () => import('../views/PeminjamanAset/AddPeminjamanLintasUnitView.vue'),
     }
   ],
 })
