@@ -149,7 +149,7 @@ const handleTambahAkun = () => {
                 <input 
                   v-model="searchQuery" 
                   type="text" 
-                  placeholder="Cari akun" 
+                  placeholder="Cari akun pengguna" 
                   @keyup.enter="handleSearch"
                 />
               </div>
