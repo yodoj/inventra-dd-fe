@@ -135,6 +135,22 @@ const router = createRouter({
       path: '/peminjaman/tambah-lintas-unit',
       name: 'add-peminjaman-lintas-unit',
       component: () => import('../views/PeminjamanAset/AddPeminjamanLintasUnitView.vue'),
+    },
+
+    {
+      path: '/pengadaan/rusak',
+      name: 'penggantian-barang-rusak-all',
+      component: () => import('../views/PenggantianBarangRusak/GetAll.vue'),
+    },
+    {
+      path: '/penggantian/create',
+      name: 'penggantian-barang-rusak-create',
+      component: () => import('../views/PenggantianBarangRusak/CreatePengajuanPenggantian.vue'),
+    },
+    {
+      path: '/penggantian/edit/:idPenggantian',
+      name: 'penggantian-barang-rusak-edit',
+      component: () => import('../views/PenggantianBarangRusak/UpdatePengajuanpenggantianBarang.vue'),
     }
   ],
 })

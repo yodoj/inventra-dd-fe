@@ -27,6 +27,8 @@ export interface TinjauPengadaanResponseDTO {
   estimasiHarga: number;
   waktuPengadaan: string;
   namaPengaju: string;
+  unitPengaju: string;
+  rolePengaju: string;
 
   statusPengadaan?: Status;
   alasan?: string;
