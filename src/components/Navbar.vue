@@ -12,7 +12,8 @@ import {
   ClipboardCheck,
   RefreshCw,
   BarChart3,
-  PieChart
+  PieChart,
+  Users
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
@@ -215,6 +216,9 @@ const canRequestPengadaan = () => {
           <div v-if="isProfileOpen" class="profile-dropdown fade-in">
             <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
+            </router-link>
+            <router-link v-if="isAdmin() || isSarpras()" to="/profile/pengelolaan-akun" class="dropdown-item">
+              <Users class="icon-sm" /> Pengelolaan Profile
             </router-link>
             <button @click="confirmLogout" class="dropdown-item logout-btn">
               <LogOut class="icon-sm" /> Logout

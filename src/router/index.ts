@@ -136,6 +136,11 @@ const router = createRouter({
       path: '/penggantian/edit/:idPenggantian',
       name: 'penggantian-barang-rusak-edit',
       component: () => import('../views/PenggantianBarangRusak/UpdatePengajuanpenggantianBarang.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun',
+      name: 'pengelolaan-akun',
+      component: () => import('../views/Profile/PengelolaanAkunView.vue'),
     }
   ],
 })
