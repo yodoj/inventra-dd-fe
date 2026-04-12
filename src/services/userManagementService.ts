@@ -62,5 +62,10 @@ export const userManagementService = {
 
     const response = await apiClient.get<UserManagementResponse>(`/api/users?${params.toString()}`)
     return response.data
+  },
+  
+  async createUser(userData: any) {
+    const response = await apiClient.post('/api/users', userData)
+    return response.data
   }
 }

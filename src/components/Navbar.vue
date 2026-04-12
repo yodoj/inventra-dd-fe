@@ -154,7 +154,32 @@ const canRequestPengadaan = () => {
           </div>
         </div>
 
+        <!-- Peminjaman Aset -->
         <div 
+          v-if="isAdmin()"
+          class="nav-item-dropdown"
+          @mouseenter="handleMouseEnter('peminjaman')"
+          @mouseleave="handleMouseLeave"
+        >
+          <div 
+            class="nav-item" 
+            :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
+          >
+            Peminjaman Aset <ChevronDown class="icon-xs" />
+            <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
+          </div>
+          <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
+            <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
+              Pengajuan - Guru, Siswa
+            </div>
+            <div @click="protectedNavigate('/peminjaman/sarpras')" class="dropdown-item" style="cursor: pointer;">
+              Pengajuan dan Persetujuan - Sarpras
+            </div>
+          </div>
+        </div>
+
+        <div 
+          v-else
           class="nav-item" 
           :class="{ active: route.path.startsWith('/peminjaman') }"
           @click="protectedNavigate('/peminjaman')"

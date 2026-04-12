@@ -13,7 +13,6 @@ export const useUserManagementStore = defineStore('userManagement', () => {
 
   const fetchUsers = async (page: number = 1, limit: number = 10, search?: string, role?: string, unit?: string) => {
     loading.value = true
-    const toast = useToastStore()
     const authStore = useAuthStore()
     
     try {
@@ -31,7 +30,23 @@ export const useUserManagementStore = defineStore('userManagement', () => {
         currentPage.value = response.data.current_page
       }
     } catch (error: any) {
-      toast.showToast(error.response?.data?.message || 'Gagal mengambil data akun pengguna', 'error')
+      // Error handled by global API interceptor in api.ts
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const createUser = async (userData: any) => {
+    loading.value = true
+    const toastStore = useToastStore()
+    try {
+      const response = await userManagementService.createUser(userData)
+      toastStore.success('Success', response.message || 'Akun pengguna berhasil ditambahkan')
+      return { success: true, message: response.message }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Gagal menambahkan akun pengguna'
+      // Error toast is handled by global api.ts interceptor to avoid double notifications
+      return { success: false, message: errorMessage }
     } finally {
       loading.value = false
     }
@@ -43,6 +58,7 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     totalItems,
     totalPages,
     currentPage,
-    fetchUsers
+    fetchUsers,
+    createUser
   }
 })

@@ -141,6 +141,11 @@ const router = createRouter({
       path: '/profile/pengelolaan-akun',
       name: 'pengelolaan-akun',
       component: () => import('../views/Profile/PengelolaanAkunView.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun/tambah',
+      name: 'tambah-akun',
+      component: () => import('../views/Profile/TambahAkunView.vue'),
     }
   ],
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useAuthStore } from '@/stores/auth';
 import SearchIcon from '@/components/icons/SearchIcon.vue';
@@ -8,6 +9,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Trash2, Eye, Users, UserCog, Pl
 
 const userStore = useUserManagementStore();
 const authStore = useAuthStore();
+const router = useRouter();
 
 const activeTab = ref<'terdaftar' | 'unit_lain'>('terdaftar');
 const searchQuery = ref('');
@@ -18,6 +20,8 @@ const isAdmin = computed(() => authStore.userRole === 'ADMIN');
 
 const roles = [
   { label: 'Semua Role', value: 'Semua Role' },
+  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Yayasan', value: 'YAYASAN' },
   { label: 'Sarpras', value: 'SARPRAS' },
   { label: 'Kepsek', value: 'KEPSEK' },
   { label: 'Guru', value: 'GURU' },
@@ -84,6 +88,10 @@ const formatRoleDisplay = (role: string) => {
 onMounted(() => {
   loadUsers();
 });
+
+const handleTambahAkun = () => {
+  router.push({ name: 'tambah-akun' });
+};
 </script>
 
 <template>
@@ -155,7 +163,7 @@ onMounted(() => {
 
         <!-- Create Account Button -->
         <div class="flex justify-end mb-16">
-          <button class="btn-add font-semibold text-sm shadow-md">
+          <button @click="handleTambahAkun" class="btn-add font-semibold text-sm shadow-md">
             <Plus class="w-5 h-5" /> Buat Akun
           </button>
         </div>
@@ -195,14 +203,14 @@ onMounted(() => {
                   <td v-if="isAdmin" class="font-bold text-center text-gray-800">{{ user.unit || '-' }}</td>
                   <td>
                     <div class="flex justify-center gap-2">
-                      <button class="btn-icon btn-edit" title="Ubah">
-                        <EditIcon class="w-4 h-4" />
+                       <button class="btn-icon btn-edit" title="Ubah">
+                        <EditIcon class="w-3.5 h-3.5" />
                       </button>
                       <button class="btn-icon btn-delete" title="Hapus">
-                        <Trash2 class="icon-sm" />
+                        <Trash2 class="w-3.5 h-3.5" />
                       </button>
                       <button class="btn-icon btn-view" title="Detail">
-                        <Eye class="icon-sm" />
+                        <Eye class="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -470,8 +478,8 @@ table tbody tr:last-child td {
 .status-role { background-color: #003B5C; color: white; }
 
 .btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
