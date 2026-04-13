@@ -28,11 +28,13 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      const authStore = useAuthStore();
-      authStore.logout();
-      toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
-      router.push('/login');
+      // Token expired or invalid (skip for login requests to avoid incorrect error message)
+      if (!error.config?.url?.includes('/api/auth/login')) {
+        const authStore = useAuthStore();
+        authStore.logout();
+        toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+        router.push('/login');
+      }
       return Promise.reject(error);
     }
 
