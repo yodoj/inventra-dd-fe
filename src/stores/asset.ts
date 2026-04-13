@@ -9,6 +9,11 @@ export interface Asset {
     nama_aset: string;
     merk_aset?: string;
     qty_aset?: number;
+    qty_tersedia?: number;
+    qty_rusak?: number;
+    qty_perbaikan?: number;
+    qty_dimusnahkan?: number;
+    qty_dipinjam?: number;
     lokasi_aset?: string;
     kategori_aset: string;
     status_aset: string;
