@@ -14,7 +14,8 @@ const authStore = useAuthStore();
 const toastStore = useToastStore();
 
 const form = ref({
-  unitTujuan: '',
+  unitAsalAset: '',
+  unitTujuan: authStore.user?.unit || '',
   idAset: '',
   waktuPeminjaman: '',
   waktuPengembalian: '',
@@ -22,7 +23,10 @@ const form = ref({
   qty: 1
 });
 
-const units = ['KB-TK', 'SD', 'SMP', 'SMA'].filter(u => u !== authStore.user?.unit);
+const allUnits = ['KB-TK', 'SD', 'SMP', 'SMA'];
+const unitsAsal = allUnits.filter(u => u !== authStore.user?.unit);
+
+
 const borrowableAssets = ref<any[]>([]);
 const isLoadingAssets = ref(false);
 const showConfirmModal = ref(false);
@@ -38,7 +42,7 @@ const maxQty = computed(() => {
 });
 
 // Watch for unit change to fetch assets
-watch(() => form.value.unitTujuan, async (newUnit) => {
+watch(() => form.value.unitAsalAset, async (newUnit) => {
   form.value.idAset = '';
   borrowableAssets.value = [];
   if (newUnit) {
@@ -66,7 +70,7 @@ watch(() => form.value.qty, (newVal) => {
 });
 
 const validateForm = () => {
-    if (!form.value.unitTujuan || !form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
+    if (!form.value.unitAsalAset || !form.value.unitTujuan || !form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
     toastStore.error('Error', 'Semua field wajib diisi');
     return false;
   }
@@ -117,24 +121,38 @@ const handleSubmit = async () => {
       <div class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="peminjaman-form">
           <div class="form-grid">
-            <!-- Unit Tujuan -->
+            <!-- Unit Asal Aset -->
             <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Unit Asal Aset <span class="required-star">*</span></label>
               <div class="custom-select">
-                <select v-model="form.unitTujuan" class="form-input" :class="{ 'placeholder-color': !form.unitTujuan }" required>
+                <select v-model="form.unitAsalAset" class="form-input" :class="{ 'placeholder-color': !form.unitAsalAset }" required>
                   <option value="" disabled>Pilih unit asal aset</option>
-                  <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                  <option v-for="u in unitsAsal" :key="u" :value="u">{{ u }}</option>
                 </select>
                 <ChevronDown class="select-icon" />
               </div>
             </div>
 
+            <!-- Unit Tujuan -->
+            <div class="form-group col-span-1">
+              <label class="s2-subtitle mb-2 block">Unit Tujuan <span class="required-star">*</span></label>
+              <div class="custom-select">
+                <select v-model="form.unitTujuan" class="form-input" :class="{ 'placeholder-color': !form.unitTujuan }" required>
+                  <option value="" disabled>Pilih unit tujuan</option>
+                  <option v-for="u in allUnits" :key="u" :value="u">{{ u }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
+            </div>
+
+            <div class="form-group col-span-1"></div>
+
             <!-- Aset Selection -->
             <div class="form-group col-span-2">
               <label class="s2-subtitle mb-2 block">Pilih Aset <span class="required-star">*</span></label>
               <div class="custom-select">
-                <select v-model="form.idAset" class="form-input" :class="{ 'placeholder-color': !form.idAset }" :disabled="!form.unitTujuan || isLoadingAssets" required>
-                  <option value="" disabled>{{ !form.unitTujuan ? 'Pilih unit tujuan terlebih dahulu' : 'Pilih aset yang ingin dipinjam' }}</option>
+                <select v-model="form.idAset" class="form-input" :class="{ 'placeholder-color': !form.idAset }" :disabled="!form.unitAsalAset || isLoadingAssets" required>
+                  <option value="" disabled>{{ !form.unitAsalAset ? 'Pilih unit asal terlebih dahulu' : 'Pilih aset yang ingin dipinjam' }}</option>
                   <option v-for="asset in borrowableAssets" :key="asset.idAset" :value="asset.idAset">
                     [{{ asset.kodeAset }}] {{ asset.namaAset }}{{ asset.merkAset ? ` - ${asset.merkAset}` : '' }} (Tersedia: {{ asset.qtyTersedia }})
                   </option>
