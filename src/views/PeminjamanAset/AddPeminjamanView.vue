@@ -18,8 +18,15 @@ const form = ref({
   waktuPeminjaman: '',
   waktuPengembalian: '',
   tujuanPeminjaman: '',
-  qty: 1
+  qty: 1,
+  unitTujuan: authStore.user?.unit || ''
 });
+
+const isSarprasOrAdmin = computed(() => {
+  return ['SARPRAS', 'ADMIN', 'SUPERADMIN'].includes(authStore.userRole || '');
+});
+
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 const borrowableAssets = ref<any[]>([]);
 const isLoadingAssets = ref(false);
@@ -59,11 +66,14 @@ const fetchAssets = async (unit: string) => {
 watch(() => authStore.user?.unit, (newUnit) => {
   if (newUnit) {
     fetchAssets(newUnit);
+    if (!form.value.unitTujuan) {
+      form.value.unitTujuan = newUnit;
+    }
   }
 }, { immediate: true });
 
 const validateForm = () => {
-  if (!form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
+  if (!form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty || (isSarprasOrAdmin.value && !form.value.unitTujuan)) {
     toastStore.error('Error', 'Semua field wajib diisi');
     return false;
   }
@@ -129,7 +139,7 @@ const handleSubmit = async () => {
             </div>
 
             <!-- Kuantitas -->
-            <div class="form-group">
+            <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
               <input 
                 v-model.number="form.qty" 
@@ -141,6 +151,19 @@ const handleSubmit = async () => {
                 required 
               />
             </div>
+
+            <!-- Unit Tujuan (Visible for Sarpras/Admin) -->
+            <div v-if="isSarprasOrAdmin" class="form-group col-span-1">
+              <label class="s2-subtitle mb-2 block">Unit Tujuan <span class="required-star">*</span></label>
+              <div class="custom-select">
+                <select v-model="form.unitTujuan" class="form-input" :class="{ 'placeholder-color': !form.unitTujuan }" required>
+                  <option value="" disabled>Pilih unit tujuan</option>
+                  <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
+            </div>
+            <div v-else class="form-group col-span-1"></div>
 
             <!-- Waktu Peminjaman -->
             <div class="form-group">
