@@ -166,6 +166,10 @@ const prevPage = () => {
 };
 
 onMounted(() => {
+  // For SARPRAS, default to their unit if no filter is set
+  if (authStore.userRole === 'SARPRAS' && authStore.user?.unit) {
+    unitFilter.value = authStore.user.unit;
+  }
   loadAssets();
 });
 
