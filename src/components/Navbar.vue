@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { 
-  ChevronDown, 
-  User, 
-  LogOut, 
+import {
+  ChevronDown,
+  User,
+  LogOut,
   Settings,
   LayoutDashboard,
   FileText,
@@ -69,7 +69,7 @@ const handleLogout = () => {
 };
 
 const closeAll = (e: MouseEvent) => {
-  if (!(e.target as HTMLElement).closest('.nav-item-dropdown') && 
+  if (!(e.target as HTMLElement).closest('.nav-item-dropdown') &&
       !(e.target as HTMLElement).closest('.profile-section')) {
     openDropdown.value = null;
     isProfileOpen.value = false;
@@ -97,8 +97,13 @@ const canSeeReports = () => {
 };
 
 const canSeeRusak = () => {
-  // Siswa, Guru, Sarpras, and Admin can see "Penggantian Barang Rusak"
-  return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
+  // Siswa, Guru, and Admin can see "Penggantian Barang Rusak"
+  return ['ADMIN', 'GURU', 'SISWA'].includes(authStore.userRole || '');
+};
+
+const canSeeRusakTinjau = () => {
+  // Sarpras and Admin can see "Peninjauan Penggantian Barang Rusak"
+  return ['ADMIN', 'SARPRAS'].includes(authStore.userRole || '');
 };
 
 const canApprovePengadaan = () => {
@@ -126,13 +131,13 @@ const canRequestPengadaan = () => {
         </router-link>
 
         <!-- Manajemen Aset -->
-        <div 
+        <div
           class="nav-item-dropdown"
           @mouseenter="handleMouseEnter('aset')"
           @mouseleave="handleMouseLeave"
         >
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: openDropdown === 'aset' || route.path.startsWith('/assets') }"
           >
             Manajemen Aset <ChevronDown class="icon-xs" />
@@ -153,8 +158,8 @@ const canRequestPengadaan = () => {
           </div>
         </div>
 
-        <div 
-          class="nav-item" 
+        <div
+          class="nav-item"
           :class="{ active: route.path.startsWith('/peminjaman') }"
           @click="protectedNavigate('/peminjaman')"
         >
@@ -163,13 +168,13 @@ const canRequestPengadaan = () => {
         </div>
 
         <!-- Pengadaan Aset -->
-        <div 
+        <div
           class="nav-item-dropdown"
           @mouseenter="handleMouseEnter('pengadaan')"
           @mouseleave="handleMouseLeave"
         >
-          <div 
-            class="nav-item" 
+          <div
+            class="nav-item"
             :class="{ active: openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan') }"
           >
             Pengadaan Aset <ChevronDown class="icon-xs" />
@@ -181,6 +186,9 @@ const canRequestPengadaan = () => {
             </div>
             <div v-if="canSeeRusak()" @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
               <RefreshCw class="icon-sm" /> Penggantian Barang Rusak
+            </div>
+            <div v-if="canSeeRusakTinjau()" @click="protectedNavigate('/pengadaan/rusak/tinjau')" class="dropdown-item" style="cursor: pointer;">
+              <RefreshCw class="icon-sm" /> Peninjauan Penggantian Barang Rusak
             </div>
             <div v-if="canApprovePengadaan()" @click="protectedNavigate('/pengadaan/pengajuan/tinjau')" class="dropdown-item" style="cursor: pointer;">
               <ClipboardCheck class="icon-sm" /> Persetujuan Pengadaan Barang
@@ -211,7 +219,7 @@ const canRequestPengadaan = () => {
               <img src="@/assets/avatar-icon.png" alt="User Avatar" />
             </div>
           </button>
-          
+
           <div v-if="isProfileOpen" class="profile-dropdown fade-in">
             <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
@@ -311,7 +319,7 @@ const canRequestPengadaan = () => {
 
 .active-indicator {
   position: absolute;
-  top: -20px; 
+  top: -20px;
   left: 0;
   width: 100%;
   height: 4px;
@@ -341,7 +349,7 @@ const canRequestPengadaan = () => {
 .dropdown-menu::before {
   content: "";
   position: absolute;
-  top: -15px; 
+  top: -15px;
   left: 0;
   width: 100%;
   height: 15px;
