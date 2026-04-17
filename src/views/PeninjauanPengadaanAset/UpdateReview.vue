@@ -271,10 +271,8 @@ const allowedNextStatuses = computed(() => {
 });
 
 
-function onCancel() {
-  if (!store.current) return;
-  form.statusPengadaan = store.current.statusPengadaan || "";
-  form.alasan = store.current.alasan || "";
+function onCancel(){
+  router.push("/pengadaan/pengajuan/tinjau")
 }
 
 

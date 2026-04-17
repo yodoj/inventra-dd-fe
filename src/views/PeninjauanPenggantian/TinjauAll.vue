@@ -6,33 +6,31 @@ import EditIcon from '@/components/icons/EditIcon.vue'
 import { ChevronDown } from 'lucide-vue-next'
 import 'primeicons/primeicons.css'
 
-import { useTinjauPengadaanStore } from '@/stores/tinjauPengadaanStore'
+import { useTinjauPenggantianStore } from '@/stores/tinjauPenggantianStore'
 import { useAuthStore } from '@/stores/auth'
 
 type TableRow = {
-  idPengadaan: string
+  idPenggantian: string
   namaPengaju: string
   rolePengaju: string
   unitPengaju: string
-  gambar: string
-  nama: string
+  linkGambar: string
+  namaAset: string
   merk: string
   qty: number
-  tanggal: string
-  harga: number
+  waktuPenggatian: string
   alasan: string
   namaReviewer: string
   reviewerRole: string
-  tanggalReview: string | null
-  statusPengadaan: string
-  kepsekFirstReviewedAt: string | null
-  yayasanFirstReviewedAt: string | null
+  createdAt: string | null
+  statusPenggantian: string
+  updatedAt: string | null
 }
 
 const auth = useAuthStore()
 const role = computed(() => auth.userRole)
 
-const store = useTinjauPengadaanStore()
+const store = useTinjauPenggantianStore()
 const router = useRouter()
 
 const q = ref('')
@@ -43,10 +41,8 @@ const sortOrder = ref('asc')
 const statuses = [
   { label: 'Semua Status', value: 'ALL' },
   { label: 'Diajukan', value: 'DIAJUKAN' },
-  { label: 'Disetujui oleh Kepsek', value: 'DISETUJUI_KEPSEK' },
-  { label: 'Disetujui oleh Yayasan', value: 'DISETUJUI_YAYASAN' },
-  { label: 'Ditolak', value: 'DITOLAK' },
-  { label: 'Dibeli', value: 'DIBELI' },
+  { label: 'Disetujui', value: 'DISETUJUI' },
+  { label: 'Ditolak', value: 'DITOLAK' }
 ]
 
 function getSortIcon(column: string) {
@@ -65,26 +61,24 @@ function sortBy(key: string) {
   }
 }
 
-function getStatusClass(statusPengadaan: string) {
+function getStatusClass(statusPenggantian: string) {
   const map: Record<string, string> = {
     DIAJUKAN: 'status-diajukan',
-    DISETUJUI_KEPSEK: 'status-kepsek',
-    DISETUJUI_YAYASAN: 'status-yayasan',
+    DISETUJUI: 'status-disetujui',
     DITOLAK: 'status-ditolak',
-    DIBELI: 'status-yayasan',
   }
-  return map[statusPengadaan] || ''
+  return map[statusPenggantian] || ''
 }
 
-function formatStatus(statusPengadaan: string) {
-  return String(statusPengadaan || '').replace(/_/g, ' ')
+function formatStatus(statusPenggantian: string) {
+  return String(statusPenggantian || '').replace(/_/g, ' ')
 }
 
 function formatRole(role: string) {
   if (!role) return ''
   const r = String(role).toLowerCase()
-  if (r === 'kepsek') return 'Kepsek'
-  if (r === 'yayasan') return 'Yayasan'
+  if (r === 'sarpras') return 'sarpras'
+  if (r === 'admin') return 'admin'
   return role
 }
 
@@ -95,18 +89,10 @@ function formatDate(isoOrDate: string | null) {
   return `${day}/${m}/${y}`
 }
 
-function formatRupiah(n: number | string) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(Number(n || 0))
-}
-
 async function fetchAll() {
   try {
     await store.fetchAll({
-      status_pengadaan: statusFilter.value === 'ALL' ? null : statusFilter.value,
+      status_penggantian: statusFilter.value === 'ALL' ? null : statusFilter.value,
       search: q.value || null,
     })
   } catch (e) {
@@ -128,35 +114,26 @@ onMounted(fetchAll)
 
 const tableRows = computed(() => {
   const data = store.items.map((it) => ({
-    idPengadaan: it.idPengadaan ?? 0,
+    idPenggantian: it.idPenggantian ?? 0,
     namaPengaju: it.namaPengaju ?? '-',
     unitPengaju: it.unitPengaju ?? '-',
     rolePengaju: it.rolePengaju ?? '-',
-    gambar: it.linkGambar ?? '',
-    nama: it.namaAset ?? '',
+    linkGambar: it.linkGambar ?? '',
+    namaAset: it.namaAset ?? '',
     merk: it.merk ?? '',
     qty: it.qty ?? 0,
-    tanggal: it.waktuPengadaan ?? '',
-    harga: it.estimasiHarga ?? 0,
+    waktuPenggatian: it.waktuPenggantian ?? '',
     alasan: it.alasan ?? '-',
     namaReviewer: it.namaReviewer ?? '-',
     reviewerRole: it.reviewerRole ?? '-',
-    tanggalReview: it.updatedAt ?? null,
-    statusPengadaan: it.statusPengadaan ?? 'DIAJUKAN',
-    kepsekFirstReviewedAt: it.kepsekFirstReviewedAt ?? null,
-    yayasanFirstReviewedAt: it.yayasanFirstReviewedAt ?? null,
+    createdAt: it.createdAt ?? null,
+    statusPenggantian: it.statusPenggantian ?? 'DIAJUKAN',
+    updatedAt: it.updatedAt ?? null,
   }))
   .filter((row) => {
     // filter 2 hari
-    if (role.value === 'YAYASAN') {
-      return !row.yayasanFirstReviewedAt || withinDays(row.yayasanFirstReviewedAt, 2)
-    }
+    return !row.createdAt || withinDays(row.createdAt, 2)
 
-    if (role.value === 'KEPSEK') {
-      return !row.kepsekFirstReviewedAt || withinDays(row.kepsekFirstReviewedAt, 2)
-    }
-
-    return true
   })
 
   if (sortKey.value) {
@@ -185,61 +162,36 @@ function withinDays(fromISO: string | null, days = 2) {
 }
 
 function selectAndGoCreate(row: TableRow) {
-  const id = row.idPengadaan
+  const id = row.idPenggantian
   if (!id) return
-  store.selectPengadaan(Number(id))
-  router.push(`/pengadaan/pengajuan/tinjau/${id}`)
+  store.selectPenggantian(String(id))
+  router.push(`/penggantian/pengajuan/tinjau/${id}`)
 }
 
 function selectAndGoEdit(row: TableRow) {
-  const id = row.idPengadaan
+  const id = row.idPenggantian
   if (!id) return
-  store.selectPengadaan(Number(id))
-  router.push(`/pengadaan/pengajuan/tinjau/update/${id}`)
-}
-
-function selectAndGoBeli(row: TableRow) {
-  const id = row.idPengadaan
-  if (!id) return
-  store.selectPengadaan(Number(id))
-  router.push(`/pengadaan/pengajuan/tinjau/bukti/${id}`)
+  store.selectPenggantian(String(id))
+  router.push(`/penggantian/pengajuan/tinjau/update/${id}`)
 }
 
 function getActionType(row: TableRow) {
   const r = role.value
-  const status = row.statusPengadaan
-  const yayasanSudahReview = !!row.yayasanFirstReviewedAt
-  const kepsekSudahReview = !!row.kepsekFirstReviewedAt
+  const status = row.statusPenggantian
+  const sudahReview = !!row.createdAt
+  const actions = []
 
-  if (r === 'YAYASAN') {
-    const actions = []
-    if (status === 'DISETUJUI_KEPSEK' && !yayasanSudahReview) actions.push('CREATE')
-    if (status === 'DISETUJUI_YAYASAN') actions.push('BELI')
-    if (yayasanSudahReview && status !== 'DIBELI') {
-      if (withinDays(row.yayasanFirstReviewedAt, 2)) actions.push('EDIT')
-    }
-    return actions.length > 0 ? actions : ['NONE']
+  if (status === 'DIAJUKAN' && !sudahReview) actions.push('CREATE')
+  if (sudahReview && status !== 'DIAJUKAN') {
+    if (withinDays(row.createdAt, 2)) actions.push('EDIT')
   }
-
-  if (r === 'KEPSEK') {
-    if (status === 'DIAJUKAN' && !kepsekSudahReview) return ['CREATE']
-    if (!yayasanSudahReview && kepsekSudahReview) {
-      if (
-        (status === 'DITOLAK' || status === 'DISETUJUI_KEPSEK') &&
-        withinDays(row.kepsekFirstReviewedAt, 2)
-      ) {
-        return ['EDIT']
-      }
-    }
-  }
-
-  return ['NONE']
+  return actions.length > 0 ? actions : ['NONE']
 }
 </script>
 
 <template>
   <main class="page">
-    <h1 class="title">Peninjauan Pengajuan Pengadaan Aset</h1>
+    <h1 class="title">Peninjauan Pengajuan Penggantian Barang Rusak</h1>
 
     <div class="filter-card mb-20">
       <h3 class="filter-title">Filter Pengajuan</h3>
@@ -261,7 +213,7 @@ function getActionType(row: TableRow) {
             <input
               v-model="q"
               type="text"
-              placeholder="Cari nama pengaju, nama aset, atau merk"
+              placeholder="Cari nama barang, atau merk"
               @keyup.enter="handleApplyFilter"
             />
           </div>
@@ -276,38 +228,33 @@ function getActionType(row: TableRow) {
 
     <div class="table-wrapper">
       <table>
+
         <thead>
           <tr>
             <th>Nama Pengaju</th>
-            <th>Gambar</th>
-            <th @click="sortBy('nama')" class="sortable">
+            <th>Contoh Gambar</th>
+            <th @click="sortBy('namaAset')" class="sortable">
               <div class="th-inner">
-                <span class="th-text">Nama</span>
-                <i class="sort-icon pi" :class="getSortIcon('nama')"></i>
+                <span class="th-text">Nama Barang</span>
+                <i class="sort-icon pi" :class="getSortIcon('namaAset')"></i>
               </div>
             </th>
             <th>Merk</th>
             <th>Qty</th>
-            <th @click="sortBy('tanggal')" class="sortable">
+            <th @click="sortBy('waktuPenggatian')" class="sortable">
               <div class="th-inner">
-                <span class="th-text">Tanggal</span>
-                <i class="sort-icon pi" :class="getSortIcon('tanggal')"></i>
-              </div>
-            </th>
-            <th @click="sortBy('harga')" class="sortable">
-              <div class="th-inner">
-                <span class="th-text">Harga</span>
-                <i class="sort-icon pi" :class="getSortIcon('harga')"></i>
+                <span class="th-text">Waktu Penggatian</span>
+                <i class="sort-icon pi" :class="getSortIcon('waktuPenggatian')"></i>
               </div>
             </th>
             <th>Alasan &amp; Riwayat Review</th>
-            <th @click="sortBy('statusPengadaan')">Status</th>
+            <th @click="sortBy('statusPenggantian')">Status</th>
             <th>Aksi</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr v-for="row in tableRows" :key="row.idPengadaan">
+          <tr v-for="row in tableRows" :key="row.idPenggantian">
             <td>
               <div class="pengaju-wrapper">
                 <div class="bold">{{ row.namaPengaju }}</div>
@@ -316,16 +263,15 @@ function getActionType(row: TableRow) {
             </td>
             <td>
               <div class="img-box">
-                <img :src="row.gambar" />
+                <img :src="`http://localhost:8080/uploads/contoh-gambar/${row.linkGambar}`" />
               </div>
             </td>
-            <td class="bold">{{ row.nama }}</td>
+            <td class="bold">{{ row.namaAset }}</td>
             <td>{{ row.merk }}</td>
             <td class="center">{{ row.qty }}</td>
             <td class="date-column">
-              <span>{{ formatDate(row.tanggal) }}</span>
+              <span>{{ formatDate(row.waktuPenggatian) }}</span>
             </td>
-            <td>{{ formatRupiah(row.harga) }}</td>
 
             <td>
               <div class="alasan-wrapper">
@@ -333,14 +279,14 @@ function getActionType(row: TableRow) {
                 <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
                   Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span> ({{
                     formatRole(row.reviewerRole)
-                  }}) pada <span class="highlight">{{ formatDate(row.tanggalReview) }}</span>
+                  }}) pada <span class="highlight">{{ formatDate(row.updatedAt) }}</span>
                 </div>
               </div>
             </td>
 
             <td class="center">
-              <span :class="['badge', getStatusClass(row.statusPengadaan)]">
-                {{ formatStatus(row.statusPengadaan) }}
+              <span :class="['badge', getStatusClass(row.statusPenggantian)]">
+                {{ formatStatus(row.statusPenggantian) }}
               </span>
             </td>
 
@@ -354,16 +300,6 @@ function getActionType(row: TableRow) {
                   title="Berikan Peninjauan"
                 >
                   <i class="pi pi-comments"></i>
-                </button>
-
-                <button
-                  v-if="getActionType(row).includes('BELI')"
-                  type="button"
-                  class="btn-circle buy-btn"
-                  @click.stop="selectAndGoBeli(row)"
-                  title="Proses Pembelian"
-                >
-                  <i class="pi pi-shopping-cart"></i>
                 </button>
 
                 <button
@@ -384,7 +320,7 @@ function getActionType(row: TableRow) {
           </tr>
 
           <tr v-if="tableRows.length === 0">
-            <td colspan="10" class="empty">
+            <td colspan="9" class="empty">
               {{
                 statusFilter !== 'ALL' && tableRows.length === 0
                   ? 'Tidak ada pengajuan dengan status tersebut'
@@ -413,7 +349,6 @@ function getActionType(row: TableRow) {
   margin-bottom: 1.5rem;
 }
 
-/* ── Filter Card ── */
 .filter-card {
   background: white;
   padding: 24px 28px 20px;
@@ -454,7 +389,6 @@ function getActionType(row: TableRow) {
   font-weight: 500;
 }
 
-/* Custom Select */
 .custom-select {
   position: relative;
   min-width: 220px;
@@ -586,6 +520,7 @@ table {
 thead {
   background: #00588f;
   color: white;
+  position: sticky;
 }
 
 th {
@@ -650,8 +585,7 @@ tbody tr:hover {
 }
 
 .status-diajukan { background: #F8FDD0; color: #9C9A23; }
-.status-kepsek   { background: #ecf8fd; color: #1fa2ff; }
-.status-yayasan  { background: #ffeed9; color: #aa5b00; }
+.status-disetujui   { background: #ecf8fd; color: #1fa2ff; }
 .status-ditolak  { background: #fbe5e6; color: #dc3545; }
 
 .empty {
@@ -689,10 +623,8 @@ tbody tr:hover {
 
 .edit-btn   { background: #00588f; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
 .review-btn { background: #198754; color: white; }
-.buy-btn    { background: #ff9800; color: white; box-shadow: 0 2px 6px rgba(255,152,0,0.3); }
 
 .edit-btn:hover  { background: #244d7a; transform: translateY(-1px); }
-.buy-btn:hover   { background: #e68a00; transform: translateY(-1px); }
 
 .no-action-text {
   color: #9ca3af;
@@ -725,13 +657,12 @@ tbody tr:hover {
 .role-text { font-size: 10px; color: #94a3b8; font-weight: 400; text-transform: uppercase; }
 
 th:nth-child(1), td:nth-child(1) { width: 110px; }
-th:nth-child(2), td:nth-child(2) { width: 90px; }
+th:nth-child(2), td:nth-child(2) { width: 110px; }
 th:nth-child(3), td:nth-child(3) { width: 140px; }
-th:nth-child(4), td:nth-child(4) { width: 80px; }
+th:nth-child(4), td:nth-child(4) { width: 120px; }
 th:nth-child(5), td:nth-child(5) { width: 45px; }
-th:nth-child(6), td:nth-child(6) { width: 90px; }
-th:nth-child(7), td:nth-child(7) { width: 110px; }
-th:nth-child(8), td:nth-child(8) { width: 220px; }
-th:nth-child(9), td:nth-child(9) { width: 110px; }
-th:nth-child(10), td:nth-child(10) { width: 70px; }
+th:nth-child(6), td:nth-child(6) { width: 130px; }
+th:nth-child(7), td:nth-child(7) { width: 130px; }
+th:nth-child(8), td:nth-child(8) { width: 100px; }
+th:nth-child(9), td:nth-child(9) { width: 90px; }
 </style>
