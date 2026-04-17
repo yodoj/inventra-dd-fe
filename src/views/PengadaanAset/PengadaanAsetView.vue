@@ -354,6 +354,9 @@ const toggleSort = (column: string) => {
   border-radius: 8px;
   font-size: 14px;
 }
+.search-box input::placeholder {
+  color: #9CA3AF;
+}
 
 .search-icon {
   position: absolute;

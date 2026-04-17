@@ -12,7 +12,8 @@ import {
   ClipboardCheck,
   RefreshCw,
   BarChart3,
-  PieChart
+  PieChart,
+  Users
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
@@ -160,6 +161,33 @@ const canRequestPengadaan = () => {
 
         <div
           class="nav-item"
+        <!-- Peminjaman Aset -->
+        <div
+          v-if="isAdmin()"
+          class="nav-item-dropdown"
+          @mouseenter="handleMouseEnter('peminjaman')"
+          @mouseleave="handleMouseLeave"
+        >
+          <div
+            class="nav-item"
+            :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
+          >
+            Peminjaman Aset <ChevronDown class="icon-xs" />
+            <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
+          </div>
+          <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
+            <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
+              Pengajuan - Guru, Siswa
+            </div>
+            <div @click="protectedNavigate('/peminjaman/sarpras')" class="dropdown-item" style="cursor: pointer;">
+              Pengajuan dan Persetujuan - Sarpras
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="nav-item"
           :class="{ active: route.path.startsWith('/peminjaman') }"
           @click="protectedNavigate('/peminjaman')"
         >
@@ -223,6 +251,9 @@ const canRequestPengadaan = () => {
           <div v-if="isProfileOpen" class="profile-dropdown fade-in">
             <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
+            </router-link>
+            <router-link v-if="isAdmin() || isSarpras()" to="/profile/pengelolaan-akun" class="dropdown-item">
+              <Users class="icon-sm" /> Pengelolaan Profile
             </router-link>
             <button @click="confirmLogout" class="dropdown-item logout-btn">
               <LogOut class="icon-sm" /> Logout
