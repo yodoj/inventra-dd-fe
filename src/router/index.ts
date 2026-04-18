@@ -151,6 +151,32 @@ const router = createRouter({
       path: '/penggantian/edit/:idPenggantian',
       name: 'penggantian-barang-rusak-edit',
       component: () => import('../views/PenggantianBarangRusak/UpdatePengajuanpenggantianBarang.vue'),
+    },
+    {
+      path: '/pengadaan/rusak/tinjau',
+      name: 'peninjauan-penggantian-barang-rusak-all',
+      component: () => import('../views/PeninjauanPenggantian/TinjauAll.vue'),
+    },
+    {
+      path: '/penggantian/pengajuan/tinjau/:penggantianId',
+      name: 'peninjauan-penggantian-barang-rusak-create-review',
+      component: () => import('../views/PeninjauanPenggantian/CreateReview.vue'),
+    },
+
+    {
+      path: '/penggantian/pengajuan/tinjau/update/:penggantianId',
+      name: 'peninjauan-penggantian-barang-rusak-update-review',
+      component: () => import('../views/PeninjauanPenggantian/UpdateReview.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun',
+      name: 'pengelolaan-akun',
+      component: () => import('../views/Profile/PengelolaanAkunView.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun/tambah',
+      name: 'tambah-akun',
+      component: () => import('../views/Profile/TambahAkunView.vue'),
     }
   ],
 })

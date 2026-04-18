@@ -9,6 +9,7 @@ import { useRouter } from "vue-router"
 import { Plus, Trash2, Pencil } from "lucide-vue-next"
 import { useToastStore } from "@/stores/toast"
 import ConfirmationModal from "@/components/ConfirmationModal.vue"
+import { a } from "vue-router/dist/index-Cu9B0wDz.mjs"
 const showDeleteModal = ref(false)
 const selectedId = ref<string | null>(null)
 const router = useRouter()
@@ -26,6 +27,11 @@ type TableRow = {
   tanggal: string
   status: string
   keterangan: string
+  alasan: string
+  reviewCreatedAt: string
+  reviewUpdatedAt: string
+  reviewerRole: string
+  namaReviewer: string
 }
 
 const store = usePenggantianBarangRusakStore()
@@ -40,7 +46,6 @@ const statuses = [
   { label: "Diajukan", value: "DIAJUKAN" },
   { label: "Disetujui", value: "DISETUJUI" },
   { label: "Ditolak", value: "DITOLAK" },
-  { label: "Selesai", value: "SELESAI" }
 ]
 
 function getSortIcon(column: string) {
@@ -79,6 +84,14 @@ function formatDate(date: string | null) {
   return `${day}/${m}/${y}`
 }
 
+function formatRole(role: string) {
+  if (!role) return ''
+  const r = String(role).toLowerCase()
+  if (r === 'sarpras') return 'sarpras'
+  if (r === 'admin') return 'admin'
+  return role
+}
+
 async function fetchAll() {
   try {
     await store.fetchAll({
@@ -112,7 +125,12 @@ const tableRows = computed(() => {
     qty: it.quantity ?? 0,
     tanggal: it.waktuPenggantian ?? "",
     status: it.status ?? "DIAJUKAN",
-    keterangan: it.keterangan ?? "-"
+    keterangan: it.keterangan ?? "-",
+    alasan: it.alasan ?? "-",
+    reviewCreatedAt: it.reviewCreatedAt ?? "",
+    reviewUpdatedAt: it.reviewUpdatedAt ?? "",
+    reviewerRole: it.reviewerRole ?? "",
+    namaReviewer: it.namaReviewer ?? "",
   }))
 
   if (sortKey.value) {
@@ -292,17 +310,15 @@ function canEditDelete(status: string) {
             </td>
 
             <td>
-              <div class="review-wrapper">
+              <div class="alasan-wrapper">
                 <div class="status-main">
                   <span :class="['badge', getStatusClass(row.status)]">
                   {{ formatStatus(row.status) }}
                 </span>
                 </div>
-                <!-- <div v-if="row.namaReviewer && row.namaReviewer !== '-'" class="reviewer-info">
-                  Terakhir direview oleh <span class="highlight">{{ row.namaReviewer }}</span> ({{
-                    formatRole(row.reviewerRole)
-                  }}) pada <span class="highlight">{{ formatDate(row.tanggalReview) }}</span>
-                </div> -->
+                <div v-if="row.status !== 'DIAJUKAN'" class="reviewer-info">
+                  Alasan: <span class="highlight">{{ row.alasan }}</span>
+                </div>
               </div>
             </td>
 
@@ -604,6 +620,10 @@ tbody tr:hover {
 .status-disetujui   { background: #ecf8fd; color: #1fa2ff; }
 .status-ditolak  { background: #fbe5e6; color: #dc3545; }
 
+.alasan-wrapper { display: flex; flex-direction: column; min-height: 40px; }
+
+.alasan-main    { margin-bottom: 16px; word-break: normal; }
+
 .empty {
   text-align: center;
   padding: 20px;
@@ -699,6 +719,7 @@ tbody tr:hover {
   display: flex;
   flex-direction: column;
   min-height: 40px; }
+
 .status-main    {
   margin-bottom: 16px;
   word-break: normal;

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
 import { ArrowLeft, ChevronDown } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import dayjs from 'dayjs';
 
 const router = useRouter();
@@ -14,15 +15,19 @@ const authStore = useAuthStore();
 const toastStore = useToastStore();
 
 const form = ref({
+  unitPeminjam: authStore.user?.unit || '',
   unitTujuan: '',
   idAset: '',
   waktuPeminjaman: '',
   waktuPengembalian: '',
   tujuanPeminjaman: '',
-  qty: 1
+  qty: null
 });
 
-const units = ['KB-TK', 'SD', 'SMP', 'SMA'].filter(u => u !== authStore.user?.unit);
+const allUnits = ['KB-TK', 'SD', 'SMP', 'SMA'];
+const unitsTujuan = allUnits.filter(u => u !== authStore.user?.unit);
+
+
 const borrowableAssets = ref<any[]>([]);
 const isLoadingAssets = ref(false);
 const showConfirmModal = ref(false);
@@ -35,6 +40,13 @@ const selectedAsset = computed(() => {
 const maxQty = computed(() => {
   if (!selectedAsset.value) return 1;
   return selectedAsset.value.qtyTersedia || 1;
+});
+
+const assetOptions = computed(() => {
+  return borrowableAssets.value.map(asset => ({
+    id: asset.idAset,
+    label: `${asset.kodeAset} - ${asset.namaAset}${asset.merkAset ? ` - ${asset.merkAset}` : ''}`
+  }));
 });
 
 // Watch for unit change to fetch assets
@@ -66,7 +78,7 @@ watch(() => form.value.qty, (newVal) => {
 });
 
 const validateForm = () => {
-    if (!form.value.unitTujuan || !form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
+    if (!form.value.unitPeminjam || !form.value.unitTujuan || !form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
     toastStore.error('Error', 'Semua field wajib diisi');
     return false;
   }
@@ -107,44 +119,39 @@ const handleSubmit = async () => {
 <template>
   <div class="add-peminjaman-page">
     <div class="container py-16">
-      <div class="flex items-center gap-4 mb-20">
-        <button @click="router.back()" class="btn-back">
-          <ArrowLeft class="w-6 h-6" />
-        </button>
-        <h1 class="h2-headline">Buat Pengajuan Lintas Unit</h1>
-      </div>
+      <h1 class="h2-headline">Buat Pengajuan Peminjaman Aset</h1>
 
       <div class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="peminjaman-form">
           <div class="form-grid">
             <!-- Unit Tujuan -->
             <div class="form-group col-span-1">
-              <label class="s2-subtitle mb-2 block">Unit Asal Aset <span class="required-star">*</span></label>
+              <label class="s2-subtitle mb-2 block">Unit Tujuan <span class="required-star">*</span></label>
               <div class="custom-select">
                 <select v-model="form.unitTujuan" class="form-input" :class="{ 'placeholder-color': !form.unitTujuan }" required>
-                  <option value="" disabled>Pilih unit asal aset</option>
-                  <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                  <option value="" disabled>Pilih Unit</option>
+                  <option v-for="u in unitsTujuan" :key="u" :value="u">{{ u }}</option>
                 </select>
                 <ChevronDown class="select-icon" />
               </div>
             </div>
+            <div class="col-span-1"></div>
+            <div class="col-span-1"></div>
 
-            <!-- Aset Selection -->
-            <div class="form-group col-span-2">
-              <label class="s2-subtitle mb-2 block">Pilih Aset <span class="required-star">*</span></label>
-              <div class="custom-select">
-                <select v-model="form.idAset" class="form-input" :class="{ 'placeholder-color': !form.idAset }" :disabled="!form.unitTujuan || isLoadingAssets" required>
-                  <option value="" disabled>{{ !form.unitTujuan ? 'Pilih unit tujuan terlebih dahulu' : 'Pilih aset yang ingin dipinjam' }}</option>
-                  <option v-for="asset in borrowableAssets" :key="asset.idAset" :value="asset.idAset">
-                    [{{ asset.kodeAset }}] {{ asset.namaAset }}{{ asset.merkAset ? ` - ${asset.merkAset}` : '' }} (Tersedia: {{ asset.qtyTersedia }})
-                  </option>
-                </select>
-                <ChevronDown class="select-icon" />
-              </div>
+            <!-- Nama Aset -->
+            <div class="form-group col-span-1">
+              <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
+              <SearchableSelect 
+                v-model="form.idAset"
+                :options="assetOptions"
+                placeholder="Kode - Nama Aset - Merk"
+                :disabled="!form.unitTujuan"
+                :loading="isLoadingAssets"
+              />
             </div>
 
             <!-- Kuantitas -->
-            <div class="form-group">
+            <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
               <input 
                 v-model.number="form.qty" 
@@ -152,57 +159,56 @@ const handleSubmit = async () => {
                 min="1" 
                 :max="maxQty"
                 class="form-input" 
-                placeholder="0"
+                placeholder="Contoh: 1"
                 required 
               />
             </div>
 
-            <!-- Waktu Peminjaman -->
-            <div class="form-group">
-              <label class="s2-subtitle mb-2 block">Waktu Peminjaman <span class="required-star">*</span></label>
-              <input v-model="form.waktuPeminjaman" type="datetime-local" class="form-input" required />
-            </div>
-
-            <!-- Waktu Pengembalian -->
-            <div class="form-group">
-              <label class="s2-subtitle mb-2 block">Waktu Pengembalian <span class="required-star">*</span></label>
-              <input v-model="form.waktuPengembalian" type="datetime-local" class="form-input" required />
-            </div>
-
-            <!-- Tujuan Peminjaman -->
-            <div class="form-group col-span-3">
+            <!-- Tujuan Peminjaman (Full height) -->
+            <div class="form-group col-span-1 row-span-2">
               <label class="s2-subtitle mb-2 block">Tujuan Peminjaman <span class="required-star">*</span></label>
               <textarea 
                 v-model="form.tujuanPeminjaman" 
-                class="form-textarea" 
-                placeholder="Jelaskan keperluan peminjaman lintas unit ini..."
-                rows="4"
+                class="form-textarea full-height" 
+                placeholder="Jelaskan tujuan peminjaman"
                 required
               ></textarea>
             </div>
+
+            <!-- Waktu Peminjaman -->
+            <div class="form-group col-span-1">
+              <label class="s2-subtitle mb-2 block">Waktu Peminjaman <span class="required-star">*</span></label>
+              <input v-model="form.waktuPeminjaman" type="datetime-local" class="form-input" placeholder="DD/MM/YY HH:mm" required />
+            </div>
+
+            <!-- Waktu Pengembalian -->
+            <div class="form-group col-span-1">
+              <label class="s2-subtitle mb-2 block">Waktu Pengembalian <span class="required-star">*</span></label>
+              <input v-model="form.waktuPengembalian" type="datetime-local" class="form-input" placeholder="DD/MM/YYYY HH:mm" required />
+            </div>
           </div>
 
-          <div class="form-actions mt-24">
-            <button type="button" @click="router.back()" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit btn-secondary-theme" :disabled="isSubmitting">
-              {{ isSubmitting ? 'Mengirim...' : 'Simpan' }}
+          <div class="form-actions mt-100">
+            <button type="button" @click="router.back()" class="btn-cancel">Batalkan</button>
+            <button type="submit" class="btn-submit" :disabled="isSubmitting">
+              {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </form>
       </div>
     </div>
-  </div>
 
-  <ConfirmationModal
-    :show="showConfirmModal"
-    title="Konfirmasi Pengajuan"
-    message="Apakah Anda yakin ingin mengajukan peminjaman aset ini? Pastikan data sudah benar."
-    confirm-text="Ya, Simpan"
-    cancel-text="Batal"
-    :is-loading="isSubmitting"
-    @confirm="handleSubmit"
-    @cancel="showConfirmModal = false"
-  />
+    <ConfirmationModal
+      :show="showConfirmModal"
+      title="Konfirmasi Pengajuan"
+      message="Apakah Anda yakin ingin mengajukan peminjaman aset ini? Pastikan data sudah benar."
+      confirm-text="Ya, Simpan"
+      cancel-text="Batal"
+      :is-loading="isSubmitting"
+      @confirm="handleSubmit"
+      @cancel="showConfirmModal = false"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -213,7 +219,7 @@ const handleSubmit = async () => {
 
 .form-card {
   background: white;
-  padding: 40px;
+  padding: 80px;
   border-radius: 24px;
   max-width: 1200px;
   margin: 0 auto;
@@ -222,7 +228,7 @@ const handleSubmit = async () => {
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px 32px;
+  gap: 60px 80px;
 }
 
 .form-group {
@@ -232,6 +238,7 @@ const handleSubmit = async () => {
 .col-span-1 { grid-column: span 1; }
 .col-span-2 { grid-column: span 2; }
 .col-span-3 { grid-column: span 3; }
+.row-span-2 { grid-row: span 2; }
 
 .form-input, .custom-select select {
   width: 100%;
@@ -250,14 +257,21 @@ const handleSubmit = async () => {
   border-radius: 12px;
   font-size: 14px;
   outline: none;
-  resize: vertical;
+  resize: none;
+}
+
+.full-height {
+  height: 100%;
+  min-height: 120px;
 }
 
 .form-input:focus, .form-textarea:focus, .custom-select select:focus {
   border-color: #00588F;
 }
 
-.placeholder-color {
+.placeholder-color,
+.form-input::placeholder,
+.form-textarea::placeholder {
   color: #9CA3AF;
 }
 
@@ -282,6 +296,10 @@ const handleSubmit = async () => {
   gap: 24px;
 }
 
+.mt-100 {
+  margin-top: 100px;
+}
+
 .btn-submit {
   background-color: #00588F;
   color: white;
@@ -291,10 +309,11 @@ const handleSubmit = async () => {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 200px;
 }
 
-.btn-secondary-theme {
-    background-color: #0088CC;
+.mt-32 {
+  margin-top: 32px;
 }
 
 .btn-submit:hover:not(:disabled) {
@@ -304,11 +323,12 @@ const handleSubmit = async () => {
 .btn-cancel {
   background-color: #F3F4F6;
   color: #4B5563;
-  border: none;
+  border: 1px solid #E5E7EB;
   padding: 14px 60px;
   border-radius: 40px;
   font-weight: 700;
   cursor: pointer;
+  min-width: 200px;
 }
 
 .btn-back {
@@ -327,13 +347,13 @@ const handleSubmit = async () => {
 }
 
 .container {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
 .py-16 { padding-top: 2rem; padding-bottom: 2rem; }
-.mb-20 { margin-bottom: 2.5rem; }
+.mb-20 { margin-bottom: 60px; }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {

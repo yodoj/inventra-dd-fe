@@ -86,6 +86,11 @@ const totalColumns = computed(() => {
 
 const handleTabChange = (tab: 'barang' | 'ruangan') => {
   activeTab.value = tab;
+  // Reset all filters when switching tabs to avoid "invalid parameter" errors
+  searchQuery.value = '';
+  categoryFilter.value = '';
+  statusFilter.value = '';
+  unitFilter.value = '';
   currentPage.value = 0;
   loadAssets();
 };
@@ -161,6 +166,10 @@ const prevPage = () => {
 };
 
 onMounted(() => {
+  // For SARPRAS, default to their unit if no filter is set
+  if (authStore.userRole === 'SARPRAS' && authStore.user?.unit) {
+    unitFilter.value = authStore.user.unit;
+  }
   loadAssets();
 });
 
@@ -281,7 +290,7 @@ const handleEdit = (asset: any) => {
               <input 
                 v-model="searchQuery" 
                 type="text" 
-                placeholder="Search" 
+                placeholder="Cari nama, merk, atau kode aset" 
                 @keyup.enter="handleFilter"
               />
             </div>
