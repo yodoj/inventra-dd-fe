@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { usePeminjamanStore } from '@/stores/peminjaman';
+import { useTinjauPeminjamanStore } from '@/stores/tinjauPeminjaman';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import {
@@ -10,8 +11,10 @@ import {
   ChevronDown,
   Trash2,
   ClipboardList,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Eye
 } from 'lucide-vue-next';
+import 'primeicons/primeicons.css'
 import SearchIcon from '@/components/icons/SearchIcon.vue';
 import EditIcon from '@/components/icons/EditIcon.vue';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
@@ -19,6 +22,7 @@ import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
 const peminjamanStore = usePeminjamanStore();
+const tinjauStore = useTinjauPeminjamanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
 
@@ -37,6 +41,8 @@ const isDeleting = ref(false);
 const isSarprasOrAdmin = computed(() => {
   return ['SARPRAS', 'ADMIN', 'SUPERADMIN'].includes(authStore.userRole || '');
 });
+const isSuperAdmin = computed(() => ['ADMIN', 'SUPERADMIN'].includes(authStore.userRole || ''));
+const isSarpras = computed(() => authStore.userRole === 'SARPRAS');
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 const categories = [
@@ -59,10 +65,7 @@ const loadLoans = () => {
   if (activeTab.value === 'lintas-unit') {
     peminjamanStore.fetchLoansLintasUnit(currentPage.value, pageSize.value, filters);
   } else {
-    // Persetujuan is currently empty/placeholder
-    peminjamanStore.loans = [];
-    peminjamanStore.totalPages = 1;
-    peminjamanStore.currentPage = 0;
+    tinjauStore.fetchAll();
   }
 };
 
@@ -92,6 +95,18 @@ const handleReset = () => {
   categoryGroupFilter.value = '';
   currentPage.value = 0;
   loadLoans();
+};
+
+const handleActionTinjau = (loan: any) => {
+  if (loan.status_peminjaman === 'DIAJUKAN') {
+    router.push(`/peminjaman/tinjau/create/${loan.id_peminjaman}`);
+  } else {
+    router.push(`/peminjaman/tinjau/edit/${loan.id_peminjaman}`);
+  }
+};
+
+const handleGoToDetail = (loan: any) => {
+  router.push(`/peminjaman/tinjau/detail/${loan.id_peminjaman}`);
 };
 
 const getStatusClass = (status: string) => {
@@ -161,6 +176,9 @@ const totalColumns = computed(() => {
 
 const displayLoans = computed(() => {
     // If not Sarpras/Admin, always show internal loans
+    if (isSarprasOrAdmin.value && activeTab.value === 'persetujuan') {
+        return tinjauStore.listTinjauan;
+    }
     let list = !isSarprasOrAdmin.value ? peminjamanStore.loans : (activeTab.value === 'lintas-unit' ? peminjamanStore.loansLintasUnit : peminjamanStore.loans);
     
     // Client-side filtering as fallback/refinement
@@ -190,7 +208,7 @@ const displayLoans = computed(() => {
   <div class="managed-peminjaman-page">
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
-        <h1 class="h2-headline">{{ isSarprasOrAdmin ? 'Peminjaman Aset' : 'Riwayat Peminjaman Saya' }}</h1>
+        <h1 class="h2-headline">{{ activeTab === 'persetujuan' ? 'Peninjauan Pengajuan Peminjaman Aset' : 'Peminjaman Aset' }}</h1>
       </div>
 
       <!-- Tab Switcher (Sarpras/Admin only) -->
@@ -275,7 +293,7 @@ const displayLoans = computed(() => {
           <Plus class="w-5 h-5" /> Buat Pengajuan
         </button>
 
-        <button v-if="isSarprasOrAdmin"
+        <button v-if="isSarprasOrAdmin && activeTab === 'lintas-unit'"
           @click="router.push('/peminjaman/tambah-lintas-unit')"
           class="btn-add btn-secondary"
         >
@@ -288,10 +306,22 @@ const displayLoans = computed(() => {
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse table-fixed">
             <thead>
-              <tr>
+              <tr v-if="activeTab === 'persetujuan'">
+                <th class="col-nama border-r border-white/20">Nama Peminjam</th>
+                <th class="col-aset border-r border-white/20">Aset</th>
+                <th v-if="isSuperAdmin" class="col-unit border-r border-white/20">Unit Tujuan</th>
+                <th class="col-qty border-r border-white/20 text-center">Qty</th>
+                <th class="col-waktu border-r border-white/20">Waktu Peminjaman</th>
+                <th class="col-waktu border-r border-white/20">Waktu Pengembalian</th>
+                <th class="col-tujuan border-r border-white/20">Tujuan Peminjaman</th>
+                <th class="col-alasan border-r border-white/20">Alasan & Riwayat Review</th>
+                <th class="col-status border-r border-white/20 text-center">Status</th>
+                <th class="col-aksi text-center">Aksi</th>
+              </tr>
+              <tr v-else>
                 <th class="col-waktu-pengajuan border-r border-white/20">Waktu Pengajuan</th>
                 <th class="col-aset border-r border-white/20">Aset</th>
-                <th v-if="isSarprasOrAdmin" class="col-unit border-r border-white/20">Unit</th>
+                <th v-if="isSuperAdmin || activeTab === 'lintas-unit'" class="col-unit border-r border-white/20">Unit</th>
                 <th class="col-qty border-r border-white/20 text-center">Qty</th>
                 <th class="col-kategori border-r border-white/20">Kategori</th>
                 <th class="col-peminjaman border-r border-white/20">Waktu Peminjaman</th>
@@ -302,44 +332,129 @@ const displayLoans = computed(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-if="peminjamanStore.isLoading">
-                <td :colspan="totalColumns" class="text-center py-8">Memuat data...</td>
-              </tr>
-              <tr v-else-if="activeTab === 'persetujuan'" class="placeholder-row">
-                <td :colspan="totalColumns" class="text-center py-12 text-gray-400">
-                    <ClipboardList class="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p class="b2-body">Belum ada data persetujuan untuk saat ini.</p>
+              <tr v-if="peminjamanStore.isLoading || tinjauStore.isLoading">
+                <td :colspan="totalColumns" class="text-center py-12">
+                  <div class="flex justify-center items-center gap-2">
+                    <span class="b2-body text-gray-500">Memuat data...</span>
+                  </div>
                 </td>
               </tr>
+
               <tr v-else-if="displayLoans.length === 0">
-                <td :colspan="totalColumns" class="text-center py-8 text-gray-500">Tidak ada pengajuan ditemukan</td>
-              </tr>
-              <tr v-for="loan in displayLoans" :key="loan.id_peminjaman">
-                <td class="b3-body text-center border-r border-gray-100">{{ loan.waktu_pengajuan }}</td>
-                <td class="b2-body border-r border-gray-100 px-4">
-                  {{ loan.kode_aset }} - {{ loan.aset }}{{ loan.merk_aset ? ` - ${loan.merk_aset}` : '' }}
+                <td :colspan="totalColumns" class="text-center py-12 text-gray-400">
+                  <ClipboardList class="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p class="b2-body">Tidak ada data pengajuan.</p>
                 </td>
-                <td v-if="isSarprasOrAdmin" class="text-center border-r border-gray-100">{{ loan.unit_peminjam }}</td>
+              </tr>
+
+              <tr v-else v-for="loan in displayLoans" :key="loan.id_peminjaman">
+               <template v-if="activeTab === 'persetujuan'">
+                <td class="border-r border-gray-100 px-4">
+                  <div class="pengaju-wrapper">
+                    <span class="nama-text">{{ (loan as any).nama_peminjam }}</span>
+                    <span class="role-text">
+                      {{ (loan as any).role_peminjam }}
+                      <template v-if="(loan as any).role_peminjam !== 'SUPER_ADMIN'">
+                        {{ (loan as any).unit_asal }}
+                      </template>
+                    </span>
+                  </div>
+                </td>
+                <td class="b2-body border-r border-gray-100 px-4 font-semibold">
+                  {{ loan.kode_aset }} - {{ (loan as any).nama_aset }}
+                  {{ (loan as any).merk_aset ? ` - ${(loan as any).merk_aset}` : '' }}
+                </td>
+                <td v-if="isSuperAdmin" class="text-center border-r border-gray-100">
+                  {{ (loan as any).unit_tujuan }}
+                </td>
                 <td class="text-center border-r border-gray-100">{{ loan.qty }}</td>
-                <td class="text-center border-r border-gray-100 px-2">{{ formatKategori(loan) }}</td>
                 <td class="text-center border-r border-gray-100">{{ loan.waktu_peminjaman }}</td>
                 <td class="text-center border-r border-gray-100">{{ loan.waktu_pengembalian }}</td>
-                <td class="b3-body border-r border-gray-100 px-4 py-3 align-top whitespace-normal break-words leading-relaxed">
+                <td class="b3-body border-r border-gray-100 px-4 py-3 align-top break-words">
                   {{ loan.tujuan_peminjaman }}
                 </td>
+                <td class="border-r border-gray-100 px-4 py-3 align-top whitespace-normal break-words">
+                <div class="alasan-wrapper">
+                  <p class="alasan-main">{{ (loan as any).alasan }}</p>
+                  
+                  <div v-if="(loan as any).status_peminjaman !== 'DIAJUKAN'" class="reviewer-info">
+                    Terakhir direview oleh 
+                    <span class="highlight">
+                      {{ (loan as any).role_peninjau || (loan as any).role_peminjam }}
+                    </span> 
+                    pada 
+                    <span class="highlight">
+                      {{ (loan as any).updatedAt || (loan as any).updated_at }}
+                    </span>
+                  </div>
+
+                  <div v-else class="no-review-text">
+                    Belum ada review
+                  </div>
+                </div>
+              </td>
+            </template>
+
+                <template v-else>
+                  <td class="b3-body text-center border-r border-gray-100">{{ loan.waktu_pengajuan }}</td>
+                  <td class="b2-body border-r border-gray-100 px-4 font-semibold">
+                    {{ loan.kode_aset }} - {{ (loan as any).aset }}
+                    {{ (loan as any).merk_aset ? ` - ${(loan as any).merk_aset}` : '' }}
+                  </td>
+                  <td v-if="isSuperAdmin || activeTab === 'lintas-unit'" class="text-center border-r border-gray-100">
+                    {{ (loan as any).unit_peminjam || (loan as any).unit_asal }}
+                  </td>
+                  <td class="text-center border-r border-gray-100">{{ loan.qty }}</td>
+                  <td class="text-center border-r border-gray-100 px-2">{{ formatKategori(loan) }}</td>
+                  <td class="text-center border-r border-gray-100">{{ loan.waktu_peminjaman }}</td>
+                  <td class="text-center border-r border-gray-100">{{ loan.waktu_pengembalian }}</td>
+                  <td class="b3-body border-r border-gray-100 px-4 py-3 align-top break-words">
+                    {{ loan.tujuan_peminjaman }}
+                  </td>
+                </template>
+
                 <td class="text-center border-r border-gray-100">
                   <span :class="['badge', getStatusClass(loan.status_peminjaman)]">
                     {{ loan.status_peminjaman }}
                   </span>
                 </td>
+
                 <td>
                   <div class="flex justify-center gap-2">
-                    <template v-if="loan.status_peminjaman === 'DIAJUKAN'">
-                      <button @click="handleEdit(loan)" class="btn-icon btn-edit" title="Ubah">
+                    <template v-if="activeTab === 'persetujuan'">
+                      <button 
+                        v-if="loan.status_peminjaman === 'DIAJUKAN'"
+                        @click="handleActionTinjau(loan)" 
+                        class="btn-icon btn-review" 
+                        title="Berikan Peninjauan"
+                      >
+                        <i class="pi pi-comments" ></i>
+                      </button>
+
+                      <button 
+                        v-else
+                        @click="handleActionTinjau(loan)" 
+                        class="btn-icon btn-edit" 
+                        title="Ubah Tinjauan"
+                      >
                         <EditIcon class="w-4 h-4" />
                       </button>
-                      <button @click="confirmDelete(loan)" class="btn-icon btn-delete" title="Hapus">
-                        <Trash2 class="w-4 h-4" />
+                      <button @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
+                        <Eye class="w-4 h-4" />
+                      </button>
+                    </template>
+
+                    <template v-else>
+                      <template v-if="loan.status_peminjaman === 'DIAJUKAN'">
+                        <button @click="handleEdit(loan)" class="btn-icon btn-edit" title="Ubah">
+                          <EditIcon class="w-4 h-4" />
+                        </button>
+                        <button @click="confirmDelete(loan)" class="btn-icon btn-delete" title="Hapus">
+                          <Trash2 class="w-4 h-4" />
+                        </button>
+                      </template>
+                      <button v-else @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
+                        <ClipboardList class="w-4 h-4" />
                       </button>
                     </template>
                   </div>
@@ -399,6 +514,7 @@ const displayLoans = computed(() => {
   background-color: #EFEFEF;
   border-radius: 12px;
   overflow: hidden;
+  border: 1px solid #E0E0E0;
 }
 
 .tab-btn {
@@ -420,6 +536,10 @@ const displayLoans = computed(() => {
 .tab-btn.active {
   background-color: #00588F;
   color: white;
+}
+
+.tab-btn:hover:not(.active) {
+  background-color: #E5E5E5;
 }
 
 .icon-md { width: 20px; height: 20px; }
@@ -544,6 +664,7 @@ const displayLoans = computed(() => {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #EEEEEE;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 table thead {
@@ -608,6 +729,8 @@ table td {
 .btn-edit { background-color: #00588F; color: white; }
 .btn-delete { background-color: #DC3545; color: white; }
 .btn-icon:hover { transform: scale(1.1); }
+.btn-detail { background-color: #64748B; color: white; }
+.btn-review { background: #198754; color: white; }
 
 .btn-page {
   padding: 8px 16px;
@@ -632,5 +755,58 @@ table td {
 
 select {
   background-image: none;
+}
+
+.pengaju-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nama-text {
+  font-size: 13px; 
+  font-weight: 700;
+  color: #333;
+}
+
+.role-text {
+  font-size: 11px; 
+  color: #64748B;
+}
+
+
+.alasan-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 40px;
+}
+
+.alasan-main {
+  font-size: 12px; 
+  margin-bottom: 8px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.reviewer-info {
+  font-size: 10px;
+  color: #667085;
+  font-style: italic;
+  border-top: 1px dashed #E2E8F0;
+  padding-top: 6px;
+  line-height: 1.4;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #00588F; 
+}
+
+.col-nama { width: 140px; }
+
+.no-review-text {
+  font-size: 11px;
+  color: #667085;
+  font-style: italic;
 }
 </style>
