@@ -121,6 +121,21 @@ const router = createRouter({
       name: 'peninjauan-pengadaan-aset-buy-after-review',
       component: () => import('../views/PeninjauanPengadaanAset/BuyAfterReview.vue'),
     },
+    {
+      path: '/peminjaman',
+      name: 'managed-peminjaman',
+      component: () => import('../views/PeminjamanAset/ManagedPeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/tambah',
+      name: 'add-peminjaman',
+      component: () => import('../views/PeminjamanAset/AddPeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/tambah-lintas-unit',
+      name: 'add-peminjaman-lintas-unit',
+      component: () => import('../views/PeminjamanAset/AddPeminjamanLintasUnitView.vue'),
+    },
 
     {
       path: '/pengadaan/rusak',
@@ -136,6 +151,32 @@ const router = createRouter({
       path: '/penggantian/edit/:idPenggantian',
       name: 'penggantian-barang-rusak-edit',
       component: () => import('../views/PenggantianBarangRusak/UpdatePengajuanpenggantianBarang.vue'),
+    },
+    {
+      path: '/pengadaan/rusak/tinjau',
+      name: 'peninjauan-penggantian-barang-rusak-all',
+      component: () => import('../views/PeninjauanPenggantian/TinjauAll.vue'),
+    },
+    {
+      path: '/penggantian/pengajuan/tinjau/:penggantianId',
+      name: 'peninjauan-penggantian-barang-rusak-create-review',
+      component: () => import('../views/PeninjauanPenggantian/CreateReview.vue'),
+    },
+
+    {
+      path: '/penggantian/pengajuan/tinjau/update/:penggantianId',
+      name: 'peninjauan-penggantian-barang-rusak-update-review',
+      component: () => import('../views/PeninjauanPenggantian/UpdateReview.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun',
+      name: 'pengelolaan-akun',
+      component: () => import('../views/Profile/PengelolaanAkunView.vue'),
+    },
+    {
+      path: '/profile/pengelolaan-akun/tambah',
+      name: 'tambah-akun',
+      component: () => import('../views/Profile/TambahAkunView.vue'),
     }
   ],
 })

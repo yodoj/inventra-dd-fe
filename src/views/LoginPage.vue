@@ -41,6 +41,7 @@ const handleLogin = async () => {
   if (!email.value || !password.value) {
     errorMessage.value = 'Mohon isi email dan password Anda.';
     hasError.value = true;
+    toastStore.error('Error', errorMessage.value);
     return;
   }
 

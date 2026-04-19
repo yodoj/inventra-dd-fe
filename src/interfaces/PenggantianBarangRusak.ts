@@ -11,6 +11,12 @@ export interface PenggantianBarangRusakResponseDTO {
   namaPengaju: string
   unitPengaju: string
   rolePengaju: string
+
+  alasan: string
+  reviewCreatedAt: string
+  reviewUpdatedAt: string
+  reviewerRole: string
+  namaReviewer: string
 }
 
 export interface PenggantianBarangRusakRequestDTO {
