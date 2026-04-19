@@ -3,7 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { usePeminjamanStore } from '@/stores/peminjaman';
 import { useTinjauPeminjamanStore } from '@/stores/tinjauPeminjaman';
 import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import {
   Plus,
   ChevronLeft,
@@ -21,12 +21,15 @@ import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
 
 const router = useRouter();
+const route = useRoute();
 const peminjamanStore = usePeminjamanStore();
 const tinjauStore = useTinjauPeminjamanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
 
-const activeTab = ref<'persetujuan' | 'lintas-unit'>('lintas-unit');
+const activeTab = ref<'persetujuan' | 'lintas-unit'>(
+  route.path.endsWith('/tinjau') ? 'persetujuan' : 'lintas-unit'
+);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const unitFilter = ref('');
@@ -56,16 +59,16 @@ const statuses = [
   { label: 'Dibatalkan', value: 'DIBATALKAN' }
 ];
 
-const loadLoans = () => {
+const loadLoans = async () => {
   const filters: any = {};
   if (searchQuery.value) filters.search = searchQuery.value;
   if (statusFilter.value) filters.status = statusFilter.value;
   if (unitFilter.value) filters.unit = unitFilter.value;
 
   if (activeTab.value === 'lintas-unit') {
-    peminjamanStore.fetchLoansLintasUnit(currentPage.value, pageSize.value, filters);
+    await peminjamanStore.fetchLoansLintasUnit(currentPage.value, pageSize.value, filters);
   } else {
-    tinjauStore.fetchAll();
+    await tinjauStore.fetchAll();
   }
 };
 
@@ -78,10 +81,25 @@ onMounted(() => {
   }
 });
 
-watch(activeTab, () => {
-    currentPage.value = 0;
-    loadLoans();
+watch(activeTab, (newTab) => {
+  if (newTab === 'persetujuan') {
+    router.push('/peminjaman/tinjau');
+  } else {
+    router.push('/peminjaman');
+  }
+  
+  currentPage.value = 0;
+  loadLoans();
 });
+
+// Watch perubahan URL (misal user klik tombol back di browser)
+watch(
+  () => route.path,
+  (newPath) => {
+    activeTab.value = newPath.endsWith('/tinjau') ? 'persetujuan' : 'lintas-unit';
+    loadLoans(); 
+  }
+);
 
 const handleFilter = () => {
   currentPage.value = 0;
@@ -98,10 +116,20 @@ const handleReset = () => {
 };
 
 const handleActionTinjau = (loan: any) => {
+  // Pastikan field id_peminjaman ini ada di data loan kamu
+  const targetId = loan.id_peminjaman; 
+
   if (loan.status_peminjaman === 'DIAJUKAN') {
-    router.push(`/peminjaman/tinjau/create/${loan.id_peminjaman}`);
+    router.push({
+      // Path harus sama persis dengan yang di index.ts
+      path: `/peminjaman/tinjau/create/${targetId}`,
+      state: { loan: loan }
+    });
   } else {
-    router.push(`/peminjaman/tinjau/edit/${loan.id_peminjaman}`);
+    router.push({
+      path: `/peminjaman/tinjau/update/${targetId}`,
+      state: { loan: loan }
+    });
   }
 };
 
@@ -169,9 +197,11 @@ const nextPage = () => {
 };
 
 const totalColumns = computed(() => {
-    let count = 9; // Base columns
-    if (isSarprasOrAdmin.value) count++; // Unit column
-    return count;
+  if (activeTab.value === 'persetujuan') {
+    return isSuperAdmin.value ? 10 : 9;
+  } else {
+    return (isSuperAdmin.value || activeTab.value === 'lintas-unit') ? 10 : 9;
+  }
 });
 
 const displayLoans = computed(() => {
