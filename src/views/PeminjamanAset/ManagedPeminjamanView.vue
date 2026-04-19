@@ -10,10 +10,13 @@ import {
   ChevronRight,
   ChevronDown,
   Trash2,
-  ClipboardList,
+  MessageSquare,
   ArrowRightLeft,
   Eye,
-  Search
+  Search,
+  FileText,
+  Home,
+  Calendar
 } from 'lucide-vue-next';
 import 'primeicons/primeicons.css'
 import EditIcon from '@/components/icons/EditIcon.vue';
@@ -61,10 +64,8 @@ const loadLoans = async () => {
   if (unitFilter.value) filters.unit = unitFilter.value;
 
   if (isSarprasOrAdmin.value && activeTab.value === 'persetujuan' && !isGuruSiswaView.value) {
-    // Tab Persetujuan (Tinjau Store)
     await tinjauStore.fetchAll(filters);
   } else {
-    // Internal Monitoring or Lintas Unit (Peminjaman Store)
     if (!isSarprasOrAdmin.value) {
         await peminjamanStore.fetchLoans(currentPage.value, pageSize.value, filters);
     } else if (isGuruSiswaView.value) {
@@ -145,8 +146,24 @@ const formatKategori = (loan: any) => {
 
 const splitDateTime = (val: string) => {
   if (!val) return ['', ''];
-  const parts = val.split(' ');
-  return [parts[0], parts[1] || ''];
+  // Handle ISO format or space-separated format
+  const cleanVal = val.replace('T', ' ');
+  const [datePart, timePart] = cleanVal.split(' ');
+  
+  if (!datePart) return ['', ''];
+  
+  // Format Date: YYYY-MM-DD -> DD-MM-YYYY
+  const [y, m, d] = datePart.split('-');
+  const formattedDate = y && m && d ? `${d}-${m}-${y}` : datePart;
+  
+  // Format Time: HH:mm:ss -> HH:mm
+  let formattedTime = '';
+  if (timePart) {
+    const timeParts = timePart.split(':');
+    formattedTime = timeParts.length >= 2 ? `${timeParts[0]}:${timeParts[1]}` : timePart;
+  }
+  
+  return [formattedDate, formattedTime];
 };
 
 const confirmDelete = (loan: any) => {
@@ -199,7 +216,6 @@ const displayLoans = computed(() => {
     }
     let list = activeTab.value === 'lintas-unit' ? peminjamanStore.loansLintasUnit : peminjamanStore.loans;
     
-    // Client-side category group refining if backend doesn't support it directly
     if (categoryGroupFilter.value) {
         if (categoryGroupFilter.value === 'BARANG') {
             list = list.filter(l => l.kategori_aset === 'BARANG_TIDAK_HABIS_PAKAI');
@@ -225,7 +241,7 @@ const totalPages = computed(() => {
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">
-          {{ isGuruSiswaView ? 'Pengajuan - Guru, Siswa' : (isSarprasOrAdmin ? 'Peminjaman Aset' : 'Riwayat Peminjaman Saya') }}
+          {{ activeTab === 'persetujuan' && !isGuruSiswaView ? 'Peninjauan Pengajuan Peminjaman Aset' : 'Pengajuan Peminjaman Aset' }}
         </h1>
       </div>
 
@@ -235,13 +251,13 @@ const totalPages = computed(() => {
           @click="activeTab = 'persetujuan'"
           :class="['tab-btn', { active: activeTab === 'persetujuan' }]"
         >
-          <ClipboardList class="icon-md" /> Persetujuan Peminjaman
+          <FileText class="icon-md" /> Peninjauan Pengajuan
         </button>
         <button
           @click="activeTab = 'lintas-unit'"
           :class="['tab-btn', { active: activeTab === 'lintas-unit' }]"
         >
-          <ArrowRightLeft class="icon-md" /> Pengajuan ke Unit Lain
+          <Home class="icon-md" /> Pengajuan ke Unit Lain
         </button>
       </div>
 
@@ -250,7 +266,7 @@ const totalPages = computed(() => {
         <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Peminjaman</h3>
         <div class="filter-grid">
           <div v-if="isSarprasOrAdmin" class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Unit Tujuan</label>
             <div class="custom-select col-unit-select">
               <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
                 <option value="">Semua Unit</option>
@@ -272,7 +288,7 @@ const totalPages = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Status</label>
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Status Peminjaman</label>
             <div class="custom-select col-status-select">
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
                 <option value="">Semua Status</option>
@@ -286,6 +302,7 @@ const totalPages = computed(() => {
               <ChevronDown class="select-icon" />
             </div>
           </div>
+
 
           <div class="filter-item flex-grow">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Peminjaman</label>
@@ -321,30 +338,30 @@ const totalPages = computed(() => {
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse table-fixed">
             <thead>
-              <!-- Header tab Persetujuan -->
               <tr v-if="activeTab === 'persetujuan' && isSarprasOrAdmin && !isGuruSiswaView">
                 <th class="col-pengaju border-r border-white/20">Nama Peminjam</th>
-                <th class="col-aset border-r border-white/20">Aset</th>
-                <th v-if="isSuperadmin" class="col-unit border-r border-white/20">Unit Tujuan</th>
+                <th class="col-aset-wide border-r border-white/20">Aset</th>
+                <th v-if="isSuperadmin" class="col-unit-tujuan border-r border-white/20">Unit Tujuan</th>
                 <th class="col-qty border-r border-white/20 text-center">Qty</th>
-                <th class="col-peminjaman border-r border-white/20">Mulai</th>
-                <th class="col-pengembalian border-r border-white/20">Selesai</th>
-                <th class="col-tujuan border-r border-white/20">Tujuan</th>
+                <th class="col-peminjaman border-r border-white/20">Waktu Peminjaman</th>
+                <th class="col-pengembalian border-r border-white/20">Waktu Pengembalian</th>
+                <th class="col-tujuan-wide border-r border-white/20">Tujuan Peminjaman</th>
+                <th class="col-review-history border-r border-white/20">Alasan & Riwayat Review</th>
                 <th class="col-status-cell border-r border-white/20 text-center">Status</th>
-                <th class="col-aksi text-center">Aksi</th>
+                <th class="col-aksi-wide text-center">Aksi</th>
               </tr>
-              <!-- Header tab Monitoring/Siswa/Guru -->
               <tr v-else>
                 <th class="col-waktu-pengajuan border-r border-white/20">Waktu Pengajuan</th>
-                <th class="col-aset border-r border-white/20">Aset</th>
+                <th v-if="isSarprasOrAdmin" class="col-pengaju border-r border-white/20">Nama Peminjam</th>
+                <th class="col-aset-wide border-r border-white/20">Aset</th>
                 <th v-if="isSarprasOrAdmin" class="col-unit border-r border-white/20">
                   {{ isSuperadmin ? 'Unit Tujuan' : (activeTab === 'lintas-unit' ? 'Unit Tujuan' : 'Unit Peminjam') }}
                 </th>
                 <th class="col-qty border-r border-white/20 text-center">Qty</th>
                 <th class="col-kategori border-r border-white/20">Kategori</th>
-                <th class="col-peminjaman border-r border-white/20">Mulai</th>
-                <th class="col-pengembalian border-r border-white/20">Selesai</th>
-                <th class="col-tujuan border-r border-white/20">Tujuan</th>
+                <th class="col-peminjaman border-r border-white/20">Waktu Peminjaman</th>
+                <th class="col-pengembalian border-r border-white/20">Waktu Pengembalian</th>
+                <th class="col-tujuan-wide border-r border-white/20">Tujuan Peminjaman</th>
                 <th class="col-status-cell border-r border-white/20 text-center">Status</th>
                 <th class="col-aksi text-center">Aksi</th>
               </tr>
@@ -356,61 +373,79 @@ const totalPages = computed(() => {
                 </td>
               </tr>
               <tr v-else-if="displayLoans.length === 0">
-                <td colspan="10" class="text-center py-12 text-gray-500">
+                <td colspan="12" class="text-center py-12 text-gray-500">
                     Tidak ada data ditemukan.
                 </td>
               </tr>
               <tr v-for="loan in displayLoans" :key="loan.id_peminjaman">
-                <!-- Body tab Persetujuan -->
                 <template v-if="activeTab === 'persetujuan' && isSarprasOrAdmin && !isGuruSiswaView">
-                  <td class="b3-body border-r border-gray-100 px-4">{{ (loan as any).nama_peminjam || '-' }}</td>
-                  <td class="b2-body border-r border-gray-100 px-4">
-                    <span class="font-semibold block truncate">
-                      {{ loan.kode_aset }} - {{ (loan as any).nama_aset || (loan as any).aset }}
-                    </span>
-                    <span class="c2-caption text-gray-400 block truncate" v-if="(loan as any).merk_aset">
-                      Merk: {{ (loan as any).merk_aset }}
-                    </span>
+                  <td class="b3-body border-r border-gray-100 px-4 py-3">
+                    <span class="font-bold block">{{ (loan as any).nama_peminjam }}</span>
+                    <span class="text-[10px] text-gray-500 uppercase">{{ (loan as any).role_peminjam }} {{ (loan as any).unit_asal }}</span>
+                  </td>
+                  <td class="b2-body border-r border-gray-100 px-4 py-3 font-semibold">
+                    {{ loan.kode_aset }} - {{ (loan as any).nama_aset || (loan as any).aset }}
+                    {{ (loan as any).merk_aset ? ` - ${(loan as any).merk_aset}` : '' }}
                   </td>
                   <td v-if="isSuperadmin" class="text-center b3-body border-r border-gray-100">{{ (loan as any).unit_tujuan || '-' }}</td>
-                  <td class="text-center b3-body border-r border-gray-100">{{ loan.qty }}</td>
+                  <td class="text-center b3-body border-r border-gray-100 font-bold">{{ loan.qty }}</td>
                   <td class="text-center b3-body border-r border-gray-100">
-                    <div v-for="line in splitDateTime(loan.waktu_peminjaman)" :key="line">{{ line }}</div>
+                    <div class="whitespace-nowrap">{{ splitDateTime(loan.waktu_peminjaman)[0] }}</div>
+                    <div class="text-[10px] text-gray-500">{{ splitDateTime(loan.waktu_peminjaman)[1] }}</div>
                   </td>
                   <td class="text-center b3-body border-r border-gray-100">
-                    <div v-for="line in splitDateTime(loan.waktu_pengembalian)" :key="line">{{ line }}</div>
+                    <div class="whitespace-nowrap">{{ splitDateTime(loan.waktu_pengembalian)[0] }}</div>
+                    <div class="text-[10px] text-gray-500">{{ splitDateTime(loan.waktu_pengembalian)[1] }}</div>
                   </td>
                   <td class="b3-body border-r border-gray-100 px-4 py-3 align-top break-words">
                     {{ loan.tujuan_peminjaman }}
                   </td>
+                  <td class="b3-body border-r border-gray-100 px-4 py-3 align-top">
+                    <!-- Logika Alasan & Riwayat Review dari rekan -->
+                    <div v-if="loan.status_peminjaman === 'DIAJUKAN'" class="text-gray-400 italic">
+                      Belum ada review
+                    </div>
+                    <div v-else>
+                      <div class="font-semibold text-gray-700 mb-1 leading-tight">{{ (loan as any).alasan || '(Tanpa alasan)' }}</div>
+                      <div class="text-[10px] text-gray-400 leading-tight">
+                        Terakhir direview oleh <span class="font-bold uppercase">{{ (loan as any).role_peninjau }}</span>
+                        pada {{ (loan as any).updatedAt }}
+                      </div>
+                    </div>
+                  </td>
                 </template>
 
-                <!-- Body tab Monitoring/Siswa/Guru -->
                 <template v-else>
-                  <td class="b3-body text-center border-r border-gray-100 py-2">
-                    <div v-for="line in splitDateTime(loan.waktu_pengajuan)" :key="line">{{ line }}</div>
+                  <td class="b3-body text-center border-r border-gray-100 py-3">
+                    <div class="whitespace-nowrap">{{ splitDateTime(loan.waktu_pengajuan)[0] }}</div>
+                    <div class="text-[10px] text-gray-500">{{ splitDateTime(loan.waktu_pengajuan)[1] }}</div>
                   </td>
-                  <td class="b2-body border-r border-gray-100 px-4">
-                    <span class="font-semibold block truncate">{{ loan.kode_aset }} - {{ (loan as any).aset || (loan as any).nama_aset }}</span>
-                    <span class="c2-caption text-gray-400" v-if="loan.merk_aset">Merk: {{ loan.merk_aset }}</span>
+                  <td v-if="isSarprasOrAdmin" class="b3-body border-r border-gray-100 px-4 py-3">
+                    <span class="font-bold block">{{ (loan as any).nama_peminjam }}</span>
+                    <span class="text-[10px] text-gray-500 uppercase">{{ (loan as any).role_peminjam }} {{ (loan as any).unit_asal || loan.unit_peminjam }}</span>
                   </td>
-                  <td v-if="isSarprasOrAdmin" class="text-center b3-body border-r border-gray-100">
+                  <td class="b2-body border-r border-gray-100 px-4 py-3 font-semibold">
+                    {{ loan.kode_aset }} - {{ (loan as any).aset || (loan as any).nama_aset }}
+                    {{ (loan as any).merk_aset ? ` - ${(loan as any).merk_aset}` : '' }}
+                  </td>
+                  <td v-if="isSarprasOrAdmin" class="text-center b3-body border-r border-gray-100 font-bold">
                     {{ (activeTab === 'lintas-unit' || isGuruSiswaView) ? (loan as any).unit_tujuan : (loan as any).unit_peminjam }}
                   </td>
-                  <td class="text-center b3-body border-r border-gray-100">{{ loan.qty }}</td>
+                  <td class="text-center b3-body border-r border-gray-100 font-bold">{{ loan.qty }}</td>
                   <td class="text-center b3-body border-r border-gray-100 px-2">{{ formatKategori(loan) }}</td>
-                  <td class="text-center b3-body border-r border-gray-100 py-2">
-                    <div v-for="line in splitDateTime(loan.waktu_peminjaman)" :key="line">{{ line }}</div>
+                  <td class="text-center b3-body border-r border-gray-100 py-3">
+                    <div class="whitespace-nowrap">{{ splitDateTime(loan.waktu_peminjaman)[0] }}</div>
+                    <div class="text-[10px] text-gray-500">{{ splitDateTime(loan.waktu_peminjaman)[1] }}</div>
                   </td>
-                  <td class="text-center b3-body border-r border-gray-100 py-2">
-                    <div v-for="line in splitDateTime(loan.waktu_pengembalian)" :key="line">{{ line }}</div>
+                  <td class="text-center b3-body border-r border-gray-100 py-3">
+                    <div class="whitespace-nowrap">{{ splitDateTime(loan.waktu_pengembalian)[0] }}</div>
+                    <div class="text-[10px] text-gray-500">{{ splitDateTime(loan.waktu_pengembalian)[1] }}</div>
                   </td>
                   <td class="b3-body border-r border-gray-100 px-4 py-3 align-top break-words">
                     {{ loan.tujuan_peminjaman }}
                   </td>
                 </template>
 
-                <!-- Status & Aksi (Ditingkat baris yang sama untuk semua tab) -->
                 <td class="text-center border-r border-gray-100 px-2">
                   <span :class="['badge', getStatusClass(loan.status_peminjaman)]">
                     {{ loan.status_peminjaman }}
@@ -418,7 +453,6 @@ const totalPages = computed(() => {
                 </td>
                 <td>
                   <div class="flex justify-center gap-2">
-                    <!-- Aksi khusus Tab Persetujuan -->
                     <template v-if="activeTab === 'persetujuan' && isSarprasOrAdmin && !isGuruSiswaView">
                        <button
                         v-if="loan.status_peminjaman === 'DIAJUKAN'"
@@ -426,7 +460,7 @@ const totalPages = computed(() => {
                         class="btn-icon btn-review"
                         title="Berikan Peninjauan"
                       >
-                        <ClipboardList class="w-4 h-4" />
+                        <MessageSquare class="w-4 h-4" />
                       </button>
                       <button
                         v-else
@@ -440,7 +474,6 @@ const totalPages = computed(() => {
                         <Eye class="w-4 h-4" />
                       </button>
                     </template>
-                    <!-- Aksi Monitoring (Edit/Delete) -->
                     <template v-else>
                       <template v-if="loan.status_peminjaman === 'DIAJUKAN'">
                         <button @click="handleEdit(loan)" class="btn-icon btn-edit" title="Ubah">
@@ -554,7 +587,7 @@ const totalPages = computed(() => {
 
 .filter-card {
   background: white;
-  padding: 24px 28px 20px;
+  padding: 32px;
   border-radius: 16px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -562,7 +595,7 @@ const totalPages = computed(() => {
 
 .filter-grid {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -571,9 +604,9 @@ const totalPages = computed(() => {
   position: relative;
 }
 
-.col-unit-select { width: 140px; }
-.col-cat-select { width: 180px; }
-.col-status-select { width: 140px; }
+.col-unit-select { width: 160px; }
+.col-cat-select { width: 200px; }
+.col-status-select { width: 160px; }
 
 .custom-select select {
   width: 100%;
@@ -696,18 +729,21 @@ table th {
 /* Base column widths */
 .col-waktu-pengajuan { width: 100px; }
 .col-pengaju { width: 140px; }
-.col-aset { width: auto; min-width: 200px; }
+.col-aset-wide { width: auto; min-width: 220px; }
 .col-unit { width: 100px; }
-.col-qty { width: 60px; }
+.col-unit-tujuan { width: 85px; }
+.col-qty { width: 50px; }
 .col-kategori { width: 110px; }
 .col-peminjaman { width: 100px; }
 .col-pengembalian { width: 100px; }
-.col-tujuan { width: auto; min-width: 180px; }
+.col-tujuan-wide { width: auto; min-width: 180px; }
+.col-review-history { width: auto; min-width: 200px; }
 .col-status-cell { width: 100px; }
+.col-aksi-wide { width: 130px; }
 .col-aksi { width: 100px; }
 
 table td {
-  padding: 12px 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid #F1F5F9;
   vertical-align: middle;
   font-size: 12px;
@@ -741,6 +777,7 @@ table td {
   border: none;
   cursor: pointer;
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-edit { background-color: #00588F; color: white; }
@@ -817,6 +854,13 @@ table td {
   pointer-events: none;
 }
 
-.mt-12 { margin-top: 48px; }
+.mt-12 { margin-top: 32px; }
 .mt-20 { margin-top: 40px; }
+.py-16 { padding-top: 1.5rem; padding-bottom: 2rem; }
+.mb-16 { margin-bottom: 24px; }
+.mb-20 { margin-bottom: 32px; }
+
+.date-input {
+  padding-left: 42px !important;
+}
 </style>
