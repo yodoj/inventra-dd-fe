@@ -71,8 +71,15 @@ const handleSaveProfile = async () => {
     errorMessage.value = 'No Telepon tidak boleh kosong';
     return;
   }
-  if (!/^\d+$/.test(formData.value.phoneNumber)) {
-    errorMessage.value = 'No Telepon hanya boleh berisi angka';
+  // Strip spasi, -, ., (, ) lalu normalisasi prefix +62/62 → 08
+  let cleanedPhone = formData.value.phoneNumber.replace(/[\s\-.\(\)]/g, '');
+  if (cleanedPhone.startsWith('+62')) {
+    cleanedPhone = '0' + cleanedPhone.substring(3);
+  } else if (cleanedPhone.startsWith('62') && cleanedPhone.length > 5) {
+    cleanedPhone = '0' + cleanedPhone.substring(2);
+  }
+  if (!/^08[0-9]{6,13}$/.test(cleanedPhone)) {
+    errorMessage.value = 'No Telepon tidak valid. Gunakan format 08xx, +62xx, atau 62xx dengan panjang 8-15 digit';
     return;
   }
 
@@ -82,8 +89,8 @@ const handleSaveProfile = async () => {
       errorMessage.value = 'NISN tidak boleh kosong untuk Siswa';
       return;
     }
-    if (!/^\d+$/.test(formData.value.nisn)) {
-      errorMessage.value = 'NISN hanya boleh berisi angka';
+    if (!/^[0-9]{10}$/.test(formData.value.nisn)) {
+      errorMessage.value = 'NISN harus tepat 10 digit angka';
       return;
     }
     if (!formData.value.kelas.trim()) {
@@ -225,12 +232,13 @@ onMounted(() => { fetchProfile(); });
         <!-- NISN - Siswa only -->
         <div v-if="isSiswa" class="form-row">
           <label class="form-label">NISN</label>
+          <small class="form-hint">NISN harus tepat 10 digit angka</small>
           <input
             type="text"
             v-model="formData.nisn"
             placeholder="Masukkan NISN"
             class="form-input"
-            pattern="[0-9]+"
+            pattern="[0-9]{10}"
           />
         </div>
 
@@ -248,12 +256,12 @@ onMounted(() => { fetchProfile(); });
         <!-- No Telepon (editable) -->
         <div class="form-row">
           <label class="form-label">No Telepon</label>
+          <small class="form-hint">Format yang diterima: 08xx, +62xx, atau 62xx (8-15 digit)</small>
           <input
             type="tel"
             v-model="formData.phoneNumber"
-            placeholder="Masukkan nomor telepon"
+            placeholder="Contoh: 08123456789, +62 812-3456-7890"
             class="form-input"
-            pattern="[0-9]+"
             required
           />
         </div>
@@ -470,6 +478,12 @@ onMounted(() => { fetchProfile(); });
 }
 .form-input:focus {
   color: #1565a8;
+}
+.form-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* ── UBAH PASSWORD BUTTON ── */
