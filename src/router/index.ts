@@ -136,6 +136,21 @@ const router = createRouter({
       name: 'add-peminjaman-lintas-unit',
       component: () => import('../views/PeminjamanAset/AddPeminjamanLintasUnitView.vue'),
     },
+    {
+      path: '/peminjaman/edit/:id',
+      name: 'update-peminjaman',
+      component: () => import('../views/PeminjamanAset/UpdatePeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/lintas-unit/edit/:id',
+      name: 'update-peminjaman-lintas-unit',
+      component: () => import('../views/PeminjamanAset/UpdatePeminjamanLintasUnitView.vue'),
+    },
+    {
+      path: '/peminjaman/guru-siswa',
+      name: 'managed-peminjaman-all',
+      component: () => import('../views/PeminjamanAset/ManagedPeminjamanView.vue'),
+    },
 
     {
       path: '/pengadaan/rusak',
