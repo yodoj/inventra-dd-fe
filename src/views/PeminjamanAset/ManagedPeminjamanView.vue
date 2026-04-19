@@ -92,7 +92,6 @@ watch(activeTab, (newTab) => {
   loadLoans();
 });
 
-// Watch perubahan URL (misal user klik tombol back di browser)
 watch(
   () => route.path,
   (newPath) => {
@@ -116,12 +115,10 @@ const handleReset = () => {
 };
 
 const handleActionTinjau = (loan: any) => {
-  // Pastikan field id_peminjaman ini ada di data loan kamu
   const targetId = loan.id_peminjaman; 
 
   if (loan.status_peminjaman === 'DIAJUKAN') {
     router.push({
-      // Path harus sama persis dengan yang di index.ts
       path: `/peminjaman/tinjau/create/${targetId}`,
       state: { loan: loan }
     });
