@@ -159,8 +159,6 @@ const canRequestPengadaan = () => {
           </div>
         </div>
 
-        <div
-          class="nav-item"
         <!-- Peminjaman Aset -->
         <div
           v-if="isAdmin()"

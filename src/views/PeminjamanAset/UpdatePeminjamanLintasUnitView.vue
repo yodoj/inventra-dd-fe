@@ -266,6 +266,10 @@ const handleSubmit = async () => {
   gap: 60px 80px;
 }
 
+.form-grid > * {
+  min-width: 0;
+}
+
 .form-group {
     margin-bottom: 0px;
 }

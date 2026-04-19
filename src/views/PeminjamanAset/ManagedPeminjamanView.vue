@@ -82,7 +82,24 @@ onMounted(() => {
   loadLoans();
 });
 
+watch(() => route.path, (newPath) => {
+  // Sync activeTab with view type when route changes
+  if (newPath.includes('/guru-siswa')) {
+    activeTab.value = 'persetujuan';
+  } else if (newPath === '/peminjaman') {
+    activeTab.value = 'lintas-unit';
+  }
+  
+  currentPage.value = 0;
+  handleReset(); // Resets filters and calls loadLoans
+});
+
 watch(activeTab, () => {
+    currentPage.value = 0;
+    loadLoans();
+});
+
+watch(pageSize, () => {
     currentPage.value = 0;
     loadLoans();
 });
@@ -145,9 +162,14 @@ const handleDelete = async () => {
 };
 
 const handleEdit = (loan: any) => {
-  if (isSarprasOrAdmin.value) {
+  if (isGuruSiswaView.value) {
+    // If in Guru/Siswa monitoring view, use standard internal edit route
+    router.push(`/peminjaman/edit/${loan.id_peminjaman}`);
+  } else if (isSarprasOrAdmin.value) {
+    // If in Sarpras/Admin view (cross-unit), use lintas-unit route
     router.push(`/peminjaman/lintas-unit/edit/${loan.id_peminjaman}`);
   } else {
+    // Default for regular SISWA/GURU view
     router.push(`/peminjaman/edit/${loan.id_peminjaman}`);
   }
 };
@@ -205,7 +227,7 @@ const displayLoans = computed(() => {
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">
-          {{ isGuruSiswaView ? 'Pengajuan - Guru, Siswa' : (isSarprasOrAdmin ? 'Peminjaman Aset - Sarpras' : 'Riwayat Peminjaman Saya') }}
+          {{ isGuruSiswaView ? 'Pengajuan - Guru, Siswa' : (isSarprasOrAdmin ? 'Peminjaman Aset' : 'Pengajuan Peminjaman Aset') }}
         </h1>
       </div>
 
@@ -300,7 +322,7 @@ const displayLoans = computed(() => {
       </div>
 
       <!-- Table Section -->
-      <div class="table-container shadow-sm">
+      <div class="table-container shadow-sm mt-12">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse table-fixed">
             <thead>
@@ -325,7 +347,7 @@ const displayLoans = computed(() => {
               <tr v-if="peminjamanStore.isLoading">
                 <td :colspan="totalColumns" class="text-center py-8">Memuat data...</td>
               </tr>
-              <tr v-else-if="activeTab === 'persetujuan'" class="placeholder-row">
+              <tr v-else-if="activeTab === 'persetujuan' && !isGuruSiswaView" class="placeholder-row">
                 <td :colspan="totalColumns" class="text-center py-12 text-gray-400">
                     <ClipboardList class="w-12 h-12 mx-auto mb-4 opacity-20" />
                     <p class="b2-body">Belum ada data persetujuan untuk saat ini.</p>
@@ -381,17 +403,28 @@ const displayLoans = computed(() => {
       </div>
 
       <!-- Pagination Section -->
-      <div class="pagination-section mt-16 mb-8 flex justify-between items-center">
+      <div class="pagination-section mt-20 mb-8">
         <div class="flex items-center gap-4">
           <p class="c2-caption text-gray-500">
             Showing Page {{ peminjamanStore.currentPage + 1 }} of {{ peminjamanStore.totalPages || 1 }}
           </p>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-500">Per page:</span>
+            <div class="custom-select page-size-wrapper">
+              <select v-model="pageSize" class="page-size-select">
+                <option :value="10">10</option>
+                <option :value="30">30</option>
+                <option :value="50">50</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
         </div>
-        <div class="pagination-btns flex gap-2">
+        <div class="pagination-btns">
           <button @click="prevPage" :disabled="currentPage === 0" class="btn-page">
             <ChevronLeft class="w-4 h-4" /> Previous
           </button>
-          <button @click="nextPage" :disabled="currentPage >= peminjamanStore.totalPages - 1" class="btn-page">
+          <button @click="nextPage" :disabled="currentPage >= (peminjamanStore.totalPages || 1) - 1" class="btn-page">
             Next <ChevronRight class="w-4 h-4" />
           </button>
         </div>
@@ -605,6 +638,20 @@ table td {
   vertical-align: middle;
   font-size: 12px;
   color: #333;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.selected-text {
+  font-size: 14px;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
 }
 
 .badge {
@@ -650,6 +697,16 @@ table td {
   gap: 6px;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 60px 80px;
+}
+
+.form-grid > * {
+  min-width: 0;
+}
+
 .btn-page:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -661,5 +718,92 @@ table td {
 
 select {
   background-image: none;
+}
+
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-page {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #D1D5DB;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: #F9FAFB;
+  border-color: #00588F;
+  color: #00588F;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-size-wrapper {
+  width: 80px;
+  position: relative;
+}
+
+.page-size-select {
+  width: 100%;
+  padding: 6px 32px 6px 12px !important;
+  border-radius: 8px;
+  border: 1px solid #D1D5DB;
+  font-size: 13px;
+  outline: none;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #374151;
+  font-weight: 500;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.page-size-wrapper .select-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  color: #6B7280;
+}
+
+.page-size-select:hover {
+  border-color: #00588F;
+}
+
+.page-size-select:focus {
+  border-color: #00588F;
+  box-shadow: 0 0 0 2px rgba(0, 88, 143, 0.1);
+}
+
+.mt-12 {
+    margin-top: 48px;
+}
+
+.mt-20 {
+    margin-top: 40px;
 }
 </style>

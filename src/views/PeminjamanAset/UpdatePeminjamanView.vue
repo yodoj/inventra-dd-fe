@@ -32,6 +32,9 @@ const isLoadingData = ref(true);
 const showConfirmModal = ref(false);
 const isSubmitting = ref(false);
 
+const isAdmin = computed(() => authStore.userRole === 'ADMIN');
+const loanOriginalData = ref<any>(null);
+
 const selectedAsset = computed(() => {
   return borrowableAssets.value.find(a => a.idAset === form.value.idAset);
 });
@@ -45,7 +48,7 @@ const maxQty = computed(() => {
 const assetOptions = computed(() => {
   return borrowableAssets.value.map(asset => ({
     id: asset.idAset,
-    label: `[${asset.kodeAset}] ${asset.namaAset}${asset.merkAset ? ` - ${asset.merkAset}` : ''} (Tersedia: ${asset.qtyTersedia})`
+    label: `${asset.kodeAset} - ${asset.namaAset}${asset.merkAset ? ` - ${asset.merkAset}` : ''} (Tersedia: ${asset.qtyTersedia})`
   }));
 });
 
@@ -70,6 +73,7 @@ const fetchAssets = async (unit: string) => {
 onMounted(async () => {
   try {
     const loanData = await peminjamanStore.fetchLoanById(loanId);
+    loanOriginalData.value = loanData;
     
     if (loanData.status_peminjaman !== 'DIAJUKAN') {
         toastStore.error('Error', 'Hanya pengajuan dengan status DIAJUKAN yang dapat diubah');
@@ -124,7 +128,11 @@ const handleSubmit = async () => {
   try {
     await peminjamanStore.updateLoan(loanId, form.value);
     toastStore.success('Success', 'Pengajuan peminjaman berhasil diperbarui');
-    router.push('/peminjaman');
+    if (isAdmin.value) {
+      router.push('/peminjaman/guru-siswa');
+    } else {
+      router.push('/peminjaman');
+    }
   } catch (err: any) {
     const errorMsg = err.response?.data?.message || 'Gagal memperbarui pengajuan';
     toastStore.error('Error', errorMsg);
@@ -145,6 +153,19 @@ const handleSubmit = async () => {
       <div v-else class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="peminjaman-form">
           <div class="form-grid">
+            <!-- Requester Info (Admin only) -->
+            <template v-if="isAdmin && loanOriginalData">
+              <div class="form-group col-span-1">
+                <label class="s2-subtitle mb-2 block text-gray-400">Nama Pengaju</label>
+                <div class="form-input-readonly">{{ loanOriginalData.nama_peminjam }}</div>
+              </div>
+              <div class="form-group col-span-1">
+                <label class="s2-subtitle mb-2 block text-gray-400">Unit Pengaju</label>
+                <div class="form-input-readonly">{{ loanOriginalData.unit_peminjam }}</div>
+              </div>
+              <div></div> <!-- Spacer -->
+            </template>
+
             <!-- Nama Aset -->
             <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
@@ -237,12 +258,26 @@ const handleSubmit = async () => {
   gap: 60px 80px;
 }
 
+.form-grid > * {
+  min-width: 0;
+}
+
 .form-group {
     margin-bottom: 0px;
 }
 
 .col-span-1 { grid-column: span 1; }
 .row-span-2 { grid-row: span 2; }
+
+.form-input-readonly {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  background: #F9FAFB;
+  font-size: 14px;
+  color: #6B7280;
+}
 
 .form-input {
   width: 100%;
