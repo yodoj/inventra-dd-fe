@@ -2,11 +2,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { toast } from 'vue-sonner';
+import { useToastStore } from '@/stores/toast';
 import api from '@/services/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const formData = ref({
   name: '',
@@ -129,12 +130,13 @@ const handleSaveProfile = async () => {
     const updatedUser = { ...authStore.user, ...response.data.data };
     authStore.setAuth(updatedUser, authStore.token!);
 
-    toast.success('Profil berhasil diperbarui!');
+    toastStore.success('Success', 'Profil berhasil diperbarui!');
     setTimeout(() => router.push('/profile'), 1500);
   } catch (err: unknown) {
     const axiosErr = err as { response?: { data?: { message?: string } } };
     errorMessage.value = axiosErr.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
-    toast.error(errorMessage.value);
+    // Error notification is now handled by components using premium toastStore
+    toastStore.error('Error', errorMessage.value);
   } finally {
     isSaving.value = false;
   }

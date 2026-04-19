@@ -29,9 +29,6 @@ const peminjamanStore = usePeminjamanStore();
 const tinjauStore = useTinjauPeminjamanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
-
-const isGuruSiswaView = computed(() => route.path === '/peminjaman/guru-siswa');
-const activeTab = ref<'persetujuan' | 'lintas-unit'>(isGuruSiswaView.value ? 'persetujuan' : 'lintas-unit');
 const searchQuery = ref('');
 const statusFilter = ref('');
 const unitFilter = ref('');
@@ -46,6 +43,9 @@ const isDeleting = ref(false);
 const isSarprasOrAdmin = computed(() => {
   return ['SARPRAS', 'ADMIN', 'SUPERADMIN'].includes(authStore.userRole || '');
 });
+
+const isGuruSiswaView = computed(() => route.path === '/peminjaman/guru-siswa');
+const activeTab = ref<'persetujuan' | 'lintas-unit'>('persetujuan');
 
 const isSuperadmin = computed(() => {
     return authStore.userRole === 'ADMIN' && authStore.user?.unit === 'SUPERADMIN';
@@ -84,7 +84,7 @@ watch(() => route.path, (newPath) => {
   if (newPath.includes('/guru-siswa')) {
     activeTab.value = 'persetujuan';
   } else if (newPath === '/peminjaman') {
-    activeTab.value = 'lintas-unit';
+    activeTab.value = 'persetujuan';
   }
   currentPage.value = 0;
   handleReset();
@@ -234,6 +234,15 @@ const totalPages = computed(() => {
     if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) return 1;
     return peminjamanStore.totalPages || 1;
 });
+
+// Menghitung jumlah kolom secara dinamis untuk colspan agar tabel tidak terjepit saat kosong
+const dynamicColspan = computed(() => {
+  if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) {
+    return 9 + (isSuperadmin.value ? 1 : 0);
+  } else {
+    return 9 + (isSarprasOrAdmin.value ? 2 : 0);
+  }
+});
 </script>
 
 <template>
@@ -241,7 +250,7 @@ const totalPages = computed(() => {
     <div class="container py-16">
       <div class="flex justify-between items-center mb-16">
         <h1 class="h2-headline">
-          {{ activeTab === 'persetujuan' && !isGuruSiswaView ? 'Peninjauan Pengajuan Peminjaman Aset' : 'Pengajuan Peminjaman Aset' }}
+          {{ (isSarprasOrAdmin && activeTab === 'persetujuan' && !isGuruSiswaView) ? 'Peninjauan Pengajuan Peminjaman Aset' : 'Pengajuan Peminjaman Aset' }}
         </h1>
       </div>
 
@@ -251,13 +260,13 @@ const totalPages = computed(() => {
           @click="activeTab = 'persetujuan'"
           :class="['tab-btn', { active: activeTab === 'persetujuan' }]"
         >
-          <FileText class="icon-md" /> Peninjauan Pengajuan
+          <FileText class="icon-md" /> {{ isSuperadmin ? 'Persetujuan Pengajuan' : 'Persetujuan Pengajuan' }}
         </button>
         <button
           @click="activeTab = 'lintas-unit'"
           :class="['tab-btn', { active: activeTab === 'lintas-unit' }]"
         >
-          <Home class="icon-md" /> Pengajuan ke Unit Lain
+          <ArrowRightLeft class="icon-md" /> Pengajuan ke Unit Lain
         </button>
       </div>
 
@@ -323,8 +332,8 @@ const totalPages = computed(() => {
         </div>
       </div>
 
-      <!-- Add Button (Monitoring Tab only) -->
-      <div v-if="activeTab !== 'persetujuan' || isGuruSiswaView" class="flex justify-end mb-16">
+      <!-- Add Button (Standard Loan View only) -->
+      <div v-if="!isSarprasOrAdmin || activeTab !== 'persetujuan' || isGuruSiswaView" class="flex justify-end mb-16">
         <button 
           @click="router.push(isSarprasOrAdmin && activeTab === 'lintas-unit' ? '/peminjaman/tambah-lintas-unit' : '/peminjaman/tambah')"
           class="btn-add"
@@ -368,12 +377,12 @@ const totalPages = computed(() => {
             </thead>
             <tbody>
               <tr v-if="storeLoading">
-                <td colspan="10" class="text-center py-12">
+                <td :colspan="dynamicColspan" class="text-center py-12">
                   <span class="b2-body text-gray-400">Memuat data peminjaman...</span>
                 </td>
               </tr>
               <tr v-else-if="displayLoans.length === 0">
-                <td colspan="12" class="text-center py-12 text-gray-500">
+                <td :colspan="dynamicColspan" class="text-center py-12 text-gray-500 italic">
                     Tidak ada data ditemukan.
                 </td>
               </tr>

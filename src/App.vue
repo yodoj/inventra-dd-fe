@@ -10,7 +10,6 @@ const showNavbar = computed(() => route.path !== '/login')
 </script>
 
 <template>
-  <Toaster position="top-right" richColors />
   <Toast />
   <Navbar v-if="showNavbar" />
   <main :class="{ 'with-navbar': showNavbar }">
