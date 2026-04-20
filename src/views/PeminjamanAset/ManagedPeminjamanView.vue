@@ -51,6 +51,10 @@ const isSuperadmin = computed(() => {
     return authStore.userRole === 'ADMIN' && authStore.user?.unit === 'SUPERADMIN';
 });
 
+const isPeninjauanTab = computed(() => {
+  return isSarprasOrAdmin.value && activeTab.value === 'persetujuan' && !isGuruSiswaView.value;
+});
+
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 const categories = [
   { label: 'Barang', value: 'BARANG' },
@@ -203,7 +207,7 @@ const prevPage = () => {
 };
 
 const nextPage = () => {
-  const total = activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value ? 1 : peminjamanStore.totalPages;
+  const total = isPeninjauanTab.value ? 1 : peminjamanStore.totalPages;
   if (currentPage.value < total - 1) {
     currentPage.value++;
     loadLoans();
@@ -211,7 +215,7 @@ const nextPage = () => {
 };
 
 const displayLoans = computed(() => {
-    if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) {
+    if (isPeninjauanTab.value) {
         return tinjauStore.listTinjauan;
     }
     let list = activeTab.value === 'lintas-unit' ? peminjamanStore.loansLintasUnit : peminjamanStore.loans;
@@ -227,17 +231,17 @@ const displayLoans = computed(() => {
 });
 
 const storeLoading = computed(() => {
-    return peminjamanStore.isLoading || (activeTab.value === 'persetujuan' && tinjauStore.isLoading);
+    return peminjamanStore.isLoading || (isPeninjauanTab.value && tinjauStore.isLoading);
 });
 
 const totalPages = computed(() => {
-    if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) return 1;
+    if (isPeninjauanTab.value) return 1;
     return peminjamanStore.totalPages || 1;
 });
 
 // Menghitung jumlah kolom secara dinamis untuk colspan agar tabel tidak terjepit saat kosong
 const dynamicColspan = computed(() => {
-  if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) {
+  if (isPeninjauanTab.value) {
     return 9 + (isSuperadmin.value ? 1 : 0);
   } else {
     return 9 + (isSarprasOrAdmin.value ? 2 : 0);
@@ -532,7 +536,7 @@ const dynamicColspan = computed(() => {
       </div>
 
       <!-- Pagination Section -->
-      <div class="pagination-section mt-20 mb-8">
+      <div v-if="!isPeninjauanTab" class="pagination-section mt-20 mb-8">
         <div class="flex items-center gap-4">
           <p class="c2-caption text-gray-500">
             Showing Page {{ currentPage + 1 }} of {{ totalPages }}
