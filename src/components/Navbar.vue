@@ -159,7 +159,7 @@ const canRequestPengadaan = () => {
           </div>
         </div>
 
-        
+
         <!-- Peminjaman Aset -->
         <div
           v-if="isAdmin()"
@@ -178,7 +178,7 @@ const canRequestPengadaan = () => {
             <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
               Pengajuan - Guru, Siswa
             </div>
-            <div @click="protectedNavigate('/peminjaman/sarpras')" class="dropdown-item" style="cursor: pointer;">
+            <div @click="protectedNavigate('/peminjaman')" class="dropdown-item" style="cursor: pointer;">
               Pengajuan dan Persetujuan - Sarpras
             </div>
           </div>

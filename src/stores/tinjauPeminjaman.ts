@@ -24,6 +24,7 @@ export interface TinjauPeminjaman {
     alasan: string | null;
     id_peninjau: string | null;
     role_peninjau: string | null;
+    nama_peninjau: string | null;
     createdAt: string | null;
     updatedAt: string | null;
 }

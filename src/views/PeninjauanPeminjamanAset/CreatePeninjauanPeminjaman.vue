@@ -76,7 +76,7 @@ const handleSave = async () => {
       alasan: form.alasan
     });
     toastStore.success('Success', 'Peninjauan peminjaman aset berhasil tersimpan');
-    router.push('/peminjaman/tinjau'); 
+    router.push('/peminjaman'); 
   } catch (error: any) {
     toastStore.error('Error', error || 'Gagal menyimpan peninjauan');
   }

@@ -23,7 +23,7 @@ onMounted(async () => {
     }
   } catch (err) {
     toastStore.error('Error', 'Gagal memuat detail peninjauan');
-    router.push('/peminjaman/tinjau');
+    router.push('/peminjaman');
   }
 });
 
@@ -32,6 +32,22 @@ const formattedAset = computed(() => {
   const { kode_aset, nama_aset, merk_aset } = store.current;
   return merk_aset ? `${kode_aset} - ${nama_aset} - ${merk_aset}` : `${kode_aset} - ${nama_aset}`;
 });
+
+// Fungsi ambil tanggal
+const getDateOnly = (dateStr: string | null | undefined) => {
+  if (!dateStr) return "-";
+  const rawDate = dateStr.replace('T', ' ').split(' ')[0];
+  const [year, month, day] = rawDate.split('-');
+  
+  return `${day}-${month}-${year}`;
+};
+
+// Fungsi ambil jam:menit 
+const getTimeOnly = (dateStr: string | null | undefined) => {
+  if (!dateStr) return "-";
+  const clean = dateStr.replace('T', ' ').split(' ')[1] || "";
+  return clean.substring(0, 5); 
+};
 
 const isAlreadyReviewed = computed(() => store.current?.status_peminjaman !== 'DIAJUKAN');
 
@@ -147,8 +163,22 @@ const rawDateTime = (dateStr: string | null | undefined) => {
         </div>
 
         <div class="review-section">
-          <h3 class="section-subtitle mb-reason">Alasan</h3>
+          <h3 class="section-subtitle mb-reason">Informasi Peninjauan</h3>
           
+          <div v-if="isAlreadyReviewed" class="reviewer-identity mb-6">
+    <div class="row-data">
+      <span class="label">Nama Peninjau</span>
+      <span class="value">: {{ store.current.nama_peninjau || '-' }}</span>
+    </div>
+    <div class="row-data">
+      <span class="label">Role Peninjau</span>
+      <span class="value">: {{ store.current.role_peninjau }}</span>
+    </div>
+    <div class="row-data">
+      <span class="label">Alasan</span>
+      <span class="value">: </span>
+    </div>
+  </div>
           <div class="review-box">
             <p v-if="!isAlreadyReviewed" class="review-text italic">
               Belum ada review
@@ -165,13 +195,17 @@ const rawDateTime = (dateStr: string | null | undefined) => {
             </span> 
             pada 
             <span class="highlight">
-              {{ rawDateTime(store.current.updatedAt) }}
+              {{ getDateOnly(store.current.updatedAt) }}
+            </span>
+            pukul 
+            <span class="highlight">
+              {{ getTimeOnly(store.current.updatedAt) }}
             </span>
           </div>
         </div>
 
         <div class="card-footer-action">
-          <button @click="router.push('/peminjaman/tinjau')" class="btn-cancel-gray">
+          <button @click="router.push('/peminjaman')" class="btn-cancel-gray">
             Kembali
           </button>
         </div>
@@ -230,6 +264,8 @@ const rawDateTime = (dateStr: string | null | undefined) => {
   font-size: 14px; 
   line-height: 1.5;
   color: #333;
+  word-break: break-all; 
+  white-space: pre-wrap;
 }
 
 .reviewer-info {
