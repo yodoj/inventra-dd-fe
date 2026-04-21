@@ -9,7 +9,6 @@ import { useRouter } from "vue-router"
 import { Plus, Trash2, Pencil } from "lucide-vue-next"
 import { useToastStore } from "@/stores/toast"
 import ConfirmationModal from "@/components/ConfirmationModal.vue"
-import { a } from "vue-router/dist/index-Cu9B0wDz.mjs"
 const showDeleteModal = ref(false)
 const selectedId = ref<string | null>(null)
 const router = useRouter()

@@ -60,6 +60,21 @@ const formatDisplay = (text: string) => {
   return text?.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
+// Fungsi untuk convert timestamp ke format yang lebih readable
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 // Fungsi untuk menangani penghapusan pengadaan
 const handleDelete = async () => {
   if (!id_pengadaan) return;
@@ -93,7 +108,7 @@ const handleDelete = async () => {
         <div class="card-header-container">
           <div class="header-left">
             <h2 class="asset-display-title">
-              {{ pengadaan.id_pengadaan }} - {{ pengadaan.nama_aset }}
+              {{ pengadaan.nama_aset }}
             </h2>
           </div>
           
@@ -143,7 +158,7 @@ const handleDelete = async () => {
             <div class="info-column">
               <div class="row-data">
                 <span class="label">Waktu Pengajuan</span>
-                <span class="value">: {{ pengadaan.waktu_pengajuan }}</span>
+                <span class="value">: {{ formatDateTime(pengadaan.waktu_pengajuan) }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Estimasi Harga</span>

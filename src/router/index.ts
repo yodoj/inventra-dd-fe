@@ -5,7 +5,9 @@ import PengadaanAsetView from '@/views/PengadaanAset/PengadaanAsetView.vue';
 import AddPengadaanAsetView from '@/views/PengadaanAset/AddPengadaanAsetView.vue';
 import DetailPengadaanAsetView from '@/views/PengadaanAset/DetailPengadaanAsetView.vue';
 import UpdatePengadaanAsetView from '@/views/PengadaanAset/UpdatePengadaanAsetView.vue';
-
+import CreatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/CreatePeninjauanPeminjaman.vue';
+import UpdatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/UpdatePeninjauanPeminjaman.vue';
+import DetailPeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/DetailPeninjauanPeminjaman.vue';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -136,6 +138,21 @@ const router = createRouter({
       name: 'add-peminjaman-lintas-unit',
       component: () => import('../views/PeminjamanAset/AddPeminjamanLintasUnitView.vue'),
     },
+    {
+      path: '/peminjaman/edit/:id',
+      name: 'update-peminjaman',
+      component: () => import('../views/PeminjamanAset/UpdatePeminjamanView.vue'),
+    },
+    {
+      path: '/peminjaman/lintas-unit/edit/:id',
+      name: 'update-peminjaman-lintas-unit',
+      component: () => import('../views/PeminjamanAset/UpdatePeminjamanLintasUnitView.vue'),
+    },
+    {
+      path: '/peminjaman/guru-siswa',
+      name: 'managed-peminjaman-all',
+      component: () => import('../views/PeminjamanAset/ManagedPeminjamanView.vue'),
+    },
 
     {
       path: '/pengadaan/rusak',
@@ -177,8 +194,23 @@ const router = createRouter({
       path: '/profile/pengelolaan-akun/tambah',
       name: 'tambah-akun',
       component: () => import('../views/Profile/TambahAkunView.vue'),
+    },
+    {
+      path: '/peminjaman/tinjau/create/:idPeminjaman',
+      name: 'create-review-peminjaman',
+      component: CreatePeninjauanPeminjaman
+    },
+    {
+      path: '/peminjaman/tinjau/update/:idPeminjaman',
+      name: 'update-review-peminjaman',
+      component: UpdatePeninjauanPeminjaman
+    },
+    {
+      path: '/peminjaman/tinjau/detail/:idPeminjaman',
+      name: 'detail-review-peminjaman',
+      component: DetailPeninjauanPeminjaman
     }
-  ],
+  ]
 })
 
 export default router

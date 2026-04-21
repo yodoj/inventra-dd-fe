@@ -247,7 +247,7 @@ function getActionType(row: TableRow) {
         <div class="filter-item">
           <label class="filter-label">Status Pengajuan</label>
           <div class="custom-select">
-            <select v-model="statusFilter" :class="{ 'placeholder-color': statusFilter === 'ALL' }" @keyup.enter="handleApplyFilter">
+            <select v-model="statusFilter" :class="{ 'placeholder-color': statusFilter === 'ALL' }">
               <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
             </select>
             <ChevronDown class="select-icon" />
