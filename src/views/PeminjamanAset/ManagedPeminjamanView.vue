@@ -16,7 +16,10 @@ import {
   Search,
   FileText,
   Home,
-  Calendar
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-vue-next';
 import 'primeicons/primeicons.css'
 import EditIcon from '@/components/icons/EditIcon.vue';
@@ -33,8 +36,21 @@ const searchQuery = ref('');
 const statusFilter = ref('');
 const unitFilter = ref('');
 const categoryGroupFilter = ref('');
+const tanggalPeminjamanFilter = ref('');
 const currentPage = ref(0);
 const pageSize = ref(10);
+
+const sortColumn = ref('');
+const sortDesc = ref(false);
+
+const handleSort = (column: string) => {
+  if (sortColumn.value === column) {
+    sortDesc.value = !sortDesc.value;
+  } else {
+    sortColumn.value = column;
+    sortDesc.value = true;
+  }
+};
 
 const showDeleteModal = ref(false);
 const loanToDelete = ref<any>(null);
@@ -63,13 +79,24 @@ const categories = [
 
 const loadLoans = async () => {
   const filters: any = {};
-  if (searchQuery.value) filters.search = searchQuery.value;
-  if (statusFilter.value) filters.status = statusFilter.value;
-  if (unitFilter.value) filters.unit = unitFilter.value;
 
-  if (isSarprasOrAdmin.value && activeTab.value === 'persetujuan' && !isGuruSiswaView.value) {
+  if (isPeninjauanTab.value) {
+    if (unitFilter.value) filters.unitTujuan = unitFilter.value;
+    if (categoryGroupFilter.value) filters.kategoriAset = categoryGroupFilter.value;
+    if (statusFilter.value) filters.statusPeminjaman = statusFilter.value;
+    if (tanggalPeminjamanFilter.value) {
+      const [y, m, d] = tanggalPeminjamanFilter.value.split('-');
+      if (y && m && d) {
+        filters.tanggalPeminjaman = `${d}-${m}-${y}`;
+      }
+    }
     await tinjauStore.fetchAll(filters);
   } else {
+    if (searchQuery.value) filters.search = searchQuery.value;
+    if (statusFilter.value) filters.statusPeminjaman = statusFilter.value;
+    if (unitFilter.value) filters.unitTujuan = unitFilter.value;
+    if (categoryGroupFilter.value) filters.kategoriAset = categoryGroupFilter.value;
+
     if (!isSarprasOrAdmin.value) {
         await peminjamanStore.fetchLoans(currentPage.value, pageSize.value, filters);
     } else if (isGuruSiswaView.value) {
@@ -114,6 +141,7 @@ const handleReset = () => {
   statusFilter.value = '';
   unitFilter.value = '';
   categoryGroupFilter.value = '';
+  tanggalPeminjamanFilter.value = '';
   currentPage.value = 0;
   loadLoans();
 };
@@ -215,18 +243,43 @@ const nextPage = () => {
 };
 
 const displayLoans = computed(() => {
+    let list = [];
     if (isPeninjauanTab.value) {
-        return tinjauStore.listTinjauan;
+        list = [...tinjauStore.listTinjauan];
+    } else {
+        list = activeTab.value === 'lintas-unit' ? [...peminjamanStore.loansLintasUnit] : [...peminjamanStore.loans];
     }
-    let list = activeTab.value === 'lintas-unit' ? peminjamanStore.loansLintasUnit : peminjamanStore.loans;
     
-    if (categoryGroupFilter.value) {
-        if (categoryGroupFilter.value === 'BARANG') {
-            list = list.filter(l => l.kategori_aset === 'BARANG_TIDAK_HABIS_PAKAI');
-        } else {
-            list = list.filter(l => ['RUANG_KELAS', 'RUANG_NON_KELAS'].includes(l.kategori_aset));
-        }
+    if (sortColumn.value) {
+        list.sort((a: any, b: any) => {
+            let valA: any, valB: any;
+            if (sortColumn.value === 'waktu_pengajuan') {
+                valA = a.waktu_pengajuan ? new Date(a.waktu_pengajuan).getTime() : 0;
+                valB = b.waktu_pengajuan ? new Date(b.waktu_pengajuan).getTime() : 0;
+            } else if (sortColumn.value === 'waktu_peminjaman') {
+                valA = a.waktu_peminjaman ? new Date(a.waktu_peminjaman).getTime() : 0;
+                valB = b.waktu_peminjaman ? new Date(b.waktu_peminjaman).getTime() : 0;
+            } else if (sortColumn.value === 'waktu_pengembalian') {
+                valA = a.waktu_pengembalian ? new Date(a.waktu_pengembalian).getTime() : 0;
+                valB = b.waktu_pengembalian ? new Date(b.waktu_pengembalian).getTime() : 0;
+            } else if (sortColumn.value === 'aset') {
+                valA = (a.kode_aset || '').toString().toLowerCase();
+                valB = (b.kode_aset || '').toString().toLowerCase();
+            }
+
+            if (valA < valB) return sortDesc.value ? 1 : -1;
+            if (valA > valB) return sortDesc.value ? -1 : 1;
+            
+            // Secondary sort for equal values (especially useful for 'aset')
+            const timeA = a.waktu_pengajuan ? new Date(a.waktu_pengajuan).getTime() : 0;
+            const timeB = b.waktu_pengajuan ? new Date(b.waktu_pengajuan).getTime() : 0;
+            if (timeA < timeB) return -1;
+            if (timeA > timeB) return 1;
+
+            return 0;
+        });
     }
+
     return list;
 });
 
@@ -276,8 +329,62 @@ const dynamicColspan = computed(() => {
 
       <!-- Filter Section -->
       <div class="filter-card mb-20">
-        <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Peminjaman</h3>
-        <div class="filter-grid">
+        <h3 class="s2-subtitle" style="margin-bottom: 12px;">{{ isPeninjauanTab ? 'Filter Peninjauan Peminjaman' : 'Filter Peminjaman' }}</h3>
+        
+        <!-- Filter Peninjauan -->
+        <div v-if="isPeninjauanTab" class="filter-grid">
+          <div v-if="authStore.userRole === 'ADMIN'" class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Unit Tujuan</label>
+            <div class="custom-select col-unit-select">
+              <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
+                <option value="">Semua Unit</option>
+                <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
+
+          <div class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Kategori</label>
+            <div class="custom-select col-cat-select">
+              <select v-model="categoryGroupFilter" :class="{ 'placeholder-color': !categoryGroupFilter }">
+                <option value="">Semua Kategori</option>
+                <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
+
+          <div class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Status Peminjaman</label>
+            <div class="custom-select col-status-select">
+              <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
+                <option value="">Semua Status</option>
+                <option v-for="s in [
+                  { label: 'Diajukan', value: 'DIAJUKAN' },
+                  { label: 'Disetujui', value: 'DISETUJUI' },
+                  { label: 'Ditolak', value: 'DITOLAK' }
+                ]" :key="s.value" :value="s.value">{{ s.label }}</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
+
+          <div class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Tanggal Peminjaman</label>
+            <div class="search-box">
+              <Calendar class="search-icon" />
+              <input
+                v-model="tanggalPeminjamanFilter"
+                type="date"
+                @keyup.enter="handleFilter"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Peminjaman Default -->
+        <div v-else class="filter-grid">
           <div v-if="isSarprasOrAdmin" class="filter-item">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Unit Tujuan</label>
             <div class="custom-select col-unit-select">
@@ -308,14 +415,12 @@ const dynamicColspan = computed(() => {
                 <option v-for="s in [
                   { label: 'Diajukan', value: 'DIAJUKAN' },
                   { label: 'Disetujui', value: 'DISETUJUI' },
-                  { label: 'Ditolak', value: 'DITOLAK' },
-                  { label: 'Dibatalkan', value: 'DIBATALKAN' }
+                  { label: 'Ditolak', value: 'DITOLAK' }
                 ]" :key="s.value" :value="s.value">{{ s.label }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
           </div>
-
 
           <div class="filter-item flex-grow">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Peminjaman</label>
@@ -353,27 +458,76 @@ const dynamicColspan = computed(() => {
             <thead>
               <tr v-if="activeTab === 'persetujuan' && isSarprasOrAdmin && !isGuruSiswaView">
                 <th class="col-pengaju border-r border-white/20">Nama Peminjam</th>
-                <th class="col-aset-wide border-r border-white/20">Aset</th>
+                <th class="col-aset-wide border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('aset')">
+                  <div class="flex items-center gap-1">
+                    <span>Aset</span>
+                    <ArrowUp v-if="sortColumn === 'aset' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'aset' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'aset'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
                 <th v-if="isSuperadmin" class="col-unit-tujuan border-r border-white/20">Unit Tujuan</th>
                 <th class="col-qty border-r border-white/20 text-center">Qty</th>
-                <th class="col-peminjaman border-r border-white/20">Waktu Peminjaman</th>
-                <th class="col-pengembalian border-r border-white/20">Waktu Pengembalian</th>
+                <th class="col-peminjaman border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('waktu_peminjaman')">
+                  <div class="flex items-center gap-1 justify-center">
+                    <span>Waktu Peminjaman</span>
+                    <ArrowUp v-if="sortColumn === 'waktu_peminjaman' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'waktu_peminjaman' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'waktu_peminjaman'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
+                <th class="col-pengembalian border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('waktu_pengembalian')">
+                  <div class="flex items-center gap-1 justify-center">
+                    <span>Waktu Pengembalian</span>
+                    <ArrowUp v-if="sortColumn === 'waktu_pengembalian' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'waktu_pengembalian' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'waktu_pengembalian'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
                 <th class="col-tujuan-wide border-r border-white/20">Tujuan Peminjaman</th>
                 <th class="col-review-history border-r border-white/20">Alasan & Riwayat Review</th>
                 <th class="col-status-cell border-r border-white/20 text-center">Status</th>
                 <th class="col-aksi-wide text-center">Aksi</th>
               </tr>
               <tr v-else>
-                <th class="col-waktu-pengajuan border-r border-white/20">Waktu Pengajuan</th>
+                <th class="col-waktu-pengajuan border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('waktu_pengajuan')">
+                  <div class="flex items-center gap-1">
+                    <span>Waktu Pengajuan</span>
+                    <ArrowUp v-if="sortColumn === 'waktu_pengajuan' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'waktu_pengajuan' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'waktu_pengajuan'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
                 <th v-if="isSarprasOrAdmin" class="col-pengaju border-r border-white/20">Nama Peminjam</th>
-                <th class="col-aset-wide border-r border-white/20">Aset</th>
+                <th class="col-aset-wide border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('aset')">
+                  <div class="flex items-center gap-1">
+                    <span>Aset</span>
+                    <ArrowUp v-if="sortColumn === 'aset' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'aset' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'aset'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
                 <th v-if="isSarprasOrAdmin" class="col-unit border-r border-white/20">
                   {{ isSuperadmin ? 'Unit Tujuan' : (activeTab === 'lintas-unit' ? 'Unit Tujuan' : 'Unit Peminjam') }}
                 </th>
                 <th class="col-qty border-r border-white/20 text-center">Qty</th>
                 <th class="col-kategori border-r border-white/20">Kategori</th>
-                <th class="col-peminjaman border-r border-white/20">Waktu Peminjaman</th>
-                <th class="col-pengembalian border-r border-white/20">Waktu Pengembalian</th>
+                <th class="col-peminjaman border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('waktu_peminjaman')">
+                  <div class="flex items-center gap-1 justify-center">
+                    <span>Waktu Peminjaman</span>
+                    <ArrowUp v-if="sortColumn === 'waktu_peminjaman' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'waktu_peminjaman' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'waktu_peminjaman'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
+                <th class="col-pengembalian border-r border-white/20 cursor-pointer hover:bg-white/10" @click="handleSort('waktu_pengembalian')">
+                  <div class="flex items-center gap-1 justify-center">
+                    <span>Waktu Pengembalian</span>
+                    <ArrowUp v-if="sortColumn === 'waktu_pengembalian' && !sortDesc" class="w-3 h-3" />
+                    <ArrowDown v-if="sortColumn === 'waktu_pengembalian' && sortDesc" class="w-3 h-3" />
+                    <ArrowUpDown v-if="sortColumn !== 'waktu_pengembalian'" class="w-3 h-3 opacity-50" />
+                  </div>
+                </th>
                 <th class="col-tujuan-wide border-r border-white/20">Tujuan Peminjaman</th>
                 <th class="col-status-cell border-r border-white/20 text-center">Status</th>
                 <th class="col-aksi text-center">Aksi</th>
@@ -650,7 +804,7 @@ const dynamicColspan = computed(() => {
 
 .custom-select select {
   width: 100%;
-  padding: 10px 16px;
+  padding: 8px 16px;
   padding-right: 40px;
   border: 1px solid #D1D5DB;
   border-radius: 40px;
@@ -685,7 +839,7 @@ const dynamicColspan = computed(() => {
 
 .search-box input {
   width: 100%;
-  padding: 10px 12px 10px 42px;
+  padding: 8px 12px 8px 42px;
   border: 1px solid #D1D5DB;
   border-radius: 40px;
   font-size: 14px;
