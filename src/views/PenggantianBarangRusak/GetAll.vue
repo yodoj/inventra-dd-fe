@@ -292,7 +292,7 @@ function canEditDelete(status: string) {
 
             <td>
               <div class="img-box">
-                <img :src="`http://localhost:8080/uploads/contoh-gambar/${row.gambar}`" />
+                <img :src="`https://inventra-dd-be.onrender.com/uploads/contoh-gambar/${row.gambar}`" />
               </div>
             </td>
 

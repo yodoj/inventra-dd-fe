@@ -263,7 +263,7 @@ function getActionType(row: TableRow) {
             </td>
             <td>
               <div class="img-box">
-                <img :src="`http://localhost:8080/uploads/contoh-gambar/${row.linkGambar}`" />
+                <img :src="`https://inventra-dd-be.onrender.com/uploads/contoh-gambar/${row.linkGambar}`" />
               </div>
             </td>
             <td class="bold">{{ row.namaAset }}</td>
