@@ -33,7 +33,6 @@ const formattedAset = computed(() => {
   return merk_aset ? `${kode_aset} - ${nama_aset} - ${merk_aset}` : `${kode_aset} - ${nama_aset}`;
 });
 
-// Fungsi ambil tanggal
 const getDateOnly = (dateStr: string | null | undefined) => {
   if (!dateStr) return "-";
   const rawDate = dateStr.replace('T', ' ').split(' ')[0];
@@ -42,7 +41,6 @@ const getDateOnly = (dateStr: string | null | undefined) => {
   return `${day}-${month}-${year}`;
 };
 
-// Fungsi ambil jam:menit 
 const getTimeOnly = (dateStr: string | null | undefined) => {
   if (!dateStr) return "-";
   const clean = dateStr.replace('T', ' ').split(' ')[1] || "";
@@ -60,8 +58,11 @@ const getStatusClass = (status: string) => {
   }
 };
 
-const rawDateTime = (dateStr: string | null | undefined) => {
-  return dateStr ? dateStr.replace('T', ' ').replace('.000+00:00', '') : "-";
+const formatDateTime = (dateStr: string | null | undefined) => {
+  if (!dateStr) return "-";
+  const date = getDateOnly(dateStr);
+  const time = getTimeOnly(dateStr);
+  return `${date} | ${time}`;
 };
 </script>
 
@@ -140,11 +141,11 @@ const rawDateTime = (dateStr: string | null | undefined) => {
               </div>
               <div class="row-data">
                 <span class="label">Waktu Peminjaman</span>
-                <span class="value">: {{ rawDateTime(store.current.waktu_peminjaman) }}</span>
+                <span class="value">: {{ formatDateTime(store.current.waktu_peminjaman) }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Waktu Pengembalian</span>
-                <span class="value">: {{ rawDateTime(store.current.waktu_pengembalian) }}</span>
+                <span class="value">: {{ formatDateTime(store.current.waktu_pengembalian) }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Tujuan Peminjaman</span>
@@ -156,7 +157,7 @@ const rawDateTime = (dateStr: string | null | undefined) => {
               </div>
               <div class="row-data">
                 <span class="label">Waktu Pengajuan</span>
-                <span class="value">: {{ rawDateTime(store.current.waktu_pengajuan) }}</span>
+                <span class="value">: {{ formatDateTime(store.current.waktu_pengajuan) }}</span>
               </div>
             </div>
           </div>
