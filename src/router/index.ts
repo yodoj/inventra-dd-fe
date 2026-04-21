@@ -7,7 +7,7 @@ import DetailPengadaanAsetView from '@/views/PengadaanAset/DetailPengadaanAsetVi
 import UpdatePengadaanAsetView from '@/views/PengadaanAset/UpdatePengadaanAsetView.vue';
 import CreatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/CreatePeninjauanPeminjaman.vue';
 import UpdatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/UpdatePeninjauanPeminjaman.vue';
-
+import DetailPeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/DetailPeninjauanPeminjaman.vue';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -127,13 +127,6 @@ const router = createRouter({
       path: '/peminjaman',
       name: 'managed-peminjaman',
       component: () => import('../views/PeminjamanAset/ManagedPeminjamanView.vue'),
-      children: [
-        {
-          path: 'tinjau', // Ini akan menjadi /peminjaman/peninjauan
-          name: 'peninjauan-peminjaman',
-          component: () => import('@/views/PeminjamanAset/ManagedPeminjamanView.vue'),
-        }
-      ]
     },
     {
       path: '/peminjaman/tambah',
@@ -211,6 +204,11 @@ const router = createRouter({
       path: '/peminjaman/tinjau/update/:idPeminjaman',
       name: 'update-review-peminjaman',
       component: UpdatePeninjauanPeminjaman
+    },
+    {
+      path: '/peminjaman/tinjau/detail/:idPeminjaman',
+      name: 'detail-review-peminjaman',
+      component: DetailPeninjauanPeminjaman
     }
   ]
 })

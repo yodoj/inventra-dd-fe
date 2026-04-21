@@ -51,6 +51,10 @@ const isSuperadmin = computed(() => {
     return authStore.userRole === 'ADMIN' && authStore.user?.unit === 'SUPERADMIN';
 });
 
+const isPeninjauanTab = computed(() => {
+  return isSarprasOrAdmin.value && activeTab.value === 'persetujuan' && !isGuruSiswaView.value;
+});
+
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 const categories = [
   { label: 'Barang', value: 'BARANG' },
@@ -203,7 +207,7 @@ const prevPage = () => {
 };
 
 const nextPage = () => {
-  const total = activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value ? 1 : peminjamanStore.totalPages;
+  const total = isPeninjauanTab.value ? 1 : peminjamanStore.totalPages;
   if (currentPage.value < total - 1) {
     currentPage.value++;
     loadLoans();
@@ -211,7 +215,7 @@ const nextPage = () => {
 };
 
 const displayLoans = computed(() => {
-    if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) {
+    if (isPeninjauanTab.value) {
         return tinjauStore.listTinjauan;
     }
     let list = activeTab.value === 'lintas-unit' ? peminjamanStore.loansLintasUnit : peminjamanStore.loans;
@@ -227,17 +231,17 @@ const displayLoans = computed(() => {
 });
 
 const storeLoading = computed(() => {
-    return peminjamanStore.isLoading || (activeTab.value === 'persetujuan' && tinjauStore.isLoading);
+    return peminjamanStore.isLoading || (isPeninjauanTab.value && tinjauStore.isLoading);
 });
 
 const totalPages = computed(() => {
-    if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) return 1;
+    if (isPeninjauanTab.value) return 1;
     return peminjamanStore.totalPages || 1;
 });
 
 // Menghitung jumlah kolom secara dinamis untuk colspan agar tabel tidak terjepit saat kosong
 const dynamicColspan = computed(() => {
-  if (activeTab.value === 'persetujuan' && isSarprasOrAdmin.value && !isGuruSiswaView.value) {
+  if (isPeninjauanTab.value) {
     return 9 + (isSuperadmin.value ? 1 : 0);
   } else {
     return 9 + (isSarprasOrAdmin.value ? 2 : 0);
@@ -390,7 +394,14 @@ const dynamicColspan = computed(() => {
                 <template v-if="activeTab === 'persetujuan' && isSarprasOrAdmin && !isGuruSiswaView">
                   <td class="b3-body border-r border-gray-100 px-4 py-3">
                     <span class="font-bold block">{{ (loan as any).nama_peminjam }}</span>
-                    <span class="text-[10px] text-gray-500 uppercase">{{ (loan as any).role_peminjam }} {{ (loan as any).unit_asal }}</span>
+                    
+                    <span class="text-[10px] text-gray-500 uppercase">
+                      {{ (loan as any).role_peminjam }} 
+
+                      <template v-if="(loan as any).role_peminjam?.toUpperCase().trim() !== 'ADMIN'">
+                        {{ (loan as any).unit_asal }}
+                      </template>
+                    </span>
                   </td>
                   <td class="b2-body border-r border-gray-100 px-4 py-3 font-semibold">
                     {{ loan.kode_aset }} - {{ (loan as any).nama_aset || (loan as any).aset }}
@@ -415,10 +426,23 @@ const dynamicColspan = computed(() => {
                       Belum ada review
                     </div>
                     <div v-else>
-                      <div class="font-semibold text-gray-700 mb-1 leading-tight">{{ (loan as any).alasan || '(Tanpa alasan)' }}</div>
-                      <div class="text-[10px] text-gray-400 leading-tight">
-                        Terakhir direview oleh <span class="font-bold uppercase">{{ (loan as any).role_peninjau }}</span>
-                        pada {{ (loan as any).updatedAt }}
+                      <div class="alasan-wrapper">
+                        <p class="alasan-main">{{ (loan as any).alasan || '(Tanpa alasan)' }}</p>
+
+                        <div v-if="(loan as any).status_peminjaman !== 'DIAJUKAN'" class="reviewer-info">
+                          Terakhir direview oleh 
+                          <span class="highlight">
+                            {{ (loan as any).role_peninjau || (loan as any).role_peminjam }}
+                          </span> 
+                          pada 
+                          <span class="highlight">
+                            {{ splitDateTime((loan as any).updatedAt)[0] }}
+                          </span> 
+                          pukul 
+                          <span class="highlight">
+                            {{ splitDateTime((loan as any).updatedAt)[1] }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -431,7 +455,14 @@ const dynamicColspan = computed(() => {
                   </td>
                   <td v-if="isSarprasOrAdmin" class="b3-body border-r border-gray-100 px-4 py-3">
                     <span class="font-bold block">{{ (loan as any).nama_peminjam }}</span>
-                    <span class="text-[10px] text-gray-500 uppercase">{{ (loan as any).role_peminjam }} {{ (loan as any).unit_asal || loan.unit_peminjam }}</span>
+                    
+                    <span class="text-[10px] text-gray-500 uppercase">
+                      {{ (loan as any).role_peminjam }}
+
+                      <template v-if="(loan as any).role_peminjam?.toString().trim().toUpperCase() !== 'ADMIN'">
+                        {{ (loan as any).unit_asal || (loan as any).unit_peminjam }}
+                      </template>
+                    </span>
                   </td>
                   <td class="b2-body border-r border-gray-100 px-4 py-3 font-semibold">
                     {{ loan.kode_aset }} - {{ (loan as any).aset || (loan as any).nama_aset }}
@@ -505,7 +536,7 @@ const dynamicColspan = computed(() => {
       </div>
 
       <!-- Pagination Section -->
-      <div class="pagination-section mt-20 mb-8">
+      <div v-if="!isPeninjauanTab" class="pagination-section mt-20 mb-8">
         <div class="flex items-center gap-4">
           <p class="c2-caption text-gray-500">
             Showing Page {{ currentPage + 1 }} of {{ totalPages }}
@@ -793,7 +824,7 @@ table td {
 .btn-delete { background-color: #DC3545; color: white; }
 .btn-detail { background-color: #64748B; color: white; }
 .btn-review { background-color: #198754; color: white; }
-.btn-edit-tinjau { background-color: #008f88; color: white; }
+.btn-edit-tinjau { background-color: #00588F; color: white; }
 
 .btn-icon:hover { transform: scale(1.1); }
 
@@ -871,5 +902,37 @@ table td {
 
 .date-input {
   padding-left: 42px !important;
+}
+
+.alasan-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.alasan-main {
+  font-size: 12px;
+  margin-bottom: 0.3cm; 
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.reviewer-info {
+  font-size: 10px;
+  color: #667085;
+  font-style: italic;
+  padding-top: 8px;
+  line-height: 1.4;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #00588F;
+}
+
+.no-review-text {
+  font-size: 12px;
+  font-style: italic;
+  color: #999;
 }
 </style>

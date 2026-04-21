@@ -79,7 +79,7 @@ const handleUpdate = async () => {
       alasan: form.alasan
     });
     toastStore.success('Success', 'Update peninjauan peminjaman aset berhasil tersimpan');
-    router.push('/peminjaman/tinjau'); 
+    router.push('/peminjaman'); 
   } catch (error: any) {
     toastStore.error('Error', error.response?.data?.message || 'Gagal memperbarui peninjauan');
   }
