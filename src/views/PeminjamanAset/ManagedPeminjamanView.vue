@@ -300,6 +300,11 @@ const dynamicColspan = computed(() => {
     return 9 + (isSarprasOrAdmin.value ? 2 : 0);
   }
 });
+
+const isBeforeStart = (loan: any) => {
+  if (!loan.waktu_peminjaman) return false;
+  return new Date() < new Date(loan.waktu_peminjaman);
+};
 </script>
 
 <template>
@@ -657,7 +662,7 @@ const dynamicColspan = computed(() => {
                         <MessageSquare class="w-4 h-4" />
                       </button>
                       <button
-                        v-else
+                        v-else-if="isBeforeStart(loan)"
                         @click="handleActionTinjau(loan)"
                         class="btn-icon btn-edit-tinjau"
                         title="Ubah Peninjauan"
