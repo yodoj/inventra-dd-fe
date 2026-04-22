@@ -6,7 +6,7 @@
 
       <div class="review-grid">
         <div class="field">
-          <label class="label">Harga</label>
+          <label class="label">Harga <span class="text-red-500">*</span> </label>
           <div class="money" :class="{ 'money-disabled': isLocked }">
             <span class="money-prefix">Rp</span>
             <input
@@ -22,7 +22,7 @@
         </div>
 
         <div class="field">
-          <label class="label">Bukti Pembelian</label>
+          <label class="label">Bukti Pembelian <span class="text-red-500">*</span> </label>
           <label class="dropzone" :class="{ 'dz-disabled': isLocked }">
             <input
               class="file-hidden"
@@ -54,7 +54,13 @@
             </div>
           </label>
         </div>
-        <p v-if="store.errorMessage" class="err">{{ store.errorMessage }}</p>
+        <div v-if="error" class="lock-banner">
+          <span>{{ error }}</span>
+        </div>
+
+        <div v-if="store.errorMessage" class="lock-banner">
+          <span>{{ store.errorMessage }}</span>
+        </div>
 
           <div v-if="isLocked && lockMessage" class="lock-banner">
           <svg class="lock-icon" viewBox="0 0 24 24">
@@ -108,7 +114,9 @@
 import { reactive, ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
+import { useToastStore } from '@/stores/toast'
 
+const toastStore = useToastStore()
 const route = useRoute();
 const router = useRouter();
 const store = useTinjauPengadaanStore();
@@ -119,12 +127,13 @@ const previewUrl = ref("");
 const showConfirmModal = ref(false);
 
 const pengadaanId = computed(() => route.params.idPengadaan);
-
+const error = ref("")
 const isLocked = computed(() => {
   if (store.isLoading) return true;
   const status = store.current?.statusPengadaan;
   return status === 'DIBELI' || status === 'DITOLAK';
 });
+
 
 const lockMessage = computed(() => {
   const status = store.current?.statusPengadaan;
@@ -140,11 +149,36 @@ onMounted(async () => {
   }
 });
 
-function triggerConfirm() {
+async function triggerConfirm() {
   if (isLocked.value) return;
-  if (!form.harga) return alert("Harga wajib diisi.");
-  if (!fotoFile.value) return alert("Bukti pembelian wajib diunggah.");
-  showConfirmModal.value = true;
+
+  error.value = "";
+  store.errorMessage = "";
+
+  // validasi frontend
+  if (!form.harga || Number(form.harga) <= 0) {
+    error.value = "Harga harus lebih dari 0";
+    return;
+  }
+
+  if (!fotoFile.value) {
+    error.value = "Bukti pembelian wajib diunggah";
+    return;
+  }
+
+  try {
+    // cek backend dulu
+    await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
+
+    // kalau backend tidak error baru buka modal
+    showConfirmModal.value = true;
+
+  } catch (err) {
+    error.value =
+      err.response?.data?.message ||
+      err.message ||
+      "Terjadi kesalahan.";
+  }
 }
 
 function onFileChange(e) {
@@ -162,14 +196,14 @@ function removeFile() {
 }
 
 async function confirmSave() {
-  try {
-    showConfirmModal.value = false;
-    await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
-    alert("Berhasil memperbarui pembelian!");
-    router.push("/pengadaan/pengajuan/tinjau");
-  } catch (err) {
-    console.error("Gagal simpan pembelian:", err);
-  }
+  showConfirmModal.value = false;
+
+  toastStore.success(
+    "Success",
+    "Berhasil memperbarui pembelian."
+  );
+
+  router.push("/pengadaan/pengajuan/tinjau");
 }
 
 function onCancel() {

@@ -5,7 +5,7 @@
     <div class="review-card">
       <div class="review-grid">
         <div class="field">
-          <label class="label">Status</label>
+          <label class="label">Status <span class="text-red-500">*</span></label>
 
           <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
             <button
@@ -40,15 +40,22 @@
 
 
         <div class="field">
-          <label class="label">Alasan</label>
+          <label class="label">Alasan <span class="text-red-500">*</span></label>
           <textarea
             v-model="form.alasan"
             class="textarea"
             placeholder="Masukkan alasan anda"
             rows="3"
+            :disabled="isLocked"
           />
         </div>
-        <p v-if="store.errorMessage" class="err">{{ store.errorMessage }}</p>
+        <div v-if="error" class="lock-banner">
+          <span>{{ error }}</span>
+        </div>
+
+        <div v-if="store.errorMessage" class="lock-banner">
+          <span>{{ store.errorMessage }}</span>
+        </div>
         <div v-if="isLocked && lockMessage" class="lock-banner">
           <svg class="lock-icon" viewBox="0 0 24 24">
             <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
@@ -98,7 +105,9 @@ import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router";
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
 import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from '@/stores/toast'
 
+const toastStore = useToastStore()
 const route = useRoute();
 const router = useRouter();
 
@@ -108,7 +117,7 @@ const auth = useAuthStore();
 const pengadaanId = computed(() => (route.params.pengadaanId));
 const role = computed(() => auth.userRole);
 const showConfirmModal = ref(false);
-const statusError = ref("");
+const error = ref("");
 
 const form = reactive({
   statusPengadaan: "",
@@ -262,18 +271,20 @@ const allowedNextStatuses = computed(() => {
 });
 
 
-function onCancel() {
-  if (!store.current) return;
-  form.statusPengadaan = store.current.statusPengadaan || "";
-  form.alasan = store.current.alasan || "";
+function onCancel(){
+  router.push("/pengadaan/pengajuan/tinjau")
 }
 
 
 function triggerConfirm() {
-  statusError.value = "";
+  error.value = "";
 
   if (!form.statusPengadaan) {
-    statusError.value = "Pilih status terlebih dahulu!";
+    error.value = "Pilih status terlebih dahulu!";
+    return;
+  }
+  if (!form.alasan) {
+    error.value = "Masukkan alasan terlebih dahulu!";
     return;
   }
   showConfirmModal.value = true;
@@ -286,9 +297,16 @@ async function confirmSave() {
       statusPengadaan: form.statusPengadaan,
       alasan: form.alasan,
     });
-    alert("Berhasil memperbarui peninjauan!");
+    toastStore.success(
+      "Success",
+      "Berhasil memperbarui peninjauan."
+    )
     router.push("/pengadaan/pengajuan/tinjau");
   } catch (err) {
+    toastStore.error(
+      "Error",
+      "Gagal memperbarui peninjauan."
+    );
   }
 }
 
@@ -521,6 +539,12 @@ async function confirmSave() {
   width: 20px;
   height: 20px;
   fill: #b91c1c;
+}
+
+.textarea:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .modal-overlay {

@@ -1,23 +1,16 @@
 export type Status =
   | "DIAJUKAN"
-  | "DISETUJUI_KEPSEK"
-  | "DISETUJUI_YAYASAN"
-  | "DITOLAK"
-  | "DIBELI";
+  | "DISETUJUI"
+  | "DITOLAK";
 
-export interface TinjauPengadaanRequestDTO {
-  statusPengadaan: Status;
+export interface TinjauPenggantianRequestDTO {
+  statusPenggantian: Status;
   alasan: string;
 }
 
-export interface PembelianRequestDTO {
-  harga: number;
-  buktiPembelian: File;
-}
-
-export interface TinjauPengadaanResponseDTO {
-  id: number;
-  idPengadaan: string;
+export interface TinjauPenggantianResponseDTO {
+  id: string;
+  idPenggantian: string;
 
   namaAset: string;
   linkGambar: string;
@@ -25,23 +18,20 @@ export interface TinjauPengadaanResponseDTO {
   merk: string;
   qty: number;
   estimasiHarga: number;
-  waktuPengadaan: string;
+  waktuPenggantian: string;
   namaPengaju: string;
   unitPengaju: string;
   rolePengaju: string;
 
-  statusPengadaan?: Status;
+  statusPenggantian?: Status;
   alasan?: string;
 
-  kepsekFirstReviewedAt?: string | null;
-  yayasanFirstReviewedAt?: string | null;
+  createdAt?: string | null;
   updatedAt?: string | null;
   reviewerRole?: string | null;
   namaReviewer?: string | null;
 
   userId?: string | number | null;
-  harga?: number | null;
-  buktiPembelian?: string | null;
   unit?: string | null;
 }
 

@@ -19,6 +19,11 @@ const form = ref({
   namaAset: '',
   merkAset: '',
   qtyAset: 1,
+  qtyTersedia: 0,
+  qtyRusak: 0,
+  qtyPerbaikan: 0,
+  qtyDimusnahkan: 0,
+  qtyDipinjam: 0,
   lokasiAset: '',
   statusAset: '',
   kategoriAset: '',
@@ -71,6 +76,11 @@ onMounted(async () => {
       namaAset: data.nama_aset,
       merkAset: data.merk_aset,
       qtyAset: data.qty_aset,
+      qtyTersedia: data.qty_tersedia || 0,
+      qtyRusak: data.qty_rusak || 0,
+      qtyPerbaikan: data.qty_perbaikan || 0,
+      qtyDimusnahkan: data.qty_dimusnahkan || 0,
+      qtyDipinjam: data.qty_dipinjam || 0,
       lokasiAset: data.lokasi_aset,
       statusAset: data.status_aset,
       kategoriAset: data.kategori_aset,
@@ -87,7 +97,37 @@ onMounted(async () => {
   }
 });
 
+const totalQtyDetails = computed(() => {
+  return (form.value.qtyTersedia || 0) +
+    (form.value.qtyRusak || 0) +
+    (form.value.qtyPerbaikan || 0) +
+    (form.value.qtyDimusnahkan || 0) +
+    (form.value.qtyDipinjam || 0);
+});
+
+const isQtySumValid = computed(() => {
+  return totalQtyDetails.value === form.value.qtyAset;
+});
+
+// Auto-calculate Physical Tersedia based on other states
+watch([
+  () => form.value.qtyAset,
+  () => form.value.qtyRusak,
+  () => form.value.qtyPerbaikan,
+  () => form.value.qtyDimusnahkan,
+  () => form.value.qtyDipinjam
+], () => {
+  // Physical Tersedia is the total stock minus unusable items
+  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save 
+  // we want to ensure the sum remains consistent with qtyAset.
+  form.value.qtyTersedia = Math.max(0, form.value.qtyAset - (form.value.qtyRusak || 0) - (form.value.qtyPerbaikan || 0) - (form.value.qtyDimusnahkan || 0) - (form.value.qtyDipinjam || 0));
+});
+
 const confirmSubmit = () => {
+  if (!isQtySumValid.value) {
+    toastStore.error('Error', `Jumlah rincian (${totalQtyDetails.value}) harus sama dengan total kuantitas (${form.value.qtyAset})`);
+    return;
+  }
   showConfirmModal.value = true;
 };
 
@@ -136,7 +176,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Total Kuantitas <span class="required-star">*</span></label>
                 <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
               </div>
 
@@ -159,20 +199,41 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
-                <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
-                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" :disabled="!form.kategoriAset" required>
-                    <option value="" disabled>{{ form.kategoriAset ? 'Pilih Status' : 'Pilih kategori terlebih dahulu' }}</option>
-                    <option v-for="st in filteredStatuses" :key="st.value" :value="st.value">{{ st.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
+              <div v-if="form.kategoriAset === 'BARANG_TIDAK_HABIS_PAKAI'" class="form-group">
+                <label class="s2-subtitle mb-10 block">Rincian Ketersediaan</label>
+                
+                <div class="grid grid-cols-2 gap-x-4 gap-y-5">
+                  <div class="form-group-sub">
+                    <label class="c2-caption mb-2 block">Tersedia (Fisik)</label>
+                    <input v-model.number="form.qtyTersedia" type="number" class="form-input-small bg-gray-50 cursor-not-allowed" disabled title="Dihitung otomatis dari Total - (Rusak/Perbaikan/Dipinjam)" />
+                  </div>
+                  <div class="form-group-sub">
+                    <label class="c2-caption mb-2 block">Sedang Dipinjam</label>
+                    <input v-model.number="form.qtyDipinjam" type="number" class="form-input-small bg-gray-50 cursor-not-allowed" disabled title="Jumlah yang sedang aktif dipinjam saat ini" />
+                  </div>
+                  <div class="form-group-sub">
+                    <label class="c2-caption mb-2 block">Rusak</label>
+                    <input v-model.number="form.qtyRusak" type="number" class="form-input-small" min="0" />
+                  </div>
+                  <div class="form-group-sub">
+                    <label class="c2-caption mb-2 block">Perbaikan</label>
+                    <input v-model.number="form.qtyPerbaikan" type="number" class="form-input-small" min="0" />
+                  </div>
+                  <div class="form-group-sub">
+                    <label class="c2-caption mb-2 block">Dimusnahkan</label>
+                    <input v-model.number="form.qtyDimusnahkan" type="number" class="form-input-small" min="0" />
+                  </div>
                 </div>
+                <p class="text-[10px] mt-3 text-blue-600 italic">
+                  * Kolom Tersedia & Dipinjam dikelola otomatis oleh sistem reservasi.
+                </p>
+                <p class="text-[11px] mt-1" :class="isQtySumValid ? 'text-gray-500 italic' : 'text-danger font-medium'">
+                  {{ isQtySumValid ? `* Total rincian sesuai dengan kuantitas: ${totalQtyDetails}` : `* Total rincian (${totalQtyDetails}) tidak sesuai dengan total kuantitas (${form.qtyAset})` }}
+                </p>
               </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
+              <div v-else-if="form.kategoriAset === 'BARANG_HABIS_PAKAI'" class="form-group">
+                <label class="s2-subtitle mb-2 block">Tersedia <span class="required-star">*</span></label>
+                <input v-model.number="form.qtyTersedia" type="number" class="form-input" min="0" required />
               </div>
             </div>
 
@@ -195,6 +256,11 @@ const handleSubmit = async () => {
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
                 <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan link URL gambar" class="form-input" required />
+              </div>
+
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Keterangan</label>
+                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
               </div>
             </div>
           </div>
@@ -290,6 +356,23 @@ select option {
   outline: none;
   resize: vertical;
   min-height: 120px;
+}
+
+.form-input-small {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.form-group-sub {
+  margin-bottom: 0px;
+}
+
+.form-group-sub label {
+  margin-bottom: 8px !important;
 }
 
 .custom-select {

@@ -86,6 +86,11 @@ const totalColumns = computed(() => {
 
 const handleTabChange = (tab: 'barang' | 'ruangan') => {
   activeTab.value = tab;
+  // Reset all filters when switching tabs to avoid "invalid parameter" errors
+  searchQuery.value = '';
+  categoryFilter.value = '';
+  statusFilter.value = '';
+  unitFilter.value = '';
   currentPage.value = 0;
   loadAssets();
 };
@@ -161,6 +166,10 @@ const prevPage = () => {
 };
 
 onMounted(() => {
+  // For SARPRAS, default to their unit if no filter is set
+  if (authStore.userRole === 'SARPRAS' && authStore.user?.unit) {
+    unitFilter.value = authStore.user.unit;
+  }
   loadAssets();
 });
 
@@ -253,7 +262,7 @@ const handleEdit = (asset: any) => {
               <ChevronDown class="select-icon" />
             </div>
           </div>
-          <div class="filter-item">
+          <div v-if="activeTab === 'ruangan'" class="filter-item">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Status Aset</label>
             <div class="custom-select">
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
@@ -281,7 +290,7 @@ const handleEdit = (asset: any) => {
               <input 
                 v-model="searchQuery" 
                 type="text" 
-                placeholder="Search" 
+                placeholder="Cari nama, merk, atau kode aset" 
                 @keyup.enter="handleFilter"
               />
             </div>
@@ -313,11 +322,11 @@ const handleEdit = (asset: any) => {
                 <th class="col-img">Gambar</th>
                 <th class="col-nama">Nama</th>
                 <th v-if="activeTab === 'barang'" class="col-merk">Merk</th>
-                <th v-if="activeTab === 'barang'" class="col-qty">Qty</th>
+                <th v-if="activeTab === 'barang'" class="col-qty">Total Qty</th>
                 <th v-if="canSeeUnit" class="col-unit">Unit</th>
                 <th v-if="activeTab === 'barang'" class="col-lokasi">Lokasi</th>
                 <th class="col-kategori">Kategori</th>
-                <th class="col-status text-center">Status</th>
+                <th class="col-status text-center">{{ activeTab === 'barang' ? 'Ketersediaan' : 'Status' }}</th>
                 <th class="col-keterangan">Keterangan</th>
                 <th v-if="canSeeAction" class="col-aksi text-center">Aksi</th>
               </tr>
@@ -340,12 +349,26 @@ const handleEdit = (asset: any) => {
                 <td v-if="canSeeUnit">{{ asset.unit }}</td>
                 <td v-if="activeTab === 'barang'">{{ asset.lokasi_aset || '-' }}</td>
                 <td>{{ formatStatusDisplay(asset.kategori_aset) }}</td>
-                <td class="text-center">
-                  <span :class="['badge', getStatusClass(asset.status_aset)]">
-                    {{ formatStatusDisplay(asset.status_aset) }}
-                  </span>
+                <td class="text-left py-4">
+                  <div v-if="activeTab === 'barang'" class="availability-info">
+                    <div v-if="asset.kategori_aset === 'BARANG_TIDAK_HABIS_PAKAI'">
+                      <p><span class="font-bold">Tersedia:</span> {{ asset.qty_tersedia || 0 }}</p>
+                      <p><span class="font-bold">Sedang Dipinjam:</span> {{ asset.qty_dipinjam || 0 }}</p>
+                      <p><span class="font-bold">Rusak:</span> {{ asset.qty_rusak || 0 }}</p>
+                      <p><span class="font-bold">Perbaikan:</span> {{ asset.qty_perbaikan || 0 }}</p>
+                      <p><span class="font-bold">Dimusnahkan:</span> {{ asset.qty_dimusnahkan || 0 }}</p>
+                    </div>
+                    <div v-else>
+                      <p><span class="font-bold">Tersedia:</span> {{ asset.qty_tersedia || 0 }}</p>
+                    </div>
+                  </div>
+                  <div v-else class="text-center">
+                    <span :class="['badge', getStatusClass(asset.status_aset)]">
+                      {{ formatStatusDisplay(asset.status_aset) }}
+                    </span>
+                  </div>
                 </td>
-                <td class="b3-body max-w-[200px] truncate">{{ asset.keterangan_aset }}</td>
+                <td class="col-keterangan-text px-4">{{ asset.keterangan_aset || '-' }}</td>
                 <td v-if="canSeeAction">
                   <div class="flex justify-center gap-2">
                     <button 
@@ -489,6 +512,7 @@ const handleEdit = (asset: any) => {
   -webkit-appearance: none;
   -moz-appearance: none;
   background-image: none !important;
+  color: #333;
 }
 
 .custom-select select::-ms-expand {
@@ -508,7 +532,7 @@ const handleEdit = (asset: any) => {
 }
 
 select option {
-  color: #374151;
+  color: #333;
 }
 
 .select-icon {
@@ -533,6 +557,7 @@ select option {
   border-radius: 8px;
   font-size: 14px;
   outline: none;
+  color: #333;
 }
 
 .search-icon {
@@ -601,16 +626,16 @@ table th {
 .col-unit { width: 70px; }
 .col-lokasi { width: 110px; }
 .col-kategori { width: 100px; }
-.col-status { width: 90px; }
+.col-status { width: 160px; }
 .col-aksi { width: 100px; }
 .col-keterangan { width: 160px; }
 
 table td {
-  padding: 12px 12px;
-  border-bottom: 1px solid #EEEEEE;
+  padding: 14px 12px;
+  border-bottom: 1px solid #F1F5F9;
   vertical-align: middle;
-  font-size: 13px;
-  text-align: center;
+  font-size: 12px;
+  color: #4B5563;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -640,6 +665,34 @@ table td {
 .status-diperbaiki { background-color: #FEF9C3; color: #A16207; }
 .status-rusak { background-color: #EFEFEF; color: #333437; }
 .status-dimusnahkan { background-color: #F3F4F6; color: #6B7280; }
+
+.availability-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.availability-info p {
+  margin: 0;
+  text-align: left;
+}
+
+.availability-info .font-bold {
+  font-weight: 700;
+  color: #374151;
+}
+
+.col-keterangan-text {
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+  color: #4B5563;
+  text-align: left;
+  min-width: 140px;
+}
 
 .btn-icon {
   width: 32px;

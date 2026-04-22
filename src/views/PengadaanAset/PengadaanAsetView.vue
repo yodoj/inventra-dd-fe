@@ -82,6 +82,21 @@ const handleApplyFilter = () => {
   pengadaanStore.fetchMyPengadaan(params);
 };
 
+// Fungsi untuk convert timestamp ke format yang lebih readable
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 // Fungsi untuk mereset filter dan menampilkan semua data kembali
 const handleReset = () => {
   searchQuery.value = '';
@@ -237,7 +252,7 @@ const toggleSort = (column: string) => {
                 </td>
               </tr>
               <tr v-for="item in pengadaanStore.listPengadaan" :key="item.id_pengadaan">
-                <td class="b3-body">{{ item.waktu_pengajuan }}</td>
+                <td class="b3-body">{{ formatDateTime(item.waktu_pengajuan) }}</td>
                 <td class="text-center">
                   <img :src="item.link_gambar" class="asset-img mx-auto" />
                 </td>
@@ -353,6 +368,9 @@ const toggleSort = (column: string) => {
   border: 1px solid #D1D5DB;
   border-radius: 8px;
   font-size: 14px;
+}
+.search-box input::placeholder {
+  color: #9CA3AF;
 }
 
 .search-icon {
