@@ -117,6 +117,12 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
+onMounted(() => {
+  if (authStore.userRole === 'ADMIN') {
+    toastStore.error('Unauthorized', 'Admin hanya dapat melakukan pengajuan lintas unit');
+    router.push('/peminjaman');
+  }
+});
 </script>
 
 <template>

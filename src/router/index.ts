@@ -8,6 +8,7 @@ import UpdatePengadaanAsetView from '@/views/PengadaanAset/UpdatePengadaanAsetVi
 import CreatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/CreatePeninjauanPeminjaman.vue';
 import UpdatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/UpdatePeninjauanPeminjaman.vue';
 import DetailPeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/DetailPeninjauanPeminjaman.vue';
+import { useAuthStore } from '@/stores/auth';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -218,5 +219,18 @@ const router = createRouter({
     }
   ]
 })
+
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  if (to.path.startsWith('/peminjaman')) {
+    const allowedRoles = ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'];
+    if (authStore.isAuthenticated && !allowedRoles.includes(authStore.userRole || '')) {
+      next({ name: 'home' });
+      return;
+    }
+  }
+  next();
+});
 
 export default router
