@@ -209,6 +209,12 @@ const router = createRouter({
       path: '/peminjaman/tinjau/detail/:idPeminjaman',
       name: 'detail-review-peminjaman',
       component: DetailPeninjauanPeminjaman
+    },
+
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/Error/NotFound404View.vue')
     }
   ]
 })

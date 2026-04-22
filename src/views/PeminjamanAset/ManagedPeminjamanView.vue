@@ -664,7 +664,7 @@ const dynamicColspan = computed(() => {
                       >
                         <EditIcon class="w-4 h-4" />
                       </button>
-                      <button v-if="isSuperadmin" @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
+                      <button @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
                         <Eye class="w-4 h-4" />
                       </button>
                     </template>
