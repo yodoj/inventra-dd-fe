@@ -85,9 +85,12 @@ const handleUpdate = async () => {
   }
 };
 
-const formatDate = (date: string | null | undefined) => {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+const formatDateTime = (dateStr: string | null | undefined) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  const date = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+  return `${date} | ${time}`;
 };
 
 const onDocClick = (e: Event) => {
@@ -143,14 +146,14 @@ onBeforeUnmount(() => {
 
           <div class="info-column">
             <div class="row-data">
-              <span class="label">Tanggal Peminjaman</span>
+              <span class="label">Waktu Peminjaman</span>
               <span>:</span>
-              <span class="value">{{ formatDate(store.current.waktu_peminjaman) }}</span>
+              <span class="value">{{ formatDateTime(store.current.waktu_peminjaman) }}</span>
             </div>
             <div class="row-data">
-              <span class="label">Tanggal Pengembalian</span>
+              <span class="label">Waktu Pengembalian</span>
               <span>:</span>
-              <span class="value">{{ formatDate(store.current.waktu_pengembalian) }}</span>
+              <span class="value">{{ formatDateTime(store.current.waktu_pengembalian) }}</span>
             </div>
             <div v-if="authStore.userRole === 'ADMIN'" class="row-data">
               <span class="label">Unit Tujuan</span>

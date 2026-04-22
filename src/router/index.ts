@@ -9,7 +9,6 @@ import CreatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/CreateP
 import UpdatePeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/UpdatePeninjauanPeminjaman.vue';
 import DetailPeninjauanPeminjaman from '@/views/PeninjauanPeminjamanAset/DetailPeninjauanPeminjaman.vue';
 import { useAuthStore } from '@/stores/auth';
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

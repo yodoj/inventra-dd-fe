@@ -109,6 +109,20 @@ const isQtySumValid = computed(() => {
   return totalQtyDetails.value === form.value.qtyAset;
 });
 
+// Auto-calculate Physical Tersedia based on other states
+watch([
+  () => form.value.qtyAset,
+  () => form.value.qtyRusak,
+  () => form.value.qtyPerbaikan,
+  () => form.value.qtyDimusnahkan,
+  () => form.value.qtyDipinjam
+], () => {
+  // Physical Tersedia is the total stock minus unusable items
+  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save 
+  // we want to ensure the sum remains consistent with qtyAset.
+  form.value.qtyTersedia = Math.max(0, form.value.qtyAset - (form.value.qtyRusak || 0) - (form.value.qtyPerbaikan || 0) - (form.value.qtyDimusnahkan || 0) - (form.value.qtyDipinjam || 0));
+});
+
 const confirmSubmit = () => {
   if (!isQtySumValid.value) {
     toastStore.error('Error', `Jumlah rincian (${totalQtyDetails.value}) harus sama dengan total kuantitas (${form.value.qtyAset})`);
@@ -190,12 +204,12 @@ const handleSubmit = async () => {
                 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-5">
                   <div class="form-group-sub">
-                    <label class="c2-caption mb-2 block">Tersedia</label>
-                    <input v-model.number="form.qtyTersedia" type="number" class="form-input-small" min="0" />
+                    <label class="c2-caption mb-2 block">Tersedia (Fisik)</label>
+                    <input v-model.number="form.qtyTersedia" type="number" class="form-input-small bg-gray-50 cursor-not-allowed" disabled title="Dihitung otomatis dari Total - (Rusak/Perbaikan/Dipinjam)" />
                   </div>
                   <div class="form-group-sub">
                     <label class="c2-caption mb-2 block">Sedang Dipinjam</label>
-                    <input v-model.number="form.qtyDipinjam" type="number" class="form-input-small" min="0" />
+                    <input v-model.number="form.qtyDipinjam" type="number" class="form-input-small bg-gray-50 cursor-not-allowed" disabled title="Jumlah yang sedang aktif dipinjam saat ini" />
                   </div>
                   <div class="form-group-sub">
                     <label class="c2-caption mb-2 block">Rusak</label>
@@ -210,7 +224,10 @@ const handleSubmit = async () => {
                     <input v-model.number="form.qtyDimusnahkan" type="number" class="form-input-small" min="0" />
                   </div>
                 </div>
-                <p class="text-[11px] mt-3" :class="isQtySumValid ? 'text-gray-500 italic' : 'text-red-500 font-medium'">
+                <p class="text-[10px] mt-3 text-blue-600 italic">
+                  * Kolom Tersedia & Dipinjam dikelola otomatis oleh sistem reservasi.
+                </p>
+                <p class="text-[11px] mt-1" :class="isQtySumValid ? 'text-gray-500 italic' : 'text-danger font-medium'">
                   {{ isQtySumValid ? `* Total rincian sesuai dengan kuantitas: ${totalQtyDetails}` : `* Total rincian (${totalQtyDetails}) tidak sesuai dengan total kuantitas (${form.qtyAset})` }}
                 </p>
               </div>
