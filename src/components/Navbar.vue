@@ -114,6 +114,10 @@ const canApprovePengadaan = () => {
 const canRequestPengadaan = () => {
   return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
 };
+
+const canSeePeminjaman = () => {
+  return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
+};
 </script>
 
 <template>
@@ -125,7 +129,7 @@ const canRequestPengadaan = () => {
       </router-link>
 
       <!-- Navigation Links -->
-      <div class="nav-links">
+      <div class="nav-links" :class="{ 'nav-links-special': isKepsek() || isYayasan() }">
         <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
           Home
           <div v-if="route.path === '/'" class="active-indicator"></div>
@@ -161,38 +165,40 @@ const canRequestPengadaan = () => {
 
 
         <!-- Peminjaman Aset -->
-        <div
-          v-if="isAdmin()"
-          class="nav-item-dropdown"
-          @mouseenter="handleMouseEnter('peminjaman')"
-          @mouseleave="handleMouseLeave"
-        >
+        <template v-if="canSeePeminjaman()">
           <div
-            class="nav-item"
-            :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
+            v-if="isAdmin()"
+            class="nav-item-dropdown"
+            @mouseenter="handleMouseEnter('peminjaman')"
+            @mouseleave="handleMouseLeave"
           >
-            Peminjaman Aset <ChevronDown class="icon-xs" />
-            <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
-          </div>
-          <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
-            <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
-              Pengajuan - Guru, Siswa
+            <div
+              class="nav-item"
+              :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
+            >
+              Peminjaman Aset <ChevronDown class="icon-xs" />
+              <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
             </div>
-            <div @click="protectedNavigate('/peminjaman')" class="dropdown-item" style="cursor: pointer;">
-              Pengajuan dan Persetujuan - Sarpras
+            <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
+              <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
+                Pengajuan - Guru, Siswa
+              </div>
+              <div @click="protectedNavigate('/peminjaman')" class="dropdown-item" style="cursor: pointer;">
+                Pengajuan dan Persetujuan - Sarpras
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-else
-          class="nav-item"
-          :class="{ active: route.path.startsWith('/peminjaman') }"
-          @click="protectedNavigate('/peminjaman')"
-        >
-          Peminjaman Aset
-          <div v-if="route.path.startsWith('/peminjaman')" class="active-indicator"></div>
-        </div>
+          <div
+            v-else
+            class="nav-item"
+            :class="{ active: route.path.startsWith('/peminjaman') }"
+            @click="protectedNavigate('/peminjaman')"
+          >
+            Peminjaman Aset
+            <div v-if="route.path.startsWith('/peminjaman')" class="active-indicator"></div>
+          </div>
+        </template>
 
         <!-- Pengadaan Aset -->
         <div
@@ -325,6 +331,11 @@ const canRequestPengadaan = () => {
   display: flex;
   align-items: center;
   gap: 32px;
+}
+
+.nav-links-special {
+  gap: 72px;
+  margin: 0 auto;
 }
 
 .nav-item {

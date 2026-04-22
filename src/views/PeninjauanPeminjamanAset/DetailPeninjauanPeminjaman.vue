@@ -64,6 +64,11 @@ const formatDateTime = (dateStr: string | null | undefined) => {
   const time = getTimeOnly(dateStr);
   return `${date} | ${time}`;
 };
+
+const isPastPeminjaman = computed(() => {
+  if (!store.current?.waktu_peminjaman) return false;
+  return new Date() > new Date(store.current.waktu_peminjaman);
+});
 </script>
 
 <template>
@@ -98,7 +103,7 @@ const formatDateTime = (dateStr: string | null | undefined) => {
               </button>
               
               <button 
-                v-else
+                v-else-if="isAlreadyReviewed && !isPastPeminjaman"
                 @click="router.push(`/peminjaman/tinjau/update/${idPeminjaman}`)" 
                 class="action-icon edit-bg" 
                 title="Ubah Peninjauan"

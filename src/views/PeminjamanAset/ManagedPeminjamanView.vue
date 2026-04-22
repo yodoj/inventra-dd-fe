@@ -300,6 +300,11 @@ const dynamicColspan = computed(() => {
     return 9 + (isSarprasOrAdmin.value ? 2 : 0);
   }
 });
+
+const isBeforeStart = (loan: any) => {
+  if (!loan.waktu_peminjaman) return false;
+  return new Date() < new Date(loan.waktu_peminjaman);
+};
 </script>
 
 <template>
@@ -334,7 +339,7 @@ const dynamicColspan = computed(() => {
         <!-- Filter Peninjauan -->
         <div v-if="isPeninjauanTab" class="filter-grid">
           <div v-if="authStore.userRole === 'ADMIN'" class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Unit Tujuan</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Unit Tujuan</label>
             <div class="custom-select col-unit-select">
               <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
                 <option value="">Semua Unit</option>
@@ -345,7 +350,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Kategori</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Kategori</label>
             <div class="custom-select col-cat-select">
               <select v-model="categoryGroupFilter" :class="{ 'placeholder-color': !categoryGroupFilter }">
                 <option value="">Semua Kategori</option>
@@ -356,7 +361,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Status Peminjaman</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Status Peminjaman</label>
             <div class="custom-select col-status-select">
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
                 <option value="">Semua Status</option>
@@ -371,7 +376,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Tanggal Peminjaman</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Tanggal Peminjaman</label>
             <div class="search-box">
               <Calendar class="search-icon" />
               <input
@@ -386,7 +391,7 @@ const dynamicColspan = computed(() => {
         <!-- Filter Peminjaman Default -->
         <div v-else class="filter-grid">
           <div v-if="isSarprasOrAdmin" class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Unit Tujuan</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Unit Tujuan</label>
             <div class="custom-select col-unit-select">
               <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
                 <option value="">Semua Unit</option>
@@ -397,7 +402,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Kategori</label>
             <div class="custom-select col-cat-select">
               <select v-model="categoryGroupFilter" :class="{ 'placeholder-color': !categoryGroupFilter }">
                 <option value="">Semua Kategori</option>
@@ -408,7 +413,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px; font-weight: 600;">Status Peminjaman</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Status Peminjaman</label>
             <div class="custom-select col-status-select">
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
                 <option value="">Semua Status</option>
@@ -423,7 +428,7 @@ const dynamicColspan = computed(() => {
           </div>
 
           <div class="filter-item flex-grow">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Peminjaman</label>
+            <label class="c2-caption block" style="margin-bottom: 8px;">Cari Peminjaman</label>
             <div class="search-box">
               <Search class="search-icon" />
               <input
@@ -442,9 +447,9 @@ const dynamicColspan = computed(() => {
       </div>
 
       <!-- Add Button (Standard Loan View only) -->
-      <div v-if="!isSarprasOrAdmin || activeTab !== 'persetujuan' || isGuruSiswaView" class="flex justify-end mb-16">
+      <div v-if="!isSarprasOrAdmin || (activeTab === 'lintas-unit' && !isGuruSiswaView)" class="flex justify-end mb-16">
         <button 
-          @click="router.push(isSarprasOrAdmin && activeTab === 'lintas-unit' ? '/peminjaman/tambah-lintas-unit' : '/peminjaman/tambah')"
+          @click="router.push(activeTab === 'lintas-unit' ? '/peminjaman/tambah-lintas-unit' : '/peminjaman/tambah')"
           class="btn-add"
         >
           <Plus class="w-5 h-5" /> Buat Pengajuan
@@ -657,14 +662,14 @@ const dynamicColspan = computed(() => {
                         <MessageSquare class="w-4 h-4" />
                       </button>
                       <button
-                        v-else
+                        v-else-if="isBeforeStart(loan)"
                         @click="handleActionTinjau(loan)"
                         class="btn-icon btn-edit-tinjau"
                         title="Ubah Peninjauan"
                       >
                         <EditIcon class="w-4 h-4" />
                       </button>
-                      <button v-if="isSuperadmin" @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
+                      <button @click="handleGoToDetail(loan)" class="btn-icon btn-detail" title="Detail">
                         <Eye class="w-4 h-4" />
                       </button>
                     </template>
@@ -781,7 +786,7 @@ const dynamicColspan = computed(() => {
 
 .filter-card {
   background: white;
-  padding: 32px;
+  padding: 24px 28px 20px;
   border-radius: 16px;
   border: 1px solid #EEEEEE;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -789,7 +794,7 @@ const dynamicColspan = computed(() => {
 
 .filter-grid {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -804,15 +809,18 @@ const dynamicColspan = computed(() => {
 
 .custom-select select {
   width: 100%;
-  padding: 8px 16px;
+  padding: 12px 16px;
   padding-right: 40px;
   border: 1px solid #D1D5DB;
-  border-radius: 40px;
+  border-radius: 12px;
   background: white;
   font-size: 14px;
   outline: none;
   appearance: none;
-  height: 40px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none !important;
+  color: #333;
 }
 
 .custom-select select:focus {
@@ -833,18 +841,26 @@ const dynamicColspan = computed(() => {
   color: #6B7280;
 }
 
+select option {
+  color: #333;
+}
+
 .search-box {
   position: relative;
 }
 
 .search-box input {
   width: 100%;
-  padding: 8px 12px 8px 42px;
+  padding: 10px 12px 10px 42px;
   border: 1px solid #D1D5DB;
-  border-radius: 40px;
+  border-radius: 12px;
   font-size: 14px;
   outline: none;
-  height: 40px;
+  color: #333;
+}
+
+.search-box input::placeholder {
+  color: #9CA3AF;
 }
 
 .search-icon {
@@ -865,10 +881,10 @@ const dynamicColspan = computed(() => {
 .btn-apply {
   background-color: #00588F;
   color: white;
-  padding: 8px 24px;
+  border: none;
+  padding: 10px 24px;
   border-radius: 40px;
   cursor: pointer;
-  border: none;
   font-weight: 600;
   font-size: 14px;
 }
@@ -877,7 +893,7 @@ const dynamicColspan = computed(() => {
   background-color: white;
   color: #333;
   border: 1px solid #D1D5DB;
-  padding: 8px 24px;
+  padding: 10px 24px;
   border-radius: 40px;
   cursor: pointer;
   font-weight: 600;
