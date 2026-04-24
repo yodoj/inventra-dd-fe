@@ -1,114 +1,10 @@
-<template>
-  <div class="page">
-    <h1 class="title">Tinjau Pengajuan Pengadaan Aset</h1>
-
-    <div class="review-card">
-      <div class="review-grid">
-
-        <div class="field">
-          <label class="label">Status <span class="text-red-500">*</span></label>
-
-          <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
-            <button
-              type="button"
-              class="dd-btn"
-              :disabled="isLocked || store.isLoading"
-              @click="ddOpen = !ddOpen"
-            >
-              <span :class="{ placeholder: !form.statusPengadaan }">
-                {{ form.statusPengadaan ? STATUS_LABEL[form.statusPengadaan] : "Pilih status" }}
-              </span>
-
-              <svg class="dd-icon" viewBox="0 0 24 24">
-                <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
-              </svg>
-            </button>
-
-            <div v-if="ddOpen" class="dd-menu">
-              <button
-                v-for="s in allowedNextStatuses"
-                :key="s"
-                type="button"
-                class="dd-item"
-                @click="selectStatus(s)"
-              >
-                {{ STATUS_LABEL[s] }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="label">Alasan <span class="text-red-500">*</span> </label>
-          <textarea
-            v-model="form.alasan"
-            class="textarea"
-            placeholder="Masukkan alasan anda"
-            rows="3"
-            :disabled="isLocked || store.isLoading"
-
-          />
-        </div>
-
-        <div v-if="displayMessage" class="lock-banner">
-          {{ displayMessage }}
-        </div>
-
-      </div>
-
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="onCancel"
-          :disabled="store.isLoading"
-        >
-          Batal
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-primary"
-          @click="triggerConfirm"
-          :disabled="store.isLoading"
-        >
-          {{ store.isLoading ? "Menyimpan..." : "Simpan" }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="showConfirmModal" class="modal-overlay">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h3>Konfirmasi Peninjauan</h3>
-        <button class="close-btn" @click="showConfirmModal=false">×</button>
-      </div>
-
-      <div class="modal-body">
-        <p>Apakah Anda yakin data yang dimasukkan sudah benar?</p>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-batal" @click="showConfirmModal=false">Batal</button>
-        <button class="btn-confirm" @click="confirmSave">
-          {{ store.isLoading ? 'Proses...' : 'Ya, Simpan' }}
-        </button>
-      </div>
-
-    </div>
-  </div>
-</template>
-
-
 <script setup lang="ts">
-
 import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore"
 import { useAuthStore } from "@/stores/auth"
 import { useToastStore } from '@/stores/toast'
+import ConfirmationModal from "@/components/ConfirmationModal.vue"
 
 const toastStore = useToastStore()
 const auth = useAuthStore()
@@ -119,13 +15,15 @@ const store = useTinjauPengadaanStore()
 const error = ref("")
 const showConfirmModal = ref(false)
 const ddOpen = ref(false)
-
+const isSubmitting = ref(false)
 const pengadaanId = computed(() => route.params.pengadaanId)
 
 const form = reactive({
   statusPengadaan: "",
   alasan: ""
 })
+
+const detail = computed(() => store.current || {})
 
 const STATUS_LABEL = {
   DIAJUKAN: "Diajukan",
@@ -214,15 +112,10 @@ const lockMessage = computed(()=>{
 })
 
 const displayMessage = computed(()=>{
-
   if(error.value) return error.value
-
   if(store.errorMessage) return store.errorMessage
-
   if(isLocked.value) return lockMessage.value
-
   return ""
-
 })
 
 watch(()=>form.statusPengadaan,()=>{ error.value="" })
@@ -237,7 +130,6 @@ function onCancel(){
 }
 
 function triggerConfirm(){
-
   error.value=""
 
   if(!form.statusPengadaan){
@@ -255,31 +147,239 @@ function triggerConfirm(){
 
 async function confirmSave(){
   try {
-  showConfirmModal.value=false
+    showConfirmModal.value=false
+    isSubmitting.value = true
 
-  await store.createTinjauan(pengadaanId.value,{
-    statusPengadaan: form.statusPengadaan,
-    alasan: form.alasan
-  })
+    await store.createTinjauan(pengadaanId.value,{
+      statusPengadaan: form.statusPengadaan,
+      alasan: form.alasan
+    })
 
-  toastStore.success(
-      "Success",
-      "Peninjauan pengadaan berhasil disimpan."
-    )
+    toastStore.success("Success","Peninjauan pengadaan berhasil disimpan.")
+    router.push("/pengadaan/pengajuan/tinjau")
 
-  router.push("/pengadaan/pengajuan/tinjau")
   } catch (err) {
-    toastStore.error(
-      "Error",
-      "Gagal membuat peninjauan."
-    );
+    toastStore.error("Error","Gagal membuat peninjauan.")
+    isSubmitting.value = false
   }
-
 }
-
 </script>
 
+<template>
+  <div class="page">
+    <h1 class="title">Tinjau Pengajuan Pengadaan Aset</h1>
+
+    <div class="detail-card">
+      <h3 class="detail-title">Detail Pengajuan</h3>
+
+      <div class="detail-grid">
+
+        <div>
+          <p class="label">Nama Pengaju</p>
+          <p class="value">{{ detail.namaPengaju }}</p>
+        </div>
+
+        <div>
+          <p class="label">Unit</p>
+          <p class="value">{{ detail.unitPengaju }}</p>
+        </div>
+
+        <div>
+          <p class="label">Nama Aset</p>
+          <p class="value">{{ detail.namaAset }}</p>
+        </div>
+
+        <div>
+          <p class="label">Merk</p>
+          <p class="value">{{ detail.merk }}</p>
+        </div>
+
+        <div>
+          <p class="label">Qty</p>
+          <p class="value">{{ detail.qty }}</p>
+        </div>
+
+        <div>
+          <p class="label">Harga</p>
+          <p class="value">
+            {{ new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR', maximumFractionDigits:0}).format(detail.estimasiHarga || 0) }}
+          </p>
+        </div>
+
+        <div>
+          <p class="label">Tanggal</p>
+          <p class="value">
+            {{ detail.waktuPengadaan ? detail.waktuPengadaan.slice(0,10).split('-').reverse().join('/') : '-' }}
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="review-card">
+      <div class="review-grid">
+
+        <div class="field">
+          <label class="label">Status *</label>
+
+          <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
+            <button
+              type="button"
+              class="dd-btn"
+              :disabled="isLocked || store.isLoading"
+              @click="ddOpen = !ddOpen"
+            >
+              <span :class="{ placeholder: !form.statusPengadaan }">
+                {{ form.statusPengadaan ? STATUS_LABEL[form.statusPengadaan] : "Pilih status" }}
+              </span>
+
+              <svg class="dd-icon" viewBox="0 0 24 24">
+                <path d="M6.7 9.3L12 13.2l3.9-3.9" />
+              </svg>
+            </button>
+
+            <div v-if="ddOpen" class="dd-menu">
+              <button
+                v-for="s in allowedNextStatuses"
+                :key="s"
+                class="dd-item"
+                @click="selectStatus(s)"
+              >
+                {{ STATUS_LABEL[s] }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Alasan *</label>
+          <textarea
+            v-model="form.alasan"
+            class="textarea"
+            placeholder="Masukkan alasan anda"
+            rows="3"
+            :disabled="isLocked || store.isLoading"
+          />
+        </div>
+
+        <div v-if="displayMessage" class="lock-banner">
+          {{ displayMessage }}
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" @click="onCancel">Batal</button>
+        <button class="btn btn-primary" @click="triggerConfirm">
+          {{ store.isLoading ? "Menyimpan..." : "Simpan" }}
+        </button>
+      </div>
+    </div>
+  </div>
+  <ConfirmationModal
+    :show="showConfirmModal"
+    title="Konfirmasi Peninjauan"
+    message="Apakah Anda yakin data yang dimasukkan sudah benar?"
+    confirm-text="Ya, Simpan"
+    cancel-text="Batal"
+    :is-loading="isSubmitting"
+    @confirm="confirmSave"
+    @cancel="showConfirmModal = false"
+  />
+</template>
+
 <style scoped>
+.page {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+}
+
+.detail-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.full { grid-column: span 2; }
+
+.label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.preview-img {
+  width: 200px;
+  border-radius: 10px;
+}
+
+.review-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 38px 34px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 42px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #ddd;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #00588F;
+  color: white;
+}
+
+.btn-secondary {
+  background: #eee;
+}
 .page {
   max-width: 1200px;
   margin: 40px auto;
