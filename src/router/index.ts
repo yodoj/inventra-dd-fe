@@ -238,6 +238,12 @@ const router = createRouter({
       meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
     },
     {
+      path: '/pengadaan/dashboard',
+      name: 'dashboard-pengadaan-aset',
+      component: () => import('../views/Dashboard/DashboardPengadaanAset.vue'),
+      meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
       path: '/403',
       name: 'forbidden',
       component: () => import('@/views/Error/Forbidden403View.vue')
@@ -252,7 +258,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
-  
+
   if (!authStore.userRole) {
     authStore.checkAuth();
   }
