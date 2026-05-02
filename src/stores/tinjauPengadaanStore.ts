@@ -112,22 +112,26 @@ async function createTinjauan(pengadaanId: number, payload: TinjauPengadaanReque
   }
 
 
-  async function prosesBeli(idPengadaan: string, harga: number, file: File) {
+  async function prosesBeli(idPengadaan: string, payload: FormData) {
     try {
-      const result = await tinjauPengadaanService.beliPengadaan(idPengadaan, {
-        harga: harga,
-        buktiPembelian: file
-      });
+      const result = await tinjauPengadaanService.beliPengadaan(idPengadaan, payload);
+        current.value = result;
+        items.value.unshift(result);
 
-      current.value = result;
+        return result;
 
-      return result;
-    } catch (e: any) {
-      errorMessage.value = e.response?.data?.message || e.message || "Gagal memproses pembelian";
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+      } catch (e: any) {
+        errorMessage.value =
+          e.response?.data?.message ||
+          e.message ||
+          "Gagal membuat pengajuan";
+
+        throw e;
+
+      } finally {
+        loading.value = false;
+      }
+
   }
 
 
