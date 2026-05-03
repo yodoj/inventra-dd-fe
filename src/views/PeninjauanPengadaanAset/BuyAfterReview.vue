@@ -128,6 +128,7 @@ const showConfirmModal = ref(false);
 
 const pengadaanId = computed(() => route.params.idPengadaan);
 const error = ref("")
+const fileError = ref("")
 const isLocked = computed(() => {
   if (store.isLoading) return true;
   const status = store.current?.statusPengadaan;
@@ -168,7 +169,11 @@ async function triggerConfirm() {
 
   try {
     // cek backend dulu
-    await store.prosesBeli(pengadaanId.value, form.harga, fotoFile.value);
+    const formData = new FormData();
+    formData.append("harga", form.harga);
+    formData.append("buktiPembelian", fotoFile.value);
+
+    await store.prosesBeli(pengadaanId.value, formData);
 
     // kalau backend tidak error baru buka modal
     showConfirmModal.value = true;
@@ -183,10 +188,28 @@ async function triggerConfirm() {
 
 function onFileChange(e) {
   const file = e.target.files?.[0] || null;
+
+  if (!file) return;
+
+  // validasi tipe
+  if (!file.type.startsWith("image/")) {
+    fileError.value = "File harus berupa gambar";
+    return;
+  }
+
+  // validasi size (misal max 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    fileError.value = "Ukuran file maksimal 2MB";
+    return;
+  }
+
+  // reset error
+  fileError.value = "";
+
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
+
   fotoFile.value = file;
-  previewUrl.value = file ? URL.createObjectURL(file) : "";
-  if (file) fileError.value = "";
+  previewUrl.value = URL.createObjectURL(file);
 }
 
 function removeFile() {
