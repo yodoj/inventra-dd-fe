@@ -244,6 +244,12 @@ const router = createRouter({
       meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
     },
     {
+      path: '/pengadaan/laporan',
+      name: 'laporan-pengadaan-aset',
+      component: () => import('../views/Laporan/LaporanPengadaanAset.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
       path: '/403',
       name: 'forbidden',
       component: () => import('@/views/Error/Forbidden403View.vue')
