@@ -1,7 +1,52 @@
 <template>
   <div class="page">
     <h1 class="title">Tinjau Pengajuan Pengadaan Aset</h1>
+<div class="detail-card">
+      <h3 class="detail-title">Detail Pengajuan</h3>
 
+      <div class="detail-grid">
+
+        <div>
+          <p class="label">Nama Pengaju</p>
+          <p class="value">{{ detail.namaPengaju }}</p>
+        </div>
+
+        <div>
+          <p class="label">Unit</p>
+          <p class="value">{{ detail.unitPengaju }}</p>
+        </div>
+
+        <div>
+          <p class="label">Nama Aset</p>
+          <p class="value">{{ detail.namaAset }}</p>
+        </div>
+
+        <div>
+          <p class="label">Merk</p>
+          <p class="value">{{ detail.merk }}</p>
+        </div>
+
+        <div>
+          <p class="label">Qty</p>
+          <p class="value">{{ detail.qty }}</p>
+        </div>
+
+        <div>
+          <p class="label">Harga</p>
+          <p class="value">
+            {{ new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR', maximumFractionDigits:0}).format(detail.estimasiHarga || 0) }}
+          </p>
+        </div>
+
+        <div>
+          <p class="label">Tanggal</p>
+          <p class="value">
+            {{ detail.waktuPengadaan ? detail.waktuPengadaan.slice(0,10).split('-').reverse().join('/') : '-' }}
+          </p>
+        </div>
+
+      </div>
+    </div>
     <div class="review-card">
       <div class="review-grid">
         <div class="field">
@@ -74,30 +119,16 @@
       </div>
     </div>
   </div>
-  <div v-if="showConfirmModal" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Konfirmasi Ubah Peninjauan</h3>
-      <button class="close-btn" @click="showConfirmModal = false">×</button>
-    </div>
-
-    <div class="modal-body">
-      <div class="info-icon-box">
-        <svg viewBox="0 0 24 24" class="info-svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
-      </div>
-      <p>Apakah Anda yakin data yang dimasukkan sudah benar?</p>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn-batal" @click="showConfirmModal = false">Batal</button>
-      <button class="btn-confirm" @click="confirmSave" :disabled="store.isLoading">
-        {{ store.isLoading ? 'Proses...' : 'Ya, Simpan' }}
-      </button>
-    </div>
-  </div>
-</div>
+<ConfirmationModal
+    :show="showConfirmModal"
+    title="Konfirmasi Peninjauan"
+    message="Apakah Anda yakin data yang dimasukkan sudah benar?"
+    confirm-text="Ya, Simpan"
+    cancel-text="Batal"
+    :is-loading="isSubmitting"
+    @confirm="confirmSave"
+    @cancel="showConfirmModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -106,10 +137,12 @@ import { useRoute, useRouter } from "vue-router";
 import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from '@/stores/toast'
+import ConfirmationModal from "@/components/ConfirmationModal.vue"
 
 const toastStore = useToastStore()
 const route = useRoute();
 const router = useRouter();
+const isSubmitting = ref(false)
 
 const store = useTinjauPengadaanStore();
 const auth = useAuthStore();
@@ -123,6 +156,7 @@ const form = reactive({
   statusPengadaan: "",
   alasan: "",
 });
+const detail = computed(() => store.current || {})
 
 
 async function load() {
@@ -293,6 +327,7 @@ function triggerConfirm() {
 async function confirmSave() {
   try {
     showConfirmModal.value = false;
+    isSubmitting.value = true
     await store.updateTinjauan((pengadaanId.value), {
       statusPengadaan: form.statusPengadaan,
       alasan: form.alasan,
@@ -307,13 +342,104 @@ async function confirmSave() {
       "Error",
       "Gagal memperbarui peninjauan."
     );
+    isSubmitting.value = false
   }
 }
 
 </script>
 
-
 <style scoped>
+.page {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+}
+
+.detail-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.full { grid-column: span 2; }
+
+.label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.preview-img {
+  width: 200px;
+  border-radius: 10px;
+}
+
+.review-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 38px 34px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 42px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #ddd;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #00588F;
+  color: white;
+}
+
+.btn-secondary {
+  background: #eee;
+}
 .page {
   max-width: 1200px;
   margin: 40px auto;
@@ -322,7 +448,7 @@ async function confirmSave() {
 }
 
 .title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 800;
   margin-bottom: 24px;
 }
@@ -357,9 +483,9 @@ async function confirmSave() {
 
 .field .label {
   display: block;
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
   color: #111827;
 }
 
@@ -501,6 +627,26 @@ async function confirmSave() {
   color:#9ca3af;
   cursor:not-allowed;
 }
+.lock-banner {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #b91c1c;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.lock-icon {
+  width: 20px;
+  height: 20px;
+  fill: #b91c1c;
+  flex-shrink: 0;
+}
 
 @media (max-width: 860px) {
   .review-grid {
@@ -521,32 +667,6 @@ async function confirmSave() {
     font-size: 14px;
   }
 }
-  .lock-banner {
-  grid-column: span 2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #b91c1c;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-
-.lock-icon {
-  width: 20px;
-  height: 20px;
-  fill: #b91c1c;
-}
-
-.textarea:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
 .modal-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -648,12 +768,5 @@ async function confirmSave() {
 
 .btn-confirm:hover {
   background: #1e3a5f;
-}
-
-@media (max-width: 860px) {
-  .lock-banner {
-    grid-column: span 1;
-  }
-
 }
 </style>

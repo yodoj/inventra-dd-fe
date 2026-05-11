@@ -46,7 +46,7 @@ const maxQty = computed(() => {
 const assetOptions = computed(() => {
   return borrowableAssets.value.map(asset => ({
     id: asset.idAset,
-    label: `[${asset.kodeAset}] ${asset.namaAset}${asset.merkAset ? ` - ${asset.merkAset}` : ''} (Tersedia: ${asset.qtyTersedia})`
+    label: `${asset.kodeAset} - ${asset.namaAset}${asset.merkAset ? ` - ${asset.merkAset}` : ''} (Tersedia: ${asset.qtyTersedia})`
   }));
 });
 
@@ -117,6 +117,12 @@ const handleSubmit = async () => {
     isSubmitting.value = false;
   }
 };
+onMounted(() => {
+  if (authStore.userRole === 'ADMIN') {
+    toastStore.error('Unauthorized', 'Admin hanya dapat melakukan pengajuan lintas unit');
+    router.push('/peminjaman');
+  }
+});
 </script>
 
 <template>
@@ -217,6 +223,10 @@ const handleSubmit = async () => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 60px 80px;
+}
+
+.form-grid > * {
+  min-width: 0;
 }
 
 .form-group {

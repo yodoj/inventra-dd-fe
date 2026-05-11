@@ -36,7 +36,7 @@ const units = [
   { label: 'SD', value: 'SD' },
   { label: 'SMP', value: 'SMP' },
   { label: 'SMA', value: 'SMA' },
-  { label: 'TK-KB', value: 'TK-KB' }
+  { label: 'KB-TK', value: 'KB-TK' }
 ];
 
 const pageSize = ref(10);

@@ -3,12 +3,13 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { Eye, EyeOff } from 'lucide-vue-next';
-import { toast } from 'vue-sonner';
+import { useToastStore } from '@/stores/toast';
 import api from '@/services/api';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const formData = ref({
   current_password: '',
@@ -81,12 +82,12 @@ const submitSavePassword = async () => {
       confirm_password: formData.value.confirm_password
     });
 
-    toast.success('Password berhasil diubah!');
+    toastStore.success('Success', 'Password berhasil diubah!');
     setTimeout(() => router.push('/profile'), 1500);
   } catch (err: any) {
     errorMessage.value =
       err.response?.data?.message || 'Gagal mengubah password. Silakan coba lagi.';
-    toast.error(errorMessage.value);
+    toastStore.error('Error', errorMessage.value);
   } finally {
     isLoading.value = false;
   }

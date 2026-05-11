@@ -512,6 +512,7 @@ const handleEdit = (asset: any) => {
   -webkit-appearance: none;
   -moz-appearance: none;
   background-image: none !important;
+  color: #333;
 }
 
 .custom-select select::-ms-expand {
@@ -531,7 +532,7 @@ const handleEdit = (asset: any) => {
 }
 
 select option {
-  color: #374151;
+  color: #333;
 }
 
 .select-icon {
@@ -556,6 +557,7 @@ select option {
   border-radius: 8px;
   font-size: 14px;
   outline: none;
+  color: #333;
 }
 
 .search-icon {

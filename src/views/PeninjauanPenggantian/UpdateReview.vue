@@ -52,7 +52,7 @@
             <div v-if="data.linkGambar" class="image-showcase">
               <div class="label">Contoh Gambar: </div>
               <img
-                :src="`http://localhost:8080/uploads/contoh-gambar/${data.linkGambar}`"
+                :src="`https://inventra-dd-be.onrender.com/uploads/contoh-gambar/${data.linkGambar}`"
                 class="asset-img-large"
               />
             </div>
