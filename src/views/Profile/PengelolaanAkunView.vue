@@ -3,13 +3,16 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useAuthStore } from '@/stores/auth';
+import { useToastStore } from '@/stores/toast';
 import SearchIcon from '@/components/icons/SearchIcon.vue';
 import EditIcon from '@/components/icons/EditIcon.vue';
 import { ChevronDown, ChevronLeft, ChevronRight, Trash2, Eye, Users, UserCog, Plus } from 'lucide-vue-next';
+import type { UserPerUnit } from '@/services/userManagementService';
 
 const userStore = useUserManagementStore();
 const authStore = useAuthStore();
 const router = useRouter();
+const toastStore = useToastStore();
 
 const activeTab = ref<'terdaftar' | 'unit_lain'>('terdaftar');
 const searchQuery = ref('');
@@ -92,6 +95,10 @@ onMounted(() => {
 const handleTambahAkun = () => {
   router.push({ name: 'tambah-akun' });
 };
+
+const handleViewUser = (user: UserPerUnit) => {
+  router.push({ name: 'detail-user', params: { id: user.id } });
+};
 </script>
 
 <template>
@@ -103,14 +110,14 @@ const handleTambahAkun = () => {
 
       <!-- Tab Switcher -->
       <div v-if="!isAdmin" class="tab-switcher mb-20">
-        <button 
-          @click="activeTab = 'terdaftar'" 
+        <button
+          @click="activeTab = 'terdaftar'"
           :class="['tab-btn', { active: activeTab === 'terdaftar' }]"
         >
           <Users class="icon-md" /> Akun {{ userUnit }} Terdaftar
         </button>
-        <button 
-          @click="activeTab = 'unit_lain'" 
+        <button
+          @click="activeTab = 'unit_lain'"
           :class="['tab-btn', { active: activeTab === 'unit_lain' }]"
         >
           <UserCog class="icon-md" /> Akun Sarpras Unit Lain
@@ -141,15 +148,15 @@ const handleTambahAkun = () => {
                 <ChevronDown class="select-icon" />
               </div>
             </div>
-            
+
             <div class="filter-item flex-grow">
               <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Akun</label>
               <div class="search-box">
                 <SearchIcon class="search-icon" />
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="Cari akun pengguna" 
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Cari akun pengguna"
                   @keyup.enter="handleSearch"
                 />
               </div>
@@ -190,7 +197,13 @@ const handleTambahAkun = () => {
                 <tr v-else-if="userStore.users.length === 0">
                   <td colspan="6" class="text-center py-8 text-gray-500 bg-gray-50">Data pengguna tidak ditemukan</td>
                 </tr>
-                <tr v-else v-for="(user, index) in userStore.users" :key="user.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  v-else
+                  v-for="(user, index) in userStore.users"
+                  :key="user.id"
+                  class="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
+                  @click="handleViewUser(user)"
+                >
                   <td class="b3-body font-medium">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td class="b3-body font-medium text-gray-800">{{ user.email }}</td>
                   <td class="b2-body text-gray-700">{{ user.nama_lengkap }}</td>
@@ -201,7 +214,7 @@ const handleTambahAkun = () => {
                     </span>
                   </td>
                   <td v-if="isAdmin" class="font-bold text-center text-gray-800">{{ user.unit || '-' }}</td>
-                  <td>
+                  <td @click.stop="handleViewUser(user)">
                     <div class="flex justify-center gap-2">
                        <button class="btn-icon btn-edit" title="Ubah">
                         <EditIcon class="w-3.5 h-3.5" />
@@ -209,7 +222,7 @@ const handleTambahAkun = () => {
                       <button class="btn-icon btn-delete" title="Hapus">
                         <Trash2 class="w-3.5 h-3.5" />
                       </button>
-                      <button class="btn-icon btn-view" title="Detail">
+                      <button @click.stop="handleViewUser(user)" class="btn-icon btn-view" title="Detail">
                         <Eye class="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -239,16 +252,16 @@ const handleTambahAkun = () => {
             </div>
           </div>
           <div class="pagination-btns">
-            <button 
-              @click="prevPage" 
-              :disabled="currentPage <= 1" 
+            <button
+              @click="prevPage"
+              :disabled="currentPage <= 1"
               class="btn-page"
             >
               <ChevronLeft class="icon-sm" /> Previous
             </button>
-            <button 
-              @click="nextPage" 
-              :disabled="currentPage >= userStore.totalPages" 
+            <button
+              @click="nextPage"
+              :disabled="currentPage >= userStore.totalPages"
               class="btn-page"
             >
               Next <ChevronRight class="icon-sm" />
@@ -256,11 +269,14 @@ const handleTambahAkun = () => {
           </div>
         </div>
       </div>
-      
+
       <div v-if="!isAdmin" v-show="activeTab === 'unit_lain'" class="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-500 mt-8 shadow-sm">
       </div>
 
     </div>
+
+    <!-- User Detail Modal -->
+    <!-- Removed - now using DetailUserView page instead -->
   </div>
 </template>
 

@@ -7,6 +7,8 @@ export interface UserPerUnit {
   nomor_telepon: string
   role: string
   unit?: string
+  nisn?: string
+  kelas?: string
 }
 
 export interface PaginationData {
@@ -30,11 +32,11 @@ export const userManagementService = {
     const params = new URLSearchParams()
     params.append('page', page.toString())
     params.append('limit', limit.toString())
-    
+
     if (search) {
       params.append('search', search)
     }
-    
+
     if (role && role !== 'Semua Role') {
       params.append('role', role)
     }
@@ -47,11 +49,11 @@ export const userManagementService = {
     const params = new URLSearchParams()
     params.append('page', page.toString())
     params.append('limit', limit.toString())
-    
+
     if (search) {
       params.append('search', search)
     }
-    
+
     if (role && role !== 'Semua Role') {
       params.append('role', role)
     }
@@ -63,9 +65,19 @@ export const userManagementService = {
     const response = await apiClient.get<UserManagementResponse>(`/api/users?${params.toString()}`)
     return response.data
   },
-  
+
   async createUser(userData: any) {
     const response = await apiClient.post('/api/users', userData)
+    return response.data
+  },
+
+  async deleteUser(userId: string) {
+    const response = await apiClient.delete(`/api/users/${userId}`)
+    return response.data
+  },
+
+  async getUserDetail(userId: string) {
+    const response = await apiClient.get<{ data: UserPerUnit; message: string }>(`/api/users/per-unit/${userId}`)
     return response.data
   }
 }

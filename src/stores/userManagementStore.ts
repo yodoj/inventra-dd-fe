@@ -14,7 +14,7 @@ export const useUserManagementStore = defineStore('userManagement', () => {
   const fetchUsers = async (page: number = 1, limit: number = 10, search?: string, role?: string, unit?: string) => {
     loading.value = true
     const authStore = useAuthStore()
-    
+
     try {
       let response;
       if (authStore.userRole === 'ADMIN') {
@@ -22,7 +22,7 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       } else {
         response = await userManagementService.getUsersPerUnit(page, limit, search, role)
       }
-      
+
       if (response && response.data) {
         users.value = response.data.data
         totalItems.value = response.data.total_items
@@ -52,6 +52,37 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     }
   }
 
+  const deleteUser = async (userId: string) => {
+    loading.value = true
+    const toastStore = useToastStore()
+    try {
+      const response = await userManagementService.deleteUser(userId)
+      toastStore.success('Success', response.message || 'Akun pengguna berhasil dihapus')
+      return { success: true, message: response.message }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Gagal menghapus akun pengguna'
+      return { success: false, message: errorMessage }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchUserDetail = async (userId: string) => {
+    loading.value = true
+    try {
+      const response = await userManagementService.getUserDetail(userId)
+      if (response && response.data) {
+        return { success: true, data: response.data }
+      }
+      return { success: false, data: null }
+    } catch (error: any) {
+      console.error('Error fetching user detail:', error)
+      return { success: false, data: null }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     users,
     loading,
@@ -59,6 +90,8 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     totalPages,
     currentPage,
     fetchUsers,
-    createUser
+    createUser,
+    deleteUser,
+    fetchUserDetail
   }
 })
