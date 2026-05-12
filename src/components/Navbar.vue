@@ -154,10 +154,10 @@ const canSeePeminjaman = () => {
             </div>
             <template v-if="canSeeReports()">
               <div @click="protectedNavigate('/assets/laporan')" class="dropdown-item" style="cursor: pointer;">
-                <FileText class="icon-sm" /> Laporan Utilisasi Aset
+                <FileText class="icon-sm" /> Laporan Peminjaman Aset
               </div>
               <div @click="protectedNavigate('/assets/dashboard')" class="dropdown-item" style="cursor: pointer;">
-                <LayoutDashboard class="icon-sm" /> Dashboard Utilisasi Aset
+                <LayoutDashboard class="icon-sm" /> Dashboard Peminjaman Aset
               </div>
             </template>
           </div>
