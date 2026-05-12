@@ -85,6 +85,19 @@ const formatRoleDisplay = (role: string) => {
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
 };
 
+const getRoleBadgeClass = (role: string) => {
+  if (!role) return 'role-default';
+  switch (role.toUpperCase()) {
+    case 'ADMIN': return 'role-admin';
+    case 'YAYASAN': return 'role-yayasan';
+    case 'SARPRAS': return 'role-sarpras';
+    case 'KEPSEK': return 'role-kepsek';
+    case 'GURU': return 'role-guru';
+    case 'SISWA': return 'role-siswa';
+    default: return 'role-default';
+  }
+};
+
 onMounted(() => {
   loadUsers();
 });
@@ -196,7 +209,7 @@ const handleTambahAkun = () => {
                   <td class="b2-body text-gray-700">{{ user.nama_lengkap }}</td>
                   <td class="b3-body text-gray-600">{{ user.nomor_telepon }}</td>
                   <td class="text-center">
-                    <span class="badge status-role">
+                    <span class="badge" :class="getRoleBadgeClass(user.role)">
                       {{ formatRoleDisplay(user.role) }}
                     </span>
                   </td>
@@ -475,7 +488,13 @@ table tbody tr:last-child td {
   line-height: 1.2;
 }
 
-.status-role { background-color: #003B5C; color: white; }
+.role-admin { background-color: white; border: 2px solid #00588F; color: #002845; }
+.role-yayasan { background-color: white; border: 2px solid #3730A3; color: #002845; }
+.role-sarpras { background-color: white; border: 2px solid #D8B4F8; color: #002845; }
+.role-kepsek { background-color: white; border: 2px solid #A5B4FC; color: #002845; }
+.role-guru { background-color: white; border: 2px solid #804674; color: #002845; }
+.role-siswa { background-color: white; border: 2px solid #5C6BE1; color: #002845; }
+.role-default { background-color: white; border: 2px solid #9CA3AF; color: #002845; }
 
 .btn-icon {
   width: 28px;

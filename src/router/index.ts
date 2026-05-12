@@ -161,8 +161,72 @@ const router = createRouter({
       path: '/profile/pengelolaan-akun/tambah',
       name: 'tambah-akun',
       component: () => import('../views/Profile/TambahAkunView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
+      path: '/laporan/utilisasi',
+      name: 'laporan-utilisasi',
+      component: () => import('../views/Laporan/LaporanUtilisasiView.vue'),
+      meta: { roles: ['SUPERADMIN', 'ADMIN', 'YAYASAN', 'KEPSEK', 'SARPRAS'] }
+    },
+    {
+      path: '/pengadaan/dashboard',
+      name: 'dashboard-pengadaan-aset',
+      component: () => import('../views/Dashboard/DashboardPengadaanAset.vue'),
+      meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
+      path: '/403',
+      name: 'forbidden',
+      component: () => import('@/views/Error/Forbidden403View.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/Error/NotFound404View.vue')
     }
-  ],
+  ]
 })
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+
+  if (!authStore.userRole) {
+    authStore.checkAuth();
+  }
+
+  if (!to.meta || !to.meta.roles) {
+    return next();
+  }
+
+  const allowedRoles = to.meta.roles as string[];
+
+  if (!authStore.isAuthenticated) {
+    return next({ name: 'login' });
+  }
+
+  const userRole = authStore.userRole;
+  const userUnit = authStore.user?.unit;
+
+  const userRoles = [];
+  if (userRole) {
+    userRoles.push(userRole.toUpperCase());
+    if (userRole.toUpperCase() === 'ADMIN' && userUnit && userUnit.toUpperCase() === 'SUPERADMIN') {
+      userRoles.push('SUPERADMIN');
+    }
+  }
+
+  if (allowedRoles.includes('ALL')) {
+    return next();
+  }
+
+  const hasAccess = allowedRoles.some(role => userRoles.includes(role.toUpperCase()));
+
+  if (hasAccess) {
+    next();
+  } else {
+    next({ path: '/403' });
+  }
+});
 
 export default router
