@@ -1,125 +1,132 @@
 <template>
   <div class="page">
-    <h1 class="title">Tinjau Pengajuan Pengadaan Aset</h1>
-<div class="detail-card">
-      <h3 class="detail-title">Detail Pengajuan</h3>
+    <div class="container py-32">
+      <h1 class="title">Ubah Tinjau Pengajuan Penggantian</h1>
 
-      <div class="detail-grid">
-
-        <div>
-          <p class="label">Nama Pengaju</p>
-          <p class="value">{{ detail.namaPengaju }}</p>
+      <div class="main-card">
+        <div class="card-header-container">
+          <h2 class="asset-display-title">
+            {{ data?.idPenggantian }}
+          </h2>
         </div>
 
-        <div>
-          <p class="label">Unit</p>
-          <p class="value">{{ detail.unitPengaju }}</p>
-        </div>
+        <div v-if="data" class="info-section">
+          <h3 class="section-subtitle">Detail Pengajuan</h3>
 
-        <div>
-          <p class="label">Nama Aset</p>
-          <p class="value">{{ detail.namaAset }}</p>
-        </div>
+          <div class="info-grid-3-col">
+            <div>
+              <div class="row-data">
+                <span class="label">Nama Pengaju</span>
+                <span>:</span>
+                <span class="value">{{ data.namaPengaju }}</span>
+              </div>
+              <div class="row-data">
+                <span class="label">Unit</span>
+                <span>:</span>
+                <span class="value">{{ data.unitPengaju }}</span>
+              </div>
+              <div class="row-data">
+                <span class="label">Role</span>
+                <span>:</span>
+                <span class="value">{{ data.rolePengaju }}</span>
+              </div>
+            </div>
 
-        <div>
-          <p class="label">Merk</p>
-          <p class="value">{{ detail.merk }}</p>
-        </div>
-
-        <div>
-          <p class="label">Qty</p>
-          <p class="value">{{ detail.qty }}</p>
-        </div>
-
-        <div>
-          <p class="label">Harga</p>
-          <p class="value">
-            {{ new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR', maximumFractionDigits:0}).format(detail.estimasiHarga || 0) }}
-          </p>
-        </div>
-
-        <div>
-          <p class="label">Tanggal</p>
-          <p class="value">
-            {{ detail.waktuPengadaan ? detail.waktuPengadaan.slice(0,10).split('-').reverse().join('/') : '-' }}
-          </p>
-        </div>
-
-      </div>
-    </div>
-    <div class="review-card">
-      <div class="review-grid">
-        <div class="field">
-          <label class="label">Status <span class="text-red-500">*</span></label>
-
-          <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
-            <button
-              type="button"
-              class="dd-btn"
-              :disabled="isLocked"
-              @click="ddOpen = !ddOpen"
-            >
-              <span :class="{ placeholder: !form.statusPengadaan }">
-                {{ form.statusPengadaan ? STATUS_LABEL[form.statusPengadaan] : "Pilih status" }}
-              </span>
-
-              <svg class="dd-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
-              </svg>
-            </button>
-
-            <div v-if="ddOpen" class="dd-menu">
-              <button
-                v-for="s in allowedNextStatuses"
-                :key="s"
-                type="button"
-                class="dd-item"
-                @click="selectStatus(s)"
-              >
-                {{ STATUS_LABEL[s] }}
-                <span v-if="s === store.current?.statusPengadaan"></span>
-              </button>
+            <div>
+              <div class="row-data">
+                <span class="label">Nama Barang</span>
+                <span>:</span>
+                <span class="value">{{ data.namaAset }}</span>
+              </div>
+              <div class="row-data">
+                <span class="label">Merk</span>
+                <span>:</span>
+                <span class="value">{{ data.merk }}</span>
+              </div>
+              <div class="row-data">
+                <span class="label">Qty</span>
+                <span>:</span>
+                <span class="value">{{ data.qty }}</span>
+              </div>
+            </div>
+            <div v-if="data.linkGambar" class="image-showcase">
+              <div class="label">Contoh Gambar: </div>
+              <img
+                :src="`https://inventra-dd-be.onrender.com/uploads/contoh-gambar/${data.linkGambar}`"
+                class="asset-img-large"
+              />
             </div>
           </div>
         </div>
 
+        <div class="review-section">
+          <h3 class="section-subtitle">Form Peninjauan</h3>
 
-        <div class="field">
-          <label class="label">Alasan <span class="text-red-500">*</span></label>
-          <textarea
-            v-model="form.alasan"
-            class="textarea"
-            placeholder="Masukkan alasan anda"
-            rows="3"
-            :disabled="isLocked"
-          />
-        </div>
-        <div v-if="error" class="lock-banner">
-          <span>{{ error }}</span>
+          <div class="review-grid">
+
+            <div class="field">
+              <label class="label">Status <span class="text-red-500">*</span></label>
+
+              <div class="dd" :class="{ open: ddOpen, disabled: isLocked }">
+                <button
+                  type="button"
+                  class="dd-btn"
+                  :disabled="isLocked || store.isLoading"
+                  @click="ddOpen = !ddOpen"
+                >
+                  <span :class="{ placeholder: !form.statusPenggantian }">
+                {{ form.statusPenggantian ? STATUS_LABEL[form.statusPenggantian] : "Pilih status" }}
+                  </span>
+
+                  <svg class="dd-icon" viewBox="0 0 24 24">
+                    <path d="M6.7 9.3a1 1 0 0 1 1.4 0L12 13.2l3.9-3.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4z"/>
+                  </svg>
+                </button>
+
+                <div v-if="ddOpen" class="dd-menu">
+                  <button
+                    v-for="s in allowedNextStatuses"
+                    :key="s"
+                    class="dd-item"
+                    @click="selectStatus(s)"
+                  >
+                    {{ STATUS_LABEL[s] }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Alasan <span class="text-red-500">*</span></label>
+              <textarea
+                v-model="form.alasan"
+                class="textarea"
+                placeholder="Masukkan alasan..."
+                :disabled="isLocked || store.isLoading"
+              />
+            </div>
+
+            <div v-if="displayMessage" class="lock-banner">
+              {{ displayMessage }}
+            </div>
+          </div>
+
+
+          <div class="actions">
+            <button class="btn btn-secondary" @click="onCancel">
+              Batal
+            </button>
+
+            <button class="btn btn-primary" @click="triggerConfirm">
+              Simpan
+            </button>
+          </div>
         </div>
 
-        <div v-if="store.errorMessage" class="lock-banner">
-          <span>{{ store.errorMessage }}</span>
-        </div>
-        <div v-if="isLocked && lockMessage" class="lock-banner">
-          <svg class="lock-icon" viewBox="0 0 24 24">
-            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-          </svg>
-          <span>{{ lockMessage }}</span>
-        </div>
       </div>
-
-      <div class="actions">
-        <button type="button" class="btn btn-secondary" @click="onCancel">
-          Batal
-        </button>
-        <button type="button" class="btn btn-primary" @click="triggerConfirm">
-          Simpan
-        </button>
       </div>
     </div>
-  </div>
-<ConfirmationModal
+    <ConfirmationModal
     :show="showConfirmModal"
     title="Konfirmasi Peninjauan"
     message="Apakah Anda yakin data yang dimasukkan sudah benar?"
@@ -129,12 +136,14 @@
     @confirm="confirmSave"
     @cancel="showConfirmModal = false"
   />
+
+
 </template>
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useTinjauPengadaanStore } from "@/stores/tinjauPengadaanStore";
+import { useTinjauPenggantianStore } from "@/stores/tinjauPenggantianStore";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from '@/stores/toast'
 import ConfirmationModal from "@/components/ConfirmationModal.vue"
@@ -142,43 +151,40 @@ import ConfirmationModal from "@/components/ConfirmationModal.vue"
 const toastStore = useToastStore()
 const route = useRoute();
 const router = useRouter();
+const store = useTinjauPenggantianStore();
+const auth = useAuthStore();
 const isSubmitting = ref(false)
 
-const store = useTinjauPengadaanStore();
-const auth = useAuthStore();
-
-const pengadaanId = computed(() => (route.params.pengadaanId));
+const penggantianId = computed(() => (route.params.penggantianId));
 const role = computed(() => auth.userRole);
 const showConfirmModal = ref(false);
 const error = ref("");
+const data = computed(() => store.current)
 
 const form = reactive({
-  statusPengadaan: "",
+  statusPenggantian: "",
   alasan: "",
 });
-const detail = computed(() => store.current || {})
 
 
 async function load() {
-  if (!pengadaanId.value) return;
+  if (!penggantianId.value) return;
 
   try {
-    await store.fetchByPengadaanId((pengadaanId.value));
+    await store.fetchByPenggantianId((penggantianId.value));
 
     if (store.current) {
       const curr = store.current;
-      const userRole = auth.userRole;
 
       // Cek apakah role sekarang sudah pernah mengisi review ini sebelumnya
-      const hasReviewed = (userRole === 'KEPSEK' && curr.kepsekFirstReviewedAt) ||
-                          (userRole === 'YAYASAN' && curr.yayasanFirstReviewedAt);
+      const hasReviewed = (curr.createdAt);
 
       if (hasReviewed) {
-        form.statusPengadaan = curr.statusPengadaan || "";
+        form.statusPenggantian = curr.statusPenggantian || "";
         form.alasan = curr.alasan || "";
       } else {
         // Jika belum (mode create untuk role ini), biarkan form kosong
-        form.statusPengadaan = "";
+        form.statusPenggantian = "";
         form.alasan = "";
       }
     }
@@ -191,10 +197,8 @@ onMounted(load);
 
 const STATUS_LABEL = {
   DIAJUKAN: "Diajukan",
-  DISETUJUI_KEPSEK: "Disetujui Kepsek",
-  DISETUJUI_YAYASAN: "Disetujui Yayasan",
+  DISETUJUI: "Disetujui",
   DITOLAK: "Ditolak",
-  DIBELI: "Dibeli",
 };
 
 
@@ -202,7 +206,7 @@ const ddOpen = ref(false);
 
 function selectStatus(s) {
   if (isLocked.value) return;
-  form.statusPengadaan = s;
+  form.statusPenggantian = s;
   ddOpen.value = false;
 }
 
@@ -231,27 +235,12 @@ const canUpdate = computed(() => {
   const curr = store.current;
   const r = role.value;
 
-  if (r === "KEPSEK") {
-    if (!curr.kepsekFirstReviewedAt) return false;
+  if (!curr.createdAt) return false;
 
-    const masaGaransi = withinDays(curr.kepsekFirstReviewedAt, 2);
-    // Kepsek boleh update jika:
-    //    Masih dalam 2 hari DAN Yayasan belum menyetujui/menolak (melangkah ke tahap berikutnya)
-    const yayasanBelumReview = !curr.yayasanFirstReviewedAt;
-
-    return masaGaransi && yayasanBelumReview;
+  if (withinDays(curr.createdAt, 2)) {
+    return true;
   }
 
-  if (r === "YAYASAN") {
-    if (!curr.yayasanFirstReviewedAt) return false;
-
-    const masaGaransi = withinDays(curr.yayasanFirstReviewedAt, 2);
-    // Yayasan boleh update status (termasuk mengubah Ditolak jadi Setuju)
-    //    asalkan masih dalam 2 hari dan aset belum dibeli (final)
-    const belumDibeli = curr.statusPengadaan !== "DIBELI";
-
-    return masaGaransi && belumDibeli;
-  }
 
   return false;
 });
@@ -266,29 +255,13 @@ const lockMessage = computed(() => {
   if (store.isLoading) return "";
 
   // Pesan spesifik berdasarkan Rule
-  if (r === "KEPSEK") {
-    if (!curr.kepsekFirstReviewedAt) return "Tidak bisa mengubah hasil tinjau. Data belum pernah ditinjau oleh Kepala Sekolah.";
+  if (!curr.createdAt) return "Tidak bisa mengubah hasil tinjau. Data belum pernah ditinjau.";
 
-    if (!withinDays(curr.kepsekFirstReviewedAt, 2)) {
-      return "Batas waktu perubahan (2 hari) telah berakhir.";
-    }
-    if (curr.yayasanFirstReviewedAt) {
-      return "Data sudah diproses oleh Yayasan dan tidak dapat diubah lagi.";
-    }
+  if (!withinDays(curr.createdAt, 2)) {
+    return "Batas waktu perubahan (2 hari) telah berakhir.";
   }
 
-  if (r === "YAYASAN") {
-    if (!curr.yayasanFirstReviewedAt) return "Tidak bisa mengubah hasil tinjau. Data belum pernah ditinjau oleh Yayasan.";
-
-    if (!withinDays(curr.yayasanFirstReviewedAt, 2)) {
-      return "Batas waktu perubahan (2 hari) telah berakhir.";
-    }
-    if (curr.statusPengadaan === "DIBELI") {
-      return "Aset sudah dalam status DIBELI dan tidak dapat diubah.";
-    }
-  }
-
-  if (!canUpdate.value && (curr.kepsekFirstReviewedAt || curr.yayasanFirstReviewedAt)) {
+  if (!canUpdate.value && (curr.createdAt)) {
     return "Akses pengeditan dikunci.";
   }
 
@@ -297,23 +270,19 @@ const lockMessage = computed(() => {
 const allowedNextStatuses = computed(() => {
   if (!store.current) return [];
 
-  const r = role.value;
-  if (r === "KEPSEK") return ["DISETUJUI_KEPSEK", "DITOLAK"];
-  if (r === "YAYASAN") return ["DISETUJUI_YAYASAN", "DITOLAK"];
-
-  return ["DITOLAK"];
+  return ["DISETUJUI", "DITOLAK"];
 });
 
 
 function onCancel(){
-  router.push("/pengadaan/pengajuan/tinjau")
+  router.push("/pengadaan/rusak/tinjau")
 }
 
 
 function triggerConfirm() {
   error.value = "";
 
-  if (!form.statusPengadaan) {
+  if (!form.statusPenggantian) {
     error.value = "Pilih status terlebih dahulu!";
     return;
   }
@@ -328,15 +297,15 @@ async function confirmSave() {
   try {
     showConfirmModal.value = false;
     isSubmitting.value = true
-    await store.updateTinjauan((pengadaanId.value), {
-      statusPengadaan: form.statusPengadaan,
+    await store.updateTinjauan((penggantianId.value), {
+      statusPenggantian: form.statusPenggantian,
       alasan: form.alasan,
     });
     toastStore.success(
       "Success",
       "Berhasil memperbarui peninjauan."
     )
-    router.push("/pengadaan/pengajuan/tinjau");
+    router.push("/pengadaan/rusak/tinjau");
   } catch (err) {
     toastStore.error(
       "Error",
@@ -349,97 +318,114 @@ async function confirmSave() {
 </script>
 
 <style scoped>
-.page {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 24px;
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.title {
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 24px;
-}
-
-.detail-card {
+.main-card {
   background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid #eee;
 }
 
-.detail-title {
-  font-size: 18px;
+.card-header-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.section-subtitle {
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 16px;
 }
 
-.detail-grid {
+.info-grid-3-col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
 }
 
-.full { grid-column: span 2; }
+.row-data {
+  display: grid;
+  grid-template-columns: 140px 10px 1fr;
+  column-gap: 8px;
+  margin-bottom: 6px;
+}
 
 .label {
-  font-size: 12px;
-  color: #6b7280;
+  min-width: 140px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
 .value {
-  font-size: 14px;
-  font-weight: 600;
+  flex: 1;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-.preview-img {
-  width: 200px;
-  border-radius: 10px;
+.image-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  justify-content: center;
 }
 
-.review-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 38px 34px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+.asset-img-large {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
-.review-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 42px;
+.review-section {
+  margin-top: 32px;
+  border-top: 1px solid #eee;
+  padding-top: 24px;
 }
+
+
 
 .textarea {
   width: 100%;
   min-height: 120px;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
   border: 1px solid #ddd;
+  padding: 10px;
 }
 
 .actions {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 26px;
+  margin-top: 34px;
 }
 
-.btn {
-  padding: 12px 24px;
-  border-radius: 999px;
-  cursor: pointer;
+.btn-secondary {
+  background: #F2F4F5;
+  color: #75777D;
+  border-color: #C1C3C6;
 }
 
 .btn-primary {
   background: #00588F;
-  color: white;
+  color: #fff;
+  font-weight: 700;
 }
 
-.btn-secondary {
-  background: #eee;
+.btn-primary:hover {
+  filter: brightness(0.9);
 }
+
+.btn-secondary:hover {
+  filter: brightness(0.9);
+}
+
+
 .page {
   max-width: 1200px;
   margin: 40px auto;
@@ -477,13 +463,13 @@ async function confirmSave() {
 .review-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 42px;
+  gap: 24px;
   align-items: start;
 }
 
 .field .label {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   margin-bottom: 8px;
   color: #111827;
@@ -646,6 +632,38 @@ async function confirmSave() {
   height: 20px;
   fill: #b91c1c;
   flex-shrink: 0;
+}
+
+.recap-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.recap-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.recap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  font-size: 14px;
+}
+
+.recap-grid .full {
+  grid-column: span 2;
+}
+
+.recap-img {
+  width: 200px;
+  border-radius: 10px;
+  margin-top: 8px;
+  border: 1px solid #ddd;
 }
 
 @media (max-width: 860px) {

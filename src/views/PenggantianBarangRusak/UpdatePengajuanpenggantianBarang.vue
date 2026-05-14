@@ -44,7 +44,7 @@ onMounted(async () => {
     form.value.keterangan = data.keterangan || ""
 
     if (data.contohBarang) {
-      previewUrl.value = `http://localhost:8080/uploads/contoh-gambar/${data.contohBarang}`
+      previewUrl.value = `https://inventra-dd-be.onrender.com/uploads/contoh-gambar/${data.contohBarang}`
     }
 
   } catch (err) {

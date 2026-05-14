@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { 
-  ChevronDown, 
-  User, 
-  LogOut, 
+import {
+  ChevronDown,
+  User,
+  LogOut,
   Settings,
   LayoutDashboard,
   FileText,
@@ -70,7 +70,7 @@ const handleLogout = () => {
 };
 
 const closeAll = (e: MouseEvent) => {
-  if (!(e.target as HTMLElement).closest('.nav-item-dropdown') && 
+  if (!(e.target as HTMLElement).closest('.nav-item-dropdown') &&
       !(e.target as HTMLElement).closest('.profile-section')) {
     openDropdown.value = null;
     isProfileOpen.value = false;
@@ -98,8 +98,13 @@ const canSeeReports = () => {
 };
 
 const canSeeRusak = () => {
-  // Siswa, Guru, Sarpras, and Admin can see "Penggantian Barang Rusak"
-  return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
+  // Siswa, Guru, and Admin can see "Penggantian Barang Rusak"
+  return ['ADMIN', 'GURU', 'SISWA'].includes(authStore.userRole || '');
+};
+
+const canSeeRusakTinjau = () => {
+  // Sarpras and Admin can see "Peninjauan Penggantian Barang Rusak"
+  return ['ADMIN', 'SARPRAS'].includes(authStore.userRole || '');
 };
 
 const canApprovePengadaan = () => {
@@ -108,6 +113,10 @@ const canApprovePengadaan = () => {
 
 const canRequestPengadaan = () => {
   return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
+};
+
+const canSeePeminjaman = () => {
+  return ['ADMIN', 'SARPRAS', 'GURU', 'SISWA'].includes(authStore.userRole || '');
 };
 </script>
 
@@ -120,43 +129,50 @@ const canRequestPengadaan = () => {
       </router-link>
 
       <!-- Navigation Links -->
-      <div class="nav-links" :class="{ 'nav-links-special': authStore.isAuthenticated && (isKepsek() || isYayasan()) }">
-        <template v-if="authStore.isAuthenticated">
-          <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
-            Home
-            <div v-if="route.path === '/'" class="active-indicator"></div>
-          </router-link>
+      <div class="nav-links" :class="{ 'nav-links-special': isKepsek() || isYayasan() }">
+        <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
+          Home
+          <div v-if="route.path === '/'" class="active-indicator"></div>
+        </router-link>
 
-          <!-- Manajemen Aset -->
+        <!-- Manajemen Aset -->
+        <div
+          v-if="authStore.isAuthenticated"
+          class="nav-item-dropdown"
+          @mouseenter="handleMouseEnter('aset')"
+          @mouseleave="handleMouseLeave"
+        >
           <div
-            class="nav-item-dropdown"
-            @mouseenter="handleMouseEnter('aset')"
-            @mouseleave="handleMouseLeave"
+            class="nav-item"
+            :class="{ active: openDropdown === 'aset' || route.path.startsWith('/assets') }"
           >
-            <div
-              class="nav-item"
-              :class="{ active: openDropdown === 'aset' || route.path.startsWith('/assets') }"
-            >
-              Manajemen Aset <ChevronDown class="icon-xs" />
-              <div v-if="openDropdown === 'aset' || route.path.startsWith('/assets')" class="active-indicator"></div>
-            </div>
-            <div v-if="openDropdown === 'aset'" class="dropdown-menu fade-in">
-              <div @click="protectedNavigate('/assets/kelola')" class="dropdown-item" style="cursor: pointer;">
-                <PackageCheck class="icon-sm" /> Mengelola Aset
-              </div>
-              <template v-if="canSeeReports()">
-                <div @click="protectedNavigate('/laporan/utilisasi')" class="dropdown-item" style="cursor: pointer;">
-                  <FileText class="icon-sm" /> Laporan Peminjaman Aset
-                </div>
-                <div @click="protectedNavigate('/assets/dashboard')" class="dropdown-item" style="cursor: pointer;">
-                  <LayoutDashboard class="icon-sm" /> Dashboard Utilisasi Aset
-                </div>
-              </template>
-            </div>
+            Manajemen Aset <ChevronDown class="icon-xs" />
+            <div v-if="openDropdown === 'aset' || route.path.startsWith('/assets')" class="active-indicator"></div>
           </div>
+          <div v-if="openDropdown === 'aset'" class="dropdown-menu fade-in">
+            <div @click="protectedNavigate('/assets/kelola')" class="dropdown-item" style="cursor: pointer;">
+              <PackageCheck class="icon-sm" /> Mengelola Aset
+            </div>
+            <template v-if="canSeeReports()">
+              <div @click="protectedNavigate('/assets/laporan')" class="dropdown-item" style="cursor: pointer;">
+                <FileText class="icon-sm" /> Laporan Peminjaman Aset
+              </div>
+              <div @click="protectedNavigate('/assets/dashboard')" class="dropdown-item" style="cursor: pointer;">
+                <LayoutDashboard class="icon-sm" /> Dashboard Utilisasi Aset
+              </div>
+            </template>
+          </div>
+        </div>
+        <div
+          v-else
+          class="nav-item"
+          @click="protectedNavigate('/assets')"
+        >
+          Manajemen Aset
+        </div>
 
-
-          <!-- Peminjaman Aset -->
+        <!-- Peminjaman Aset -->
+        <template v-if="authStore.isAuthenticated">
           <template v-if="canSeePeminjaman()">
             <div
               v-if="isAdmin()"
@@ -191,61 +207,59 @@ const canRequestPengadaan = () => {
               <div v-if="route.path.startsWith('/peminjaman')" class="active-indicator"></div>
             </div>
           </template>
+        </template>
+        <div
+          v-else
+          class="nav-item"
+          @click="protectedNavigate('/peminjaman')"
+        >
+          Peminjaman Aset
+        </div>
 
-          <!-- Pengadaan Aset -->
+        <!-- Pengadaan Aset -->
+        <div
+          v-if="authStore.isAuthenticated"
+          class="nav-item-dropdown"
+          @mouseenter="handleMouseEnter('pengadaan')"
+          @mouseleave="handleMouseLeave"
+        >
           <div
-            class="nav-item-dropdown"
-            @mouseenter="handleMouseEnter('pengadaan')"
-            @mouseleave="handleMouseLeave"
+            class="nav-item"
+            :class="{ active: openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan') }"
           >
-            <div
-              class="nav-item"
-              :class="{ active: openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan') }"
-            >
-              Pengadaan Aset <ChevronDown class="icon-xs" />
-              <div v-if="openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan')" class="active-indicator"></div>
+            Pengadaan Aset <ChevronDown class="icon-xs" />
+            <div v-if="openDropdown === 'pengadaan' || route.path.startsWith('/pengadaan')" class="active-indicator"></div>
+          </div>
+          <div v-if="openDropdown === 'pengadaan'" class="dropdown-menu fade-in">
+            <div v-if="canRequestPengadaan()" @click="protectedNavigate('/pengadaan/pengajuan')" class="dropdown-item" style="cursor: pointer;">
+              <ClipboardCheck class="icon-sm" /> Pengajuan Pengadaan Aset
             </div>
-            <div v-if="openDropdown === 'pengadaan'" class="dropdown-menu fade-in">
-              <div v-if="canRequestPengadaan()" @click="protectedNavigate('/pengadaan/pengajuan')" class="dropdown-item" style="cursor: pointer;">
-                <ClipboardCheck class="icon-sm" /> Pengajuan Pengadaan Aset
-              </div>
-              <div v-if="canSeeRusak()" @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
-                <RefreshCw class="icon-sm" /> Penggantian Barang Rusak
-              </div>
-              <div v-if="canSeeRusakTinjau()" @click="protectedNavigate('/pengadaan/rusak/tinjau')" class="dropdown-item" style="cursor: pointer;">
-                <RefreshCw class="icon-sm" /> Peninjauan Penggantian Barang Rusak
-              </div>
-              <div v-if="canApprovePengadaan()" @click="protectedNavigate('/pengadaan/pengajuan/tinjau')" class="dropdown-item" style="cursor: pointer;">
-                <ClipboardCheck class="icon-sm" /> Persetujuan Pengadaan Barang
-              </div>
-              <template v-if="canSeeReports()">
-                <div @click="protectedNavigate('/pengadaan/laporan')" class="dropdown-item" style="cursor: pointer;">
-                  <BarChart3 class="icon-sm" /> Laporan Pengadaan Aset
-                </div>
-                <div @click="protectedNavigate('/pengadaan/dashboard')" class="dropdown-item" style="cursor: pointer;">
-                  <PieChart class="icon-sm" /> Dashboard Pengadaan Aset
-                </div>
-              </template>
+            <div v-if="canSeeRusak()" @click="protectedNavigate('/pengadaan/rusak')" class="dropdown-item" style="cursor: pointer;">
+              <RefreshCw class="icon-sm" /> Penggantian Barang Rusak
             </div>
+            <div v-if="canSeeRusakTinjau()" @click="protectedNavigate('/pengadaan/rusak/tinjau')" class="dropdown-item" style="cursor: pointer;">
+              <RefreshCw class="icon-sm" /> Peninjauan Penggantian Barang Rusak
+            </div>
+            <div v-if="canApprovePengadaan()" @click="protectedNavigate('/pengadaan/pengajuan/tinjau')" class="dropdown-item" style="cursor: pointer;">
+              <ClipboardCheck class="icon-sm" /> Persetujuan Pengadaan Barang
+            </div>
+            <template v-if="canSeeReports()">
+              <div @click="protectedNavigate('/pengadaan/laporan')" class="dropdown-item" style="cursor: pointer;">
+                <BarChart3 class="icon-sm" /> Laporan Pengadaan Aset
+              </div>
+              <div @click="protectedNavigate('/pengadaan/dashboard')" class="dropdown-item" style="cursor: pointer;">
+                <PieChart class="icon-sm" /> Dashboard Pengadaan Aset
+              </div>
+            </template>
           </div>
-        </template>
-
-        <!-- Sebelum Login (Belum Terautentikasi) -->
-        <template v-else>
-          <router-link to="/" class="nav-item" :class="{ active: route.path === '/' }">
-            Home
-            <div v-if="route.path === '/'" class="active-indicator"></div>
-          </router-link>
-          <div @click="router.push('/login')" class="nav-item" style="cursor: pointer;">
-            Manajemen Aset
-          </div>
-          <div @click="router.push('/login')" class="nav-item" style="cursor: pointer;">
-            Peminjaman Aset
-          </div>
-          <div @click="router.push('/login')" class="nav-item" style="cursor: pointer;">
-            Pengadaan Aset
-          </div>
-        </template>
+        </div>
+        <div
+          v-else
+          class="nav-item"
+          @click="protectedNavigate('/pengadaan')"
+        >
+          Pengadaan Aset
+        </div>
       </div>
 
       <!-- Right Actions -->
@@ -262,7 +276,7 @@ const canRequestPengadaan = () => {
               <img src="@/assets/avatar-icon.png" alt="User Avatar" />
             </div>
           </button>
-          
+
           <div v-if="isProfileOpen" class="profile-dropdown fade-in">
             <router-link to="/profile" class="dropdown-item">
               <User class="icon-sm" /> My Profile
@@ -343,6 +357,11 @@ const canRequestPengadaan = () => {
   gap: 32px;
 }
 
+.nav-links-special {
+  gap: 72px;
+  margin: 0 auto;
+}
+
 .nav-item {
   position: relative;
   font-weight: 600;
@@ -365,7 +384,7 @@ const canRequestPengadaan = () => {
 
 .active-indicator {
   position: absolute;
-  top: -20px; 
+  top: -20px;
   left: 0;
   width: 100%;
   height: 4px;
@@ -395,7 +414,7 @@ const canRequestPengadaan = () => {
 .dropdown-menu::before {
   content: "";
   position: absolute;
-  top: -15px; 
+  top: -15px;
   left: 0;
   width: 100%;
   height: 15px;

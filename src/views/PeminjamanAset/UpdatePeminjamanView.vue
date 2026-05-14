@@ -1,37 +1,39 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { usePeminjamanStore } from '@/stores/peminjaman';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
-import { ArrowLeft, ChevronDown } from 'lucide-vue-next';
+import { ChevronDown } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import dayjs from 'dayjs';
 
 const router = useRouter();
+const route = useRoute();
 const peminjamanStore = usePeminjamanStore();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
 
+const loanId = route.params.id as string;
+
 const form = ref({
-  unitPeminjam: authStore.user?.unit || '',
-  unitTujuan: '',
   idAset: '',
   waktuPeminjaman: '',
   waktuPengembalian: '',
   tujuanPeminjaman: '',
-  qty: null
+  qty: 1,
+  unitTujuan: ''
 });
-
-const allUnits = ['KB-TK', 'SD', 'SMP', 'SMA'];
-const unitsTujuan = allUnits.filter(u => u !== authStore.user?.unit);
-
 
 const borrowableAssets = ref<any[]>([]);
 const isLoadingAssets = ref(false);
+const isLoadingData = ref(true);
 const showConfirmModal = ref(false);
 const isSubmitting = ref(false);
+
+const isAdmin = computed(() => authStore.userRole === 'ADMIN');
+const loanOriginalData = ref<any>(null);
 
 const selectedAsset = computed(() => {
   return borrowableAssets.value.find(a => a.idAset === form.value.idAset);
@@ -39,6 +41,7 @@ const selectedAsset = computed(() => {
 
 const maxQty = computed(() => {
   if (!selectedAsset.value) return 1;
+  // If it's the same asset as originally selected, include the current loan's qty in max
   return selectedAsset.value.qtyTersedia || 1;
 });
 
@@ -49,36 +52,55 @@ const assetOptions = computed(() => {
   }));
 });
 
-// Watch for unit change to fetch assets
-watch(() => form.value.unitTujuan, async (newUnit) => {
-  form.value.idAset = '';
-  borrowableAssets.value = [];
-  if (newUnit) {
-    isLoadingAssets.value = true;
-    try {
-      const assets = await peminjamanStore.fetchBorrowableAssets(newUnit);
-      // Only Non-consumable items and rooms are borrowable
-      borrowableAssets.value = assets.filter(a => a.kategoriAset !== 'BARANG_HABIS_PAKAI');
-      
-      if (borrowableAssets.value.length === 0) {
-        toastStore.error('Warning', `Tidak ada aset tersedia untuk dipinjam di unit ${newUnit}`);
-      }
-    } catch (err) {
-      toastStore.error('Error', 'Gagal memuat daftar aset unit tujuan');
-    } finally {
-      isLoadingAssets.value = false;
-    }
-  }
-});
-
 watch(() => form.value.qty, (newVal) => {
   if (newVal > maxQty.value) {
     form.value.qty = maxQty.value;
   }
 });
 
+const fetchAssets = async (unit: string) => {
+  isLoadingAssets.value = true;
+  try {
+    const assets = await peminjamanStore.fetchBorrowableAssets(unit);
+    borrowableAssets.value = assets.filter(a => a.kategoriAset !== 'BARANG_HABIS_PAKAI');
+  } catch (err) {
+    toastStore.error('Error', 'Gagal memuat daftar aset unit Anda');
+  } finally {
+    isLoadingAssets.value = false;
+  }
+};
+
+onMounted(async () => {
+  try {
+    const loanData = await peminjamanStore.fetchLoanById(loanId);
+    loanOriginalData.value = loanData;
+    
+    if (loanData.status_peminjaman !== 'DIAJUKAN') {
+        toastStore.error('Error', 'Hanya pengajuan dengan status DIAJUKAN yang dapat diubah');
+        router.push('/peminjaman');
+        return;
+    }
+
+    form.value = {
+      idAset: loanData.id_aset,
+      waktuPeminjaman: dayjs(loanData.waktu_peminjaman).format('YYYY-MM-DDTHH:mm'),
+      waktuPengembalian: dayjs(loanData.waktu_pengembalian).format('YYYY-MM-DDTHH:mm'),
+      tujuanPeminjaman: loanData.tujuan_peminjaman,
+      qty: loanData.qty,
+      unitTujuan: loanData.unit_peminjam
+    };
+    
+    await fetchAssets(loanData.unit_peminjam);
+  } catch (err) {
+    toastStore.error('Error', 'Gagal memuat data peminjaman');
+    router.push('/peminjaman');
+  } finally {
+    isLoadingData.value = false;
+  }
+});
+
 const validateForm = () => {
-    if (!form.value.unitPeminjam || !form.value.unitTujuan || !form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
+  if (!form.value.idAset || !form.value.waktuPeminjaman || !form.value.waktuPengembalian || !form.value.tujuanPeminjaman || !form.value.qty) {
     toastStore.error('Error', 'Semua field wajib diisi');
     return false;
   }
@@ -104,11 +126,15 @@ const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
   try {
-    await peminjamanStore.createLoanLintasUnit(form.value);
-    toastStore.success('Success', 'Pengajuan peminjaman lintas unit berhasil dibuat');
-    router.push('/peminjaman');
+    await peminjamanStore.updateLoan(loanId, form.value);
+    toastStore.success('Success', 'Pengajuan peminjaman berhasil diperbarui');
+    if (isAdmin.value) {
+      router.push('/peminjaman/guru-siswa');
+    } else {
+      router.push('/peminjaman');
+    }
   } catch (err: any) {
-    const errorMsg = err.response?.data?.message || 'Gagal membuat pengajuan lintas unit';
+    const errorMsg = err.response?.data?.message || 'Gagal memperbarui pengajuan';
     toastStore.error('Error', errorMsg);
   } finally {
     isSubmitting.value = false;
@@ -117,26 +143,28 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="add-peminjaman-page">
+  <div class="update-peminjaman-page">
     <div class="container py-16">
-      <h1 class="h2-headline">Buat Pengajuan Peminjaman Aset</h1>
+      <h1 class="h2-headline">Update Pengajuan Peminjaman Aset</h1>
 
-      <div class="form-card card-shadow">
+      <div v-if="isLoadingData" class="flex justify-center py-20">
+          <p>Memuat data...</p>
+      </div>
+      <div v-else class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="peminjaman-form">
           <div class="form-grid">
-            <!-- Unit Tujuan -->
-            <div class="form-group col-span-1">
-              <label class="s2-subtitle mb-2 block">Unit Tujuan <span class="required-star">*</span></label>
-              <div class="custom-select">
-                <select v-model="form.unitTujuan" class="form-input" :class="{ 'placeholder-color': !form.unitTujuan }" required>
-                  <option value="" disabled>Pilih Unit</option>
-                  <option v-for="u in unitsTujuan" :key="u" :value="u">{{ u }}</option>
-                </select>
-                <ChevronDown class="select-icon" />
+            <!-- Requester Info (Admin only) -->
+            <template v-if="isAdmin && loanOriginalData">
+              <div class="form-group col-span-1">
+                <label class="s2-subtitle mb-2 block text-gray-400">Nama Pengaju</label>
+                <div class="form-input-readonly">{{ loanOriginalData.nama_peminjam }}</div>
               </div>
-            </div>
-            <div class="col-span-1"></div>
-            <div class="col-span-1"></div>
+              <div class="form-group col-span-1">
+                <label class="s2-subtitle mb-2 block text-gray-400">Unit Pengaju</label>
+                <div class="form-input-readonly">{{ loanOriginalData.unit_peminjam }}</div>
+              </div>
+              <div></div> <!-- Spacer -->
+            </template>
 
             <!-- Nama Aset -->
             <div class="form-group col-span-1">
@@ -145,7 +173,6 @@ const handleSubmit = async () => {
                 v-model="form.idAset"
                 :options="assetOptions"
                 placeholder="Kode - Nama Aset - Merk"
-                :disabled="!form.unitTujuan"
                 :loading="isLoadingAssets"
               />
             </div>
@@ -178,13 +205,13 @@ const handleSubmit = async () => {
             <!-- Waktu Peminjaman -->
             <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Waktu Peminjaman <span class="required-star">*</span></label>
-              <input v-model="form.waktuPeminjaman" type="datetime-local" class="form-input" placeholder="DD/MM/YY HH:mm" required />
+              <input v-model="form.waktuPeminjaman" type="datetime-local" class="form-input" required />
             </div>
 
             <!-- Waktu Pengembalian -->
             <div class="form-group col-span-1">
               <label class="s2-subtitle mb-2 block">Waktu Pengembalian <span class="required-star">*</span></label>
-              <input v-model="form.waktuPengembalian" type="datetime-local" class="form-input" placeholder="DD/MM/YYYY HH:mm" required />
+              <input v-model="form.waktuPengembalian" type="datetime-local" class="form-input" required />
             </div>
           </div>
 
@@ -200,8 +227,8 @@ const handleSubmit = async () => {
 
     <ConfirmationModal
       :show="showConfirmModal"
-      title="Konfirmasi Pengajuan"
-      message="Apakah Anda yakin ingin mengajukan peminjaman aset ini? Pastikan data sudah benar."
+      title="Konfirmasi Perubahan"
+      message="Apakah Anda yakin ingin memperbarui pengajuan peminjaman ini? Pastikan data sudah benar."
       confirm-text="Ya, Simpan"
       cancel-text="Batal"
       :is-loading="isSubmitting"
@@ -212,17 +239,17 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-.add-peminjaman-page {
+.update-peminjaman-page {
   background-color: #FAFAFA;
   min-height: calc(100vh - 80px);
 }
 
 .form-card {
   background: white;
-  padding: 80px;
+  padding: 40px 60px;
   border-radius: 24px;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 40px auto 0;
 }
 
 .form-grid {
@@ -240,11 +267,19 @@ const handleSubmit = async () => {
 }
 
 .col-span-1 { grid-column: span 1; }
-.col-span-2 { grid-column: span 2; }
-.col-span-3 { grid-column: span 3; }
 .row-span-2 { grid-row: span 2; }
 
-.form-input, .custom-select select {
+.form-input-readonly {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  background: #F9FAFB;
+  font-size: 14px;
+  color: #6B7280;
+}
+
+.form-input {
   width: 100%;
   padding: 12px 16px;
   border: 1px solid #D1D5DB;
@@ -269,29 +304,8 @@ const handleSubmit = async () => {
   min-height: 120px;
 }
 
-.form-input:focus, .form-textarea:focus, .custom-select select:focus {
+.form-input:focus, .form-textarea:focus {
   border-color: #00588F;
-}
-
-.placeholder-color,
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: #9CA3AF;
-}
-
-.custom-select {
-  position: relative;
-}
-
-.select-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  pointer-events: none;
-  color: #6B7280;
 }
 
 .form-actions {
@@ -316,12 +330,8 @@ const handleSubmit = async () => {
   min-width: 200px;
 }
 
-.mt-32 {
-  margin-top: 32px;
-}
-
 .btn-submit:hover:not(:disabled) {
-  opacity: 0.9;
+  background-color: #004470;
 }
 
 .btn-cancel {
@@ -333,13 +343,6 @@ const handleSubmit = async () => {
   font-weight: 700;
   cursor: pointer;
   min-width: 200px;
-}
-
-.btn-back {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #333;
 }
 
 .card-shadow {
@@ -357,7 +360,6 @@ const handleSubmit = async () => {
 }
 
 .py-16 { padding-top: 2rem; padding-bottom: 2rem; }
-.mb-20 { margin-bottom: 60px; }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
@@ -366,9 +368,5 @@ input::-webkit-inner-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
-}
-
-select {
-  background-image: none;
 }
 </style>

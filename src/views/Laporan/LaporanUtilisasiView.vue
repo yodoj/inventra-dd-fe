@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useLaporanUtilisasiStore } from '@/stores/laporanUtilisasiStore';
 import { useAuthStore } from '@/stores/auth';
 import { Package, Building2, Search, FileText, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-vue-next';
@@ -10,6 +10,9 @@ const authStore = useAuthStore();
 const activeTab = ref<'history' | 'frequency'>('history');
 
 // Filter states
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
+
 const unitFilter = ref('Semua Unit');
 const periodeBulan = ref<string>('Bulan');
 const periodeTahun = ref<string>('Tahun');
@@ -17,6 +20,54 @@ const startDate = ref('');
 const endDate = ref('');
 const searchQuery = ref('');
 const kategoriFilter = ref('Semua Kategori');
+
+// Dropdown open states
+const isMonthOpen = ref(false);
+const isYearOpen = ref(false);
+
+const closeDropdowns = () => {
+  isMonthOpen.value = false;
+  isYearOpen.value = false;
+};
+
+// Handle click outside
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  if (!target.closest('.custom-select-wrapper')) {
+    closeDropdowns();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleClickOutside);
+});
+
+// Watcher to auto-fill dates when dropdown changes, but allow manual edits
+watch([periodeBulan, periodeTahun], ([newBulan, newTahun]) => {
+  const currentYear = new Date().getFullYear();
+  const year = newTahun === 'Tahun' ? currentYear : parseInt(newTahun);
+  
+  if (newBulan !== 'Bulan') {
+    const month = parseInt(newBulan) - 1;
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+    start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    startDate.value = start.toISOString().split('T')[0];
+    endDate.value = end.toISOString().split('T')[0];
+  } else if (newTahun !== 'Tahun') {
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    start.setMinutes(start.getMinutes() - start.getTimezoneOffset());
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    startDate.value = start.toISOString().split('T')[0];
+    endDate.value = end.toISOString().split('T')[0];
+  }
+});
 
 // Role & Unit checks
 const userRole = computed(() => authStore.userRole || '');
@@ -26,8 +77,15 @@ const isLockedUnit = computed(() => {
   return userRole.value === 'KEPSEK' || userRole.value === 'SARPRAS';
 });
 
+const isDateRangeInvalid = computed(() => {
+  if (startDate.value && endDate.value) {
+    return new Date(startDate.value) > new Date(endDate.value);
+  }
+  return false;
+});
+
 // Dropdown options
-const units = ['Semua Unit', 'SD', 'SMP', 'SMA', 'KB-TK'];
+const units = ['Semua Unit', 'KB-TK', 'SD', 'SMP', 'SMA'];
 const months = [
   { label: 'Bulan', value: 'Bulan' },
   { label: 'Januari', value: '1' },
@@ -44,8 +102,10 @@ const months = [
   { label: 'Desember', value: '12' }
 ];
 
-const currentYear = new Date().getFullYear();
-const years = ['Tahun', String(currentYear), String(currentYear - 1), String(currentYear - 2)];
+const years = ['Tahun'];
+for (let y = currentYear; y >= 1981; y--) {
+  years.push(String(y));
+}
 
 const categories = ['Semua Kategori', 'Barang Tidak Habis Pakai', 'Ruang Kelas', 'Ruang Non Kelas'];
 
@@ -62,17 +122,12 @@ const loadData = async () => {
   if (unitFilter.value !== 'Semua Unit') {
     params.unit = unitFilter.value;
   }
-  if (periodeBulan.value !== 'Bulan') {
-    params.bulan = Number(periodeBulan.value);
-  }
-  if (periodeTahun.value !== 'Tahun') {
-    params.tahun = Number(periodeTahun.value);
-  }
+  
   if (startDate.value) {
-    params.startDate = startDate.value + 'T00:00:00';
+    params.start_date = startDate.value;
   }
   if (endDate.value) {
-    params.endDate = endDate.value + 'T23:59:59';
+    params.end_date = endDate.value;
   }
   if (searchQuery.value.trim()) {
     params.search = searchQuery.value.trim();
@@ -119,6 +174,8 @@ watch(limit, () => {
   loadData();
 });
 
+
+
 onMounted(() => {
   if (isLockedUnit.value && userUnit.value) {
     unitFilter.value = userUnit.value;
@@ -159,7 +216,7 @@ const exportPdf = () => {
       
       <!-- Header Section -->
       <div class="mb-16" style="margin-bottom: 28px;">
-        <h1 class="h2-headline text-gray-900 font-bold text-3xl">Laporan Peminjaman Aset</h1>
+        <h1 class="h2-headline text-gray-900 font-bold text-3xl">Laporan Peminjaman Aset{{ isLockedUnit && userUnit ? ` - ${userUnit}` : '' }}</h1>
         <p class="text-gray-500 text-sm mt-1">Riwayat dan Frekuensi Peminjaman Aset</p>
       </div>
 
@@ -185,10 +242,10 @@ const exportPdf = () => {
         
         <div class="filter-grid">
           <!-- Unit Filter -->
-          <div class="filter-item" style="min-width: 140px; flex: 1;">
+          <div v-if="!isLockedUnit" class="filter-item" style="min-width: 140px; flex: 1;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
             <div class="custom-select">
-              <select v-model="unitFilter" :disabled="isLockedUnit" :class="{ 'placeholder-color': isLockedUnit }">
+              <select v-model="unitFilter">
                 <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
               </select>
               <ChevronDown class="select-icon" />
@@ -199,30 +256,59 @@ const exportPdf = () => {
           <div class="filter-item" style="min-width: 200px; flex: 1.5;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Periode</label>
             <div class="flex gap-2">
-              <div class="custom-select flex-1">
-                <select v-model="periodeBulan">
-                  <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
-                </select>
-                <ChevronDown class="select-icon" />
+              <div class="custom-select-wrapper flex-1">
+                <div class="select-trigger" @click.stop="isMonthOpen = !isMonthOpen; isYearOpen = false">
+                  {{ months.find(m => m.value === periodeBulan)?.label || 'Bulan' }}
+                  <ChevronDown class="select-icon" />
+                </div>
+                <div v-if="isMonthOpen" class="options-container">
+                  <div 
+                    v-for="m in months" 
+                    :key="m.value" 
+                    class="option-item"
+                    @click="periodeBulan = m.value; isMonthOpen = false"
+                  >
+                    {{ m.label }}
+                  </div>
+                </div>
               </div>
-              <div class="custom-select flex-1">
-                <select v-model="periodeTahun">
-                  <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-                </select>
-                <ChevronDown class="select-icon" />
+              <div class="custom-select-wrapper flex-1">
+                <div class="select-trigger" @click.stop="isYearOpen = !isYearOpen; isMonthOpen = false">
+                  {{ periodeTahun }}
+                  <ChevronDown class="select-icon" />
+                </div>
+                <div v-if="isYearOpen" class="options-container">
+                  <div 
+                    v-for="y in years" 
+                    :key="y" 
+                    class="option-item"
+                    @click="periodeTahun = y; isYearOpen = false"
+                  >
+                    {{ y }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Custom Date Range -->
-          <div class="filter-item" style="min-width: 130px; flex: 1;">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">From</label>
-            <input type="date" v-model="startDate" class="date-input" />
-          </div>
-
-          <div class="filter-item" style="min-width: 130px; flex: 1;">
-            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">To</label>
-            <input type="date" v-model="endDate" class="date-input" />
+          <div class="filter-item flex flex-col" style="min-width: 280px; flex: 2;">
+            <div class="flex gap-2">
+              <div class="flex-1">
+                <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">From</label>
+                <input type="date" v-model="startDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid }" />
+              </div>
+              <div class="flex-1">
+                <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">To</label>
+                <input type="date" v-model="endDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid }" />
+              </div>
+            </div>
+            <!-- Error Message underneath the pickers without shifting layout -->
+            <div class="relative h-0">
+              <p v-if="isDateRangeInvalid" class="absolute top-1 left-0 text-red-500 text-[10px] italic leading-tight whitespace-nowrap">
+                Rentang tanggal tidak valid: 'From' tidak boleh lebih besar dari 'To'
+              </p>
+            </div>
           </div>
 
           <!-- Kategori Filter -->
@@ -237,14 +323,15 @@ const exportPdf = () => {
           </div>
 
           <!-- Search Input -->
-          <div class="filter-item flex-grow" style="min-width: 220px;">
+          <!-- Search Bar -->
+          <div class="filter-item flex-grow" style="min-width: 250px;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Aset</label>
             <div class="search-box">
               <Search class="search-icon" />
               <input 
                 v-model="searchQuery" 
                 type="text" 
-                placeholder="Cari nama aset dan nama peminjam" 
+                placeholder="Cari nama peminjam atau aset" 
                 @keyup.enter="handleApplyFilter"
               />
             </div>
@@ -253,7 +340,14 @@ const exportPdf = () => {
 
         <!-- Filter Actions -->
         <div class="filter-actions" style="margin-top: 24px;">
-          <button @click="handleApplyFilter" class="btn-apply btn-medium">Terapkan Filter</button>
+          <button 
+            @click="handleApplyFilter" 
+            class="btn-apply btn-medium" 
+            :disabled="isDateRangeInvalid"
+            :class="{ 'opacity-50 cursor-not-allowed': isDateRangeInvalid }"
+          >
+            Terapkan Filter
+          </button>
           <button @click="handleResetFilter" class="btn-reset btn-medium">Reset</button>
         </div>
       </div>
@@ -283,7 +377,7 @@ const exportPdf = () => {
                 <th style="width: 90px;">Unit</th>
                 <th style="width: 150px;">Waktu Peminjaman</th>
                 <th style="width: 150px;">Waktu Pengembalian</th>
-                <th style="width: 200px; text-align: left; padding-left: 16px;">Tujuan Peminjaman</th>
+                <th style="width: 200px;">Tujuan Peminjaman</th>
               </tr>
             </thead>
             <tbody>
@@ -291,9 +385,8 @@ const exportPdf = () => {
                 <td colspan="8" class="text-center py-8 text-gray-500">Memuat data riwayat...</td>
               </tr>
               <tr v-else-if="store.historyList.length === 0">
-                <td colspan="8" class="text-center py-12 text-gray-400 bg-gray-50">
-                  <p class="font-medium text-base">Data riwayat peminjaman tidak ditemukan</p>
-                  <p class="text-xs mt-1">Coba sesuaikan kata kunci pencarian atau filter di atas</p>
+                <td colspan="8" class="text-center py-8 text-[#6B7280] bg-white text-sm">
+                  Data peminjaman tidak ditemukan
                 </td>
               </tr>
               <tr v-else v-for="(item, index) in store.historyList" :key="item.id" class="hover:bg-gray-50 transition-colors">
@@ -328,9 +421,8 @@ const exportPdf = () => {
                 <td colspan="6" class="text-center py-8 text-gray-500">Memuat data frekuensi...</td>
               </tr>
               <tr v-else-if="store.frequencyList.length === 0">
-                <td colspan="6" class="text-center py-12 text-gray-400 bg-gray-50">
-                  <p class="font-medium text-base">Data frekuensi peminjaman tidak ditemukan</p>
-                  <p class="text-xs mt-1">Coba sesuaikan kata kunci pencarian atau filter di atas</p>
+                <td colspan="6" class="text-center py-8 text-[#6B7280] bg-white text-sm">
+                  Data frekuensi tidak ditemukan
                 </td>
               </tr>
               <tr v-else v-for="(item, index) in store.frequencyList" :key="item.id" class="hover:bg-gray-50 transition-colors">
@@ -350,43 +442,43 @@ const exportPdf = () => {
           </table>
 
         </div>
+      </div>
 
-        <!-- Footer / Pagination Controls -->
-        <div class="flex justify-between items-center" style="padding: 16px 24px; border-top: 1px solid #EEEEEE; background-color: white;">
-          <div class="flex items-center gap-4">
-            <span class="text-xs font-semibold text-gray-500">
-              Showing Page {{ store.pagination.current_page }} of {{ store.pagination.total_page || 1 }}
-            </span>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-gray-500">Per page:</span>
-              <div class="pagination-select-wrapper">
-                <select v-model="limit" class="pagination-select">
-                  <option :value="10">10</option>
-                  <option :value="30">30</option>
-                  <option :value="50">50</option>
-                </select>
-              </div>
+      <!-- Pagination (Matched with Pengelolaan Profile) -->
+      <div class="pagination-section mt-20 mb-8">
+        <div class="flex items-center gap-4">
+          <p class="text-xs font-semibold text-gray-500">
+            Showing Page {{ store.pagination.current_page }} of {{ store.pagination.total_page || 1 }}
+          </p>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-500">Per page:</span>
+            <div class="pagination-select-wrapper">
+              <select v-model="limit" class="pagination-select">
+                <option :value="10">10</option>
+                <option :value="30">30</option>
+                <option :value="50">50</option>
+              </select>
+              <ChevronDown class="pagination-select-icon" />
             </div>
           </div>
-          
-          <div class="flex items-center gap-2">
-            <button 
-              @click="prevPage" 
-              :disabled="store.pagination.current_page <= 1"
-              class="btn-pagination"
-            >
-              <ChevronLeft class="w-3.5 h-3.5" /> Previous
-            </button>
-            <button 
-              @click="nextPage" 
-              :disabled="store.pagination.current_page >= store.pagination.total_page"
-              class="btn-pagination"
-            >
-              Next <ChevronRight class="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
-
+        
+        <div class="flex items-center gap-2">
+          <button 
+            @click="prevPage" 
+            :disabled="store.pagination.current_page <= 1"
+            class="btn-pagination"
+          >
+            <ChevronLeft class="w-3.5 h-3.5" /> Previous
+          </button>
+          <button 
+            @click="nextPage" 
+            :disabled="store.pagination.current_page >= store.pagination.total_page"
+            class="btn-pagination"
+          >
+            Next <ChevronRight class="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
     </div>
@@ -442,6 +534,65 @@ const exportPdf = () => {
   align-items: flex-end;
 }
 
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-select-wrapper {
+  position: relative;
+}
+
+.select-trigger {
+  width: 100%;
+  padding: 10px 16px;
+  padding-right: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  position: relative;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  color: #374151;
+  transition: border-color 0.2s;
+}
+
+.select-trigger:hover {
+  border-color: #00588F;
+}
+
+.options-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.option-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.option-item:hover {
+  background-color: #F3F4F6;
+  color: #00588F;
+}
+
 .custom-select {
   position: relative;
 }
@@ -456,6 +607,8 @@ const exportPdf = () => {
   font-size: 14px;
   outline: none;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .placeholder-color {
@@ -488,10 +641,11 @@ const exportPdf = () => {
 
 .search-box input {
   width: 100%;
-  padding: 10px 12px 10px 40px;
+  padding: 12px 12px 12px 40px;
   border: 1px solid #D1D5DB;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
+  outline: none;
 }
 .search-box input::placeholder {
   color: #9CA3AF;
@@ -499,10 +653,12 @@ const exportPdf = () => {
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: #6B7280;
+  width: 18px;
+  height: 18px;
 }
 
 .filter-actions {
@@ -571,13 +727,25 @@ const exportPdf = () => {
   background-color: white;
   border: 1px solid #D1D5DB;
   border-radius: 8px;
-  padding: 4px 12px;
+  padding: 4px 28px 4px 12px;
   font-size: 12px;
   font-weight: 600;
   color: #111827;
   cursor: pointer;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   transition: border-color 0.2s;
+}
+.pagination-select-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  pointer-events: none;
+  color: #6B7280;
 }
 .pagination-select:focus {
   border-color: #00588F;

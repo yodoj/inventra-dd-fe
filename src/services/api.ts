@@ -39,14 +39,12 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 400) {
-      // Bad request - validation error
-      toast.error(error.response?.data?.message || 'Input tidak valid');
+      // Bad request - validation error (handled by components)
       return Promise.reject(error);
     }
 
     if (error.response?.status === 500) {
-      // Server error
-      toast.error('Terjadi kesalahan server. Silakan coba lagi.');
+      // Server error (handled by components)
       return Promise.reject(error);
     }
 
