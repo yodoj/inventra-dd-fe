@@ -343,7 +343,7 @@ const exportPdf = () => {
               <input 
                 v-model="searchQuery" 
                 type="text" 
-                placeholder="Cari nama peminjam atau aset" 
+                :placeholder="activeTab === 'history' ? 'Cari nama peminjam atau aset' : 'Cari aset'" 
                 @keyup.enter="handleApplyFilter"
               />
             </div>
