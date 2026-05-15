@@ -22,6 +22,7 @@ export interface FrekuensiPeminjamanItem {
   total_durasi_peminjaman: string;
   total_durasi_hari: number;
   periode: string;
+  status_terakhir: string;
 }
 
 export interface PaginationMeta {

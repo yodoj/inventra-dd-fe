@@ -137,7 +137,6 @@ const canSeePeminjaman = () => {
 
         <!-- Manajemen Aset -->
         <div
-          v-if="authStore.isAuthenticated"
           class="nav-item-dropdown"
           @mouseenter="handleMouseEnter('aset')"
           @mouseleave="handleMouseLeave"
@@ -163,62 +162,46 @@ const canSeePeminjaman = () => {
             </template>
           </div>
         </div>
-        <div
-          v-else
-          class="nav-item"
-          @click="protectedNavigate('/assets')"
-        >
-          Manajemen Aset
-        </div>
+
 
         <!-- Peminjaman Aset -->
-        <template v-if="authStore.isAuthenticated">
-          <template v-if="canSeePeminjaman()">
+        <template v-if="canSeePeminjaman()">
+          <div
+            v-if="isAdmin()"
+            class="nav-item-dropdown"
+            @mouseenter="handleMouseEnter('peminjaman')"
+            @mouseleave="handleMouseLeave"
+          >
             <div
-              v-if="isAdmin()"
-              class="nav-item-dropdown"
-              @mouseenter="handleMouseEnter('peminjaman')"
-              @mouseleave="handleMouseLeave"
-            >
-              <div
-                class="nav-item"
-                :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
-              >
-                Peminjaman Aset <ChevronDown class="icon-xs" />
-                <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
-              </div>
-              <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
-                <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
-                  Pengajuan - Guru, Siswa
-                </div>
-                <div @click="protectedNavigate('/peminjaman')" class="dropdown-item" style="cursor: pointer;">
-                  Pengajuan dan Persetujuan - Sarpras
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-else
               class="nav-item"
-              :class="{ active: route.path.startsWith('/peminjaman') }"
-              @click="protectedNavigate('/peminjaman')"
+              :class="{ active: openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman') }"
             >
-              Peminjaman Aset
-              <div v-if="route.path.startsWith('/peminjaman')" class="active-indicator"></div>
+              Peminjaman Aset <ChevronDown class="icon-xs" />
+              <div v-if="openDropdown === 'peminjaman' || route.path.startsWith('/peminjaman')" class="active-indicator"></div>
             </div>
-          </template>
+            <div v-if="openDropdown === 'peminjaman'" class="dropdown-menu fade-in">
+              <div @click="protectedNavigate('/peminjaman/guru-siswa')" class="dropdown-item" style="cursor: pointer;">
+                Pengajuan - Guru, Siswa
+              </div>
+              <div @click="protectedNavigate('/peminjaman')" class="dropdown-item" style="cursor: pointer;">
+                Pengajuan dan Persetujuan - Sarpras
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="nav-item"
+            :class="{ active: route.path.startsWith('/peminjaman') }"
+            @click="protectedNavigate('/peminjaman')"
+          >
+            Peminjaman Aset
+            <div v-if="route.path.startsWith('/peminjaman')" class="active-indicator"></div>
+          </div>
         </template>
-        <div
-          v-else
-          class="nav-item"
-          @click="protectedNavigate('/peminjaman')"
-        >
-          Peminjaman Aset
-        </div>
 
         <!-- Pengadaan Aset -->
         <div
-          v-if="authStore.isAuthenticated"
           class="nav-item-dropdown"
           @mouseenter="handleMouseEnter('pengadaan')"
           @mouseleave="handleMouseLeave"
@@ -252,13 +235,6 @@ const canSeePeminjaman = () => {
               </div>
             </template>
           </div>
-        </div>
-        <div
-          v-else
-          class="nav-item"
-          @click="protectedNavigate('/pengadaan')"
-        >
-          Pengadaan Aset
         </div>
       </div>
 

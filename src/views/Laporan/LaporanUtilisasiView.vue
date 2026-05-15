@@ -107,7 +107,11 @@ for (let y = currentYear; y >= 1981; y--) {
   years.push(String(y));
 }
 
-const categories = ['Semua Kategori', 'Barang Tidak Habis Pakai', 'Ruang Kelas', 'Ruang Non Kelas'];
+const categories = [
+  { label: 'Semua Kategori', value: 'Semua Kategori' },
+  { label: 'Barang', value: 'BARANG' },
+  { label: 'Ruangan', value: 'RUANGAN' }
+];
 
 // Pagination state
 const limit = ref(10);
@@ -129,6 +133,14 @@ const loadData = async () => {
   if (endDate.value) {
     params.end_date = endDate.value;
   }
+  if (periodeBulan.value !== 'Bulan') {
+    params.period_type = 'monthly';
+  } else if (periodeTahun.value !== 'Tahun') {
+    params.period_type = 'yearly';
+  } else if (startDate.value && endDate.value) {
+    params.period_type = 'daily';
+  }
+  
   if (searchQuery.value.trim()) {
     params.search = searchQuery.value.trim();
   }
@@ -316,7 +328,7 @@ const exportPdf = () => {
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
             <div class="custom-select">
               <select v-model="kategoriFilter">
-                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+                <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
