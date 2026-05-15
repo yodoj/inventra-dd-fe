@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useLaporanUtilisasiStore } from '@/stores/laporanUtilisasiStore';
 import { useAuthStore } from '@/stores/auth';
 import { Package, Building2, Search, FileText, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { toast } from 'vue-sonner';
 
 const store = useLaporanUtilisasiStore();
 const authStore = useAuthStore();
@@ -24,6 +26,8 @@ const kategoriFilter = ref('Semua Kategori');
 // Dropdown open states
 const isMonthOpen = ref(false);
 const isYearOpen = ref(false);
+const isExportModalOpen = ref(false);
+const isExporting = ref(false);
 
 const closeDropdowns = () => {
   isMonthOpen.value = false;
@@ -216,9 +220,59 @@ const paginationRangeText = computed(() => {
   return `${start} - ${end} of ${total_data} items`;
 });
 
-const exportPdf = () => {
-  window.print();
+const handleExportPdf = async () => {
+  isExporting.value = true;
+  try {
+    const params: any = {
+      report_type: activeTab.value
+    };
+
+    if (unitFilter.value !== 'Semua Unit') params.unit = unitFilter.value;
+    if (startDate.value) params.start_date = startDate.value;
+    if (endDate.value) params.end_date = endDate.value;
+    
+    if (periodeBulan.value !== 'Bulan') {
+      params.period_type = 'monthly';
+    } else if (periodeTahun.value !== 'Tahun') {
+      params.period_type = 'yearly';
+    } else if (startDate.value && endDate.value) {
+      params.period_type = 'daily';
+    }
+    
+    if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
+    if (kategoriFilter.value !== 'Semua Kategori') params.kategori = kategoriFilter.value;
+
+    const blob = await store.exportPdf(params);
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const reportNameMap = { history: 'riwayat-peminjaman', frequency: 'frekuensi-peminjaman' };
+    const reportName = reportNameMap[activeTab.value as 'history' | 'frequency'];
+    link.setAttribute('download', `laporan-${reportName}-${dateStr}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    
+    isExportModalOpen.value = false;
+    toast.success('Laporan PDF berhasil diunduh');
+  } catch (err: any) {
+    console.error('Export failed:', err);
+    toast.error(err.response?.data?.message || 'Gagal mengunduh laporan PDF');
+  } finally {
+    isExporting.value = false;
+  }
 };
+
+const openExportModal = () => {
+  isExportModalOpen.value = true;
+};
+
 </script>
 
 <template>
@@ -369,7 +423,7 @@ const exportPdf = () => {
         <h2 style="font-size: 20px; font-weight: 700; color: #111827;">
           {{ activeTab === 'history' ? 'Daftar Riwayat Peminjaman' : 'Daftar Frekuensi Peminjaman' }}
         </h2>
-        <button @click="exportPdf" class="btn-export">
+        <button @click="openExportModal" class="btn-export">
           <FileText class="w-4 h-4" /> Export PDF
         </button>
       </div>
@@ -494,6 +548,18 @@ const exportPdf = () => {
       </div>
 
     </div>
+
+    <!-- Export Confirmation Modal -->
+    <ConfirmationModal
+      :show="isExportModalOpen"
+      title="Konfirmasi Export PDF"
+      :message="`Apakah Anda ingin mengunduh laporan ${activeTab === 'history' ? 'riwayat' : 'frekuensi'} ini dalam format PDF?`"
+      confirmText="Unduh PDF"
+      cancelText="Batal"
+      :isLoading="isExporting"
+      @confirm="handleExportPdf"
+      @cancel="isExportModalOpen = false"
+    />
   </div>
 </template>
 

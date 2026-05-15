@@ -90,6 +90,19 @@ export const useLaporanUtilisasiStore = defineStore('laporanUtilisasi', {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    async exportPdf(params: any = {}) {
+      try {
+        const response = await api.get('/api/laporan/utilisasi/export/pdf', { 
+          params,
+          responseType: 'blob'
+        });
+        return response.data;
+      } catch (err: any) {
+        console.error('Error exporting PDF:', err);
+        throw err;
+      }
     }
   }
 });
