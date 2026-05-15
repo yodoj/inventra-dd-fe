@@ -30,11 +30,13 @@ const dashboardTitle = computed(() => {
 const summary = computed(() => dashboardStore.summary);
 const peminjamanPerUnit = computed(() => dashboardStore.peminjamanPerUnit);
 const trendData = computed(() => dashboardStore.trend);
+const topBorrowed = computed(() => dashboardStore.topBorrowed);
+const topDamaged = computed(() => dashboardStore.topDamaged);
 
 // Filters State
 const currentYear = new Date().getFullYear();
-const selectedYear = ref(currentYear);
-const selectedMonth = ref<number | undefined>(undefined);
+const selectedYear = ref<number | null>(null);
+const selectedMonth = ref<number | null>(null);
 const selectedUnit = ref('Semua Unit');
 const selectedKategori = ref('Semua Kategori');
 
@@ -56,12 +58,14 @@ const monthsList = [
 
 const applyFilters = () => {
   dashboardStore.fetchTrend(selectedYear.value, selectedMonth.value, selectedUnit.value, selectedKategori.value);
-  dashboardStore.fetchSummary(selectedUnit.value, selectedKategori.value);
+  dashboardStore.fetchSummary();
+  dashboardStore.fetchTopBorrowed(selectedYear.value, selectedMonth.value, selectedUnit.value, selectedKategori.value);
+  dashboardStore.fetchTopDamaged(selectedYear.value, selectedMonth.value, selectedUnit.value, selectedKategori.value);
 };
 
 const resetFilters = () => {
-  selectedYear.value = currentYear;
-  selectedMonth.value = undefined;
+  selectedYear.value = null;
+  selectedMonth.value = null;
   selectedUnit.value = 'Semua Unit';
   selectedKategori.value = 'Semua Kategori';
   applyFilters();
@@ -73,40 +77,41 @@ onMounted(() => {
     dashboardStore.fetchPeminjamanPerUnit();
   }
   dashboardStore.fetchTrend();
+  dashboardStore.fetchTopBorrowed();
+  dashboardStore.fetchTopDamaged();
 });
 
-// Y-Axis Calculation Logic
-const maxVal = computed(() => {
-  const chartMax = Math.max(...peminjamanPerUnit.value.map(u => u.totalPeminjaman), 0);
-  const trendMax = Math.max(...trendData.value.map(t => t.count), 0);
-  return Math.max(chartMax, trendMax);
-});
-
-const yAxisMax = computed(() => {
-  const rawMax = maxVal.value;
+// Y-Axis Calculation Helpers
+const calculateYAxisMax = (rawMax: number) => {
   if (rawMax <= 10) return 10;
-  
   const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax)));
   const normalized = rawMax / magnitude;
-  
   let rounded;
   if (normalized <= 1) rounded = 1;
   else if (normalized <= 2) rounded = 2;
   else if (normalized <= 5) rounded = 5;
   else rounded = 10;
-  
   return rounded * magnitude;
-});
+};
 
-const yAxisSteps = computed(() => {
-  const max = yAxisMax.value;
+const calculateYAxisSteps = (max: number) => {
   return [max, max * 0.75, max * 0.5, max * 0.25, 0];
-});
+};
+
+// Bar Chart Scale
+const barMaxVal = computed(() => Math.max(...peminjamanPerUnit.value.map(u => u.totalPeminjaman), 0));
+const yAxisMaxBar = computed(() => calculateYAxisMax(barMaxVal.value));
+const yAxisStepsBar = computed(() => calculateYAxisSteps(yAxisMaxBar.value));
 
 const getBarHeight = (value: number) => {
-  if (yAxisMax.value === 0) return 0;
-  return (value / yAxisMax.value) * 100;
+  if (yAxisMaxBar.value === 0) return 0;
+  return (value / yAxisMaxBar.value) * 100;
 };
+
+// Trend Chart Scale
+const trendMaxVal = computed(() => Math.max(...trendData.value.map(t => t.count), 0));
+const yAxisMaxTrend = computed(() => calculateYAxisMax(trendMaxVal.value));
+const yAxisStepsTrend = computed(() => calculateYAxisSteps(yAxisMaxTrend.value));
 
 // Line Chart SVG Logic
 const getPointX = (index: number, total: number) => {
@@ -115,8 +120,8 @@ const getPointX = (index: number, total: number) => {
 };
 
 const getPointY = (value: number) => {
-  if (yAxisMax.value === 0) return 400;
-  return 400 - (value / yAxisMax.value) * 400;
+  if (yAxisMaxTrend.value === 0) return 400;
+  return 400 - (value / yAxisMaxTrend.value) * 400;
 };
 
 const svgPath = computed(() => {
@@ -128,22 +133,20 @@ const svgPath = computed(() => {
   }, "");
 });
 
-// Dummy data for Top Aset (keeping for visual completeness as per image)
-const topDipinjam = [
-  { id: '[R00222]', name: 'Auditorium - SMP', value: '150 kali' },
-  { id: '[B00001]', name: 'Kamera - Canon - SMA', value: '80 kali' },
-  { id: '[B00212]', name: 'Speaker - JBL - KB-TK', value: '70 kali' },
-  { id: '[B00200]', name: 'Microphone - Yamaha - SD', value: '50 kali' },
-  { id: '[Kamera]', name: 'Nikon - SD', value: '40 kali' }
-];
-
-const topRusak = [
-  { id: '[B00020]', name: 'Raket Bulutangkis - Yonex - SD', value: '15 kali' },
-  { id: '[B00023]', name: 'Proyektor - Samsung - SMA', value: '10 kali' },
-  { id: '[B00021]', name: 'Tinta Spidol - Snowman - SD', value: '9 kali' },
-  { id: '[B00009]', name: 'Tabung Reaksi - Pyrex - SMP', value: '7 kali' },
-  { id: '[B00002]', name: 'Bola Basket - Spalding - SMA', value: '5 kali' }
-];
+// Format Asset Name based on role and category
+const formatAssetName = (item: any) => {
+  const isBarang = item.kategori?.includes('BARANG');
+  const kode = item.kodeAset ? `[${item.kodeAset}] ` : '';
+  const nama = item.namaAset || '';
+  const merk = item.merkAset ? ` - ${item.merkAset}` : '';
+  const unit = isYayasan.value && item.unit ? ` - ${item.unit}` : '';
+  
+  if (isBarang) {
+    return `${kode}${nama}${merk}${unit}`;
+  } else {
+    return `${kode}${nama}${unit}`;
+  }
+};
 
 </script>
 
@@ -195,12 +198,12 @@ const topRusak = [
         </div>
         <div class="chart-wrapper">
           <div class="y-axis">
-            <span v-for="step in yAxisSteps" :key="step">{{ Math.round(step) }}</span>
+            <span v-for="step in yAxisStepsBar" :key="step">{{ Math.round(step) }}</span>
           </div>
           <div class="bars-container">
             <!-- Grid Lines -->
             <div class="grid-lines">
-              <div v-for="step in yAxisSteps" :key="step" class="grid-line"></div>
+              <div v-for="step in yAxisStepsBar" :key="step" class="grid-line"></div>
             </div>
             <div v-for="unit in peminjamanPerUnit" :key="unit.unit" class="bar-group">
               <div class="bar-outer">
@@ -256,13 +259,14 @@ const topRusak = [
           <div class="period-filters">
             <div class="custom-select select-small">
               <select v-model="selectedMonth">
-                <option :value="undefined">Bulan</option>
+                <option :value="null">Semua Bulan</option>
                 <option v-for="m in monthsList" :key="m.value" :value="m.value">{{ m.label }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
             <div class="custom-select select-small">
               <select v-model="selectedYear">
+                <option :value="null">Semua Tahun</option>
                 <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
               </select>
               <ChevronDown class="select-icon" />
@@ -280,34 +284,40 @@ const topRusak = [
         <h3 class="s1-subtitle">Tren Peminjaman Aset {{ !isYayasan ? userUnit : '' }}</h3>
         <div class="line-chart-container">
           <div class="line-chart-y">
-            <span v-for="step in yAxisSteps" :key="step">{{ Math.round(step) }}</span>
+            <span v-for="step in yAxisStepsTrend" :key="step">{{ Math.round(step) }}</span>
           </div>
           <div class="line-chart-content">
              <div class="chart-main-area">
-               <!-- Grid Lines -->
-               <div class="grid-lines">
-                 <div v-for="step in yAxisSteps" :key="step" class="grid-line"></div>
-               </div>
-               <!-- SVG for the line only -->
-               <svg v-if="trendData.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
-                 <path :d="svgPath" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" />
-               </svg>
-               <!-- Div dots positioned perfectly -->
-               <div class="line-dots">
-                 <div v-for="(point, i) in trendData" :key="i" 
-                   class="line-dot"
-                   :style="{ 
-                     left: (getPointX(i, trendData.length) / 10) + '%', 
-                     top: (getPointY(point.count) / 4) + '%' 
-                   }"
-                 >
-                   <span class="dot-tooltip">{{ point.count }}</span>
-                 </div>
-               </div>
+                <!-- Grid Lines -->
+                <div class="grid-lines">
+                  <div v-for="step in yAxisStepsTrend" :key="step" class="grid-line"></div>
+                </div>
+                <!-- SVG for the line only -->
+                <svg v-if="trendData.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+                  <path :d="svgPath" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" vector-effect="non-scaling-stroke" />
+                </svg>
+                <!-- Div dots positioned perfectly -->
+                <div class="line-dots">
+                  <div v-for="(point, i) in trendData" :key="i" 
+                    class="line-dot"
+                    :style="{ 
+                      left: (getPointX(i, trendData.length) / 10) + '%', 
+                      top: (getPointY(point.count) / 4) + '%' 
+                    }"
+                  >
+                    <span class="dot-tooltip">{{ point.count }}</span>
+                  </div>
+                </div>
              </div>
              <!-- Labels moved outside/below chart area -->
              <div class="line-labels">
-               <span v-for="point in trendData" :key="point.label">{{ point.label }}</span>
+                <span 
+                  v-for="(point, i) in trendData" 
+                  :key="point.label"
+                  :style="{ left: (getPointX(i, trendData.length) / 10) + '%' }"
+                >
+                  {{ point.label }}
+                </span>
              </div>
           </div>
         </div>
@@ -318,12 +328,17 @@ const topRusak = [
         <div class="top-list-card navy-card">
           <h4 class="card-title">Top 5 Aset Paling Sering Dipinjam</h4>
           <div class="top-items-stack">
-            <div v-for="(item, idx) in topDipinjam" :key="idx" class="top-item-row">
-              <div class="item-rank">{{ idx + 1 }}.</div>
-              <div class="item-info">
-                <span class="item-id">{{ item.id }}</span> {{ item.name }}
+            <template v-if="topBorrowed.length > 0">
+              <div v-for="(item, idx) in topBorrowed" :key="idx" class="top-item-row">
+                <div class="item-rank">{{ idx + 1 }}.</div>
+                <div class="item-info">
+                  {{ formatAssetName(item) }}
+                </div>
+                <div class="item-value-badge">{{ item.value }}</div>
               </div>
-              <div class="item-value-badge">{{ item.value }}</div>
+            </template>
+            <div v-else class="empty-state-text">
+              Tidak ada data peminjaman dalam periode ini.
             </div>
           </div>
         </div>
@@ -331,12 +346,17 @@ const topRusak = [
         <div class="top-list-card navy-card">
           <h4 class="card-title">Top 5 Aset Paling Sering Rusak</h4>
           <div class="top-items-stack">
-            <div v-for="(item, idx) in topRusak" :key="idx" class="top-item-row">
-              <div class="item-rank">{{ idx + 1 }}.</div>
-              <div class="item-info">
-                <span class="item-id">{{ item.id }}</span> {{ item.name }}
+            <template v-if="topDamaged.length > 0">
+              <div v-for="(item, idx) in topDamaged" :key="idx" class="top-item-row">
+                <div class="item-rank">{{ idx + 1 }}.</div>
+                <div class="item-info">
+                  {{ formatAssetName(item) }}
+                </div>
+                <div class="item-value-badge">{{ item.value }}</div>
               </div>
-              <div class="item-value-badge">{{ item.value }}</div>
+            </template>
+            <div v-else class="empty-state-text">
+              Tidak ada laporan kerusakan dalam periode ini.
             </div>
           </div>
         </div>
@@ -540,7 +560,6 @@ const topRusak = [
   background: #93C5FD;
   border-radius: 8px 8px 0 0;
   position: relative;
-  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bar-tooltip {
@@ -743,13 +762,18 @@ const topRusak = [
 }
 
 .line-labels {
+  position: relative;
   height: 40px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
+  margin-top: 8px;
+}
+
+.line-labels span {
+  position: absolute;
+  transform: translateX(-50%);
   color: #6B7280;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .dot-tooltip {
@@ -772,15 +796,6 @@ const topRusak = [
   opacity: 1;
 }
 
-.line-labels {
-  height: 40px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  color: #6B7280;
-  font-size: 14px;
-  font-weight: 600;
-}
 
 /* Top Lists Grid */
 .top-lists-grid {
@@ -797,6 +812,14 @@ const topRusak = [
 .navy-card {
   background: #00588F;
   color: white;
+}
+
+.empty-state-text {
+  text-align: center;
+  padding: 40px 20px;
+  opacity: 0.7;
+  font-style: italic;
+  font-size: 14px;
 }
 
 .card-title {

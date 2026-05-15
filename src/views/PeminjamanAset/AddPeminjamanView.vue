@@ -19,7 +19,7 @@ const form = ref({
   waktuPeminjaman: '',
   waktuPengembalian: '',
   tujuanPeminjaman: '',
-  qty: 1,
+  qty: null,
   unitTujuan: authStore.user?.unit || ''
 });
 

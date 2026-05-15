@@ -73,7 +73,12 @@ export const useAssetStore = defineStore('asset', () => {
         isLoading.value = true;
         error.value = null;
         try {
-            const response = await api.post('/api/assets/barang', data);
+            const isFormData = data instanceof FormData;
+            const response = await api.post('/api/assets/barang', data, {
+                headers: {
+                    'Content-Type': isFormData ? 'multipart/form-data' : 'application/json'
+                }
+            });
             return response.data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Gagal menambah aset barang';
@@ -87,7 +92,12 @@ export const useAssetStore = defineStore('asset', () => {
         isLoading.value = true;
         error.value = null;
         try {
-            const response = await api.post('/api/assets/ruangan', data);
+            const isFormData = data instanceof FormData;
+            const response = await api.post('/api/assets/ruangan', data, {
+                headers: {
+                    'Content-Type': isFormData ? 'multipart/form-data' : 'application/json'
+                }
+            });
             return response.data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Gagal menambah aset ruangan';
@@ -157,7 +167,12 @@ export const useAssetStore = defineStore('asset', () => {
         isLoading.value = true;
         error.value = null;
         try {
-            const response = await api.put(`/api/assets/barang/${id}`, data);
+            const isFormData = data instanceof FormData;
+            const response = await api.put(`/api/assets/barang/${id}`, data, {
+                headers: {
+                    'Content-Type': isFormData ? 'multipart/form-data' : 'application/json'
+                }
+            });
             return response.data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Gagal mengubah aset barang';
@@ -171,7 +186,12 @@ export const useAssetStore = defineStore('asset', () => {
         isLoading.value = true;
         error.value = null;
         try {
-            const response = await api.put(`/api/assets/ruangan/${id}`, data);
+            const isFormData = data instanceof FormData;
+            const response = await api.put(`/api/assets/ruangan/${id}`, data, {
+                headers: {
+                    'Content-Type': isFormData ? 'multipart/form-data' : 'application/json'
+                }
+            });
             return response.data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Gagal mengubah aset ruangan';
