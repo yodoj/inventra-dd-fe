@@ -624,7 +624,7 @@ const openExportModal = () => {
 
 .select-trigger {
   width: 100%;
-  padding: 10px 16px;
+  padding: 12px 16px;
   padding-right: 40px;
   border: 1px solid #D1D5DB;
   border-radius: 12px;
@@ -632,7 +632,7 @@ const openExportModal = () => {
   font-size: 14px;
   cursor: pointer;
   position: relative;
-  min-height: 42px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   color: #374151;
