@@ -177,8 +177,7 @@ const handleResetFilter = () => {
 };
 
 watch(activeTab, () => {
-  currentPage.value = 1;
-  loadData();
+  handleResetFilter();
 });
 
 watch(limit, () => {
@@ -257,7 +256,7 @@ const exportPdf = () => {
           <div v-if="!isLockedUnit" class="filter-item" style="min-width: 140px; flex: 1;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
             <div class="custom-select">
-              <select v-model="unitFilter">
+              <select v-model="unitFilter" :class="{ 'placeholder-color': unitFilter === 'Semua Unit' }">
                 <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
               </select>
               <ChevronDown class="select-icon" />
@@ -265,11 +264,11 @@ const exportPdf = () => {
           </div>
 
           <!-- Periode Filter -->
-          <div class="filter-item" style="min-width: 200px; flex: 1.5;">
+          <div class="filter-item" style= "flex: 1.5;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Periode</label>
             <div class="flex gap-2">
               <div class="custom-select-wrapper flex-1">
-                <div class="select-trigger" @click.stop="isMonthOpen = !isMonthOpen; isYearOpen = false">
+                <div class="select-trigger" :class="{ 'placeholder-color': periodeBulan === 'Bulan' }" @click.stop="isMonthOpen = !isMonthOpen; isYearOpen = false">
                   {{ months.find(m => m.value === periodeBulan)?.label || 'Bulan' }}
                   <ChevronDown class="select-icon" />
                 </div>
@@ -285,7 +284,7 @@ const exportPdf = () => {
                 </div>
               </div>
               <div class="custom-select-wrapper flex-1">
-                <div class="select-trigger" @click.stop="isYearOpen = !isYearOpen; isMonthOpen = false">
+                <div class="select-trigger" :class="{ 'placeholder-color': periodeTahun === 'Tahun' }" @click.stop="isYearOpen = !isYearOpen; isMonthOpen = false">
                   {{ periodeTahun }}
                   <ChevronDown class="select-icon" />
                 </div>
@@ -304,15 +303,16 @@ const exportPdf = () => {
           </div>
 
           <!-- Custom Date Range -->
-          <div class="filter-item flex flex-col" style="min-width: 280px; flex: 2;">
+          <!-- <div class="filter-item flex flex-col" style="min-width: 260px; flex: 2; position: relative; z-index: 20;"> -->
+          <div class="filter-item flex flex-col" style="min-width: 260px; flex: 2; position: relative; z-index: 20; max-width: 300px;">
             <div class="flex gap-2">
               <div class="flex-1">
                 <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">From</label>
-                <input type="date" v-model="startDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid }" />
+                <input type="date" v-model="startDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid, 'placeholder-color': !startDate }" />
               </div>
               <div class="flex-1">
                 <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">To</label>
-                <input type="date" v-model="endDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid }" />
+                <input type="date" v-model="endDate" class="date-input" :class="{ 'border-red-500': isDateRangeInvalid, 'placeholder-color': !endDate }" />
               </div>
             </div>
             <!-- Error Message underneath the pickers without shifting layout -->
@@ -324,10 +324,10 @@ const exportPdf = () => {
           </div>
 
           <!-- Kategori Filter -->
-          <div v-if="activeTab === 'frequency'" class="filter-item" style="min-width: 160px; flex: 1.2;">
+          <div v-if="activeTab === 'frequency'" class="filter-item" style="min-width: 100px; flex: 1.2; position: relative; z-index: 30;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Kategori Aset</label>
             <div class="custom-select">
-              <select v-model="kategoriFilter">
+              <select v-model="kategoriFilter" :class="{ 'placeholder-color': kategoriFilter === 'Semua Kategori' }">
                 <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
               </select>
               <ChevronDown class="select-icon" />
@@ -336,7 +336,7 @@ const exportPdf = () => {
 
           <!-- Search Input -->
           <!-- Search Bar -->
-          <div class="filter-item flex-grow" style="min-width: 250px;">
+          <div class="filter-item flex-grow" style="min-width: 100px; flex: 2;">
             <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Aset</label>
             <div class="search-box">
               <Search class="search-icon" />
@@ -543,7 +543,7 @@ const exportPdf = () => {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .pagination-section {
@@ -627,6 +627,10 @@ const exportPdf = () => {
   color: #9CA3AF !important;
 }
 
+.date-input.placeholder-color::-webkit-datetime-edit {
+  color: #9CA3AF;
+}
+
 .select-icon {
   position: absolute;
   right: 10px;
@@ -639,6 +643,7 @@ const exportPdf = () => {
 
 .date-input {
   width: 100%;
+  max-width: 140px;
   padding: 12px 16px;
   border: 1px solid #D1D5DB;
   border-radius: 12px;
