@@ -135,7 +135,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Kuantitas (Per Item)<span class="required-star">*</span></label>
                 <input v-model.number="form.qty" type="number" class="form-input" min="1" required />
               </div>
             </div>
