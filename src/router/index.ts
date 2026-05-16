@@ -58,6 +58,12 @@ const router = createRouter({
       meta: { roles: ['ALL'] }
     },
     {
+      path: '/assets/laporan',
+      name: 'laporan-peminjaman-aset',
+      component: () => import('../views/Laporan/LaporanUtilisasiView.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
       component: () => import('../views/MengelolaAset/AddAssetBarangView.vue'),
