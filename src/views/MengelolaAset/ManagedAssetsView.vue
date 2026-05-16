@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router';
 import 'primeicons/primeicons.css';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
+import { API_BASE_URL } from '@/services/api';
 
 const router = useRouter();
 const assetStore = useAssetStore();
@@ -193,6 +194,11 @@ const formatStatusDisplay = (status: string) => {
 const transformImageUrl = (url: string) => {
   if (!url) return 'https://via.placeholder.com/80x60?text=No+Image';
   
+  // Handle relative upload paths
+  if (url.startsWith('/uploads/')) {
+    return API_BASE_URL + url;
+  }
+
   // Handle Google Search Redirects
   if (url.includes('google.com/url?')) {
     const urlParams = new URLSearchParams(url.split('?')[1]);

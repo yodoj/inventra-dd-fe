@@ -250,6 +250,12 @@ const router = createRouter({
       meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
     },
     {
+      path: '/assets/dashboard',
+      name: 'dashboard-asset',
+      component: () => import('../views/Dashboard/DashboardPeminjamanAset.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'ADMIN'] }
+    },
+    {
       path: '/403',
       name: 'forbidden',
       component: () => import('@/views/Error/Forbidden403View.vue')

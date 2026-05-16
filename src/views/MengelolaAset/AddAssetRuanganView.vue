@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 import { useToastStore } from '@/stores/toast';
+import { API_BASE_URL } from '@/services/api';
 
 const router = useRouter();
 const assetStore = useAssetStore();
@@ -20,6 +21,47 @@ const form = ref({
   gambarUrlAset: '',
   keteranganAset: ''
 });
+
+const fotoFile = ref<File | null>(null);
+const previewUrl = ref('');
+const fileError = ref('');
+
+const getFullImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    return API_BASE_URL + url;
+  }
+  return url;
+};
+
+const onFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    fileError.value = 'File harus berupa gambar';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    fileError.value = 'Ukuran file maksimal 2MB';
+    return;
+  }
+
+  fileError.value = '';
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
+
+  fotoFile.value = file;
+  previewUrl.value = URL.createObjectURL(file);
+};
+
+const removeFile = () => {
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
+  fotoFile.value = null;
+  previewUrl.value = '';
+};
 
 // Watch for user changes to ensure unit is set if auth loads late
 watch(() => authStore.user, (newUser) => {
@@ -56,7 +98,20 @@ const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
   try {
-    await assetStore.createAssetRuangan(form.value);
+    const formData = new FormData();
+    formData.append('namaAset', form.value.namaAset);
+    formData.append('statusAset', form.value.statusAset);
+    formData.append('kategoriAset', form.value.kategoriAset);
+    formData.append('unit', form.value.unit);
+    formData.append('keteranganAset', form.value.keteranganAset);
+
+    if (fotoFile.value) {
+      formData.append('gambarFile', fotoFile.value);
+    } else {
+      formData.append('gambarUrlAset', form.value.gambarUrlAset);
+    }
+
+    await assetStore.createAssetRuangan(formData);
     toastStore.success('Success', 'Aset ruangan berhasil ditambahkan');
     router.push('/assets/kelola');
   } catch (error) {
@@ -111,10 +166,7 @@ const handleSubmit = async () => {
                   <ChevronDown class="select-icon" />
                 </div>
               </div>
-            </div>
 
-            <!-- Right Column -->
-            <div class="form-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
                 <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
@@ -125,10 +177,50 @@ const handleSubmit = async () => {
                   <ChevronDown class="select-icon" />
                 </div>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
-                <input v-model="form.gambarUrlAset" type="url" placeholder="Masukkan URL gambar" class="form-input" required />
+            <!-- Right Column -->
+            <div class="form-column">
+              <div class="form-group gambar-upload-group">
+                <label class="s2-subtitle mb-2 block">Gambar</label>
+                
+                <div class="upload-options">
+                  <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
+                    <input
+                      class="file-hidden"
+                      type="file"
+                      accept="image/*"
+                      :disabled="isSubmitting"
+                      @change="onFileChange"
+                    />
+
+                    <div v-if="!previewUrl" class="dz-empty">
+                      <div class="dz-icon">+</div>
+                      <div class="dz-title">Upload Foto</div>
+                      <div class="dz-sub">Klik untuk pilih file</div>
+                    </div>
+
+                    <div v-else class="dz-filled">
+                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset)" alt="Preview" />
+                      <div class="dz-bar">
+                        <div class="dz-name">{{ fotoFile?.name }}</div>
+                        <button
+                          type="button"
+                          class="dz-remove"
+                          @click.prevent="removeFile"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </label>
+
+                  <div class="url-option mt-4">
+                    <p class="c2-caption mb-3 text-gray-500">Atau masukkan link URL:</p>
+                    <input v-model="form.gambarUrlAset" type="url" placeholder="https://contoh.com/gambar.jpg" class="form-input" :disabled="!!fotoFile" />
+                  </div>
+                </div>
+                <p v-if="fileError" class="text-xs text-red-500 mt-1">{{ fileError }}</p>
               </div>
 
               <div class="form-group">
@@ -138,7 +230,7 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <div class="form-actions mt-12">
+          <div class="form-actions mt-40">
             <button type="button" @click="router.back()" class="btn-cancel">Batal</button>
             <button type="submit" class="btn-submit" :disabled="isSubmitting">
               {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
@@ -181,8 +273,14 @@ const handleSubmit = async () => {
   gap: 32px;
 }
 
+.form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 .form-input, .custom-select select {
@@ -314,5 +412,109 @@ select option {
 }
 .required-star {
   color: var(--error);
+}
+
+/* Upload Styles */
+.file-hidden {
+  display: none;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px dashed #D1D5DB;
+  border-radius: 12px;
+  background: #F9FAFB;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropzone:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.dz-empty {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.dz-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #E5E7EB;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #00588F;
+  background: white;
+}
+
+.dz-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.dz-sub {
+  font-size: 11px;
+  color: #6B7280;
+}
+
+.dz-img {
+  width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.dz-bar {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.dz-name {
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dz-remove {
+  border: none;
+  background: #FEE2E2;
+  color: #DC2626;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mt-40 {
+  margin-top: 40px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
 }
 </style>

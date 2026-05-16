@@ -171,7 +171,7 @@ const canSeePeminjaman = () => {
                   <FileText class="icon-sm" /> Laporan Peminjaman Aset
                 </div>
                 <div @click="protectedNavigate('/assets/dashboard')" class="dropdown-item" style="cursor: pointer;">
-                  <LayoutDashboard class="icon-sm" /> Dashboard Utilisasi Aset
+                  <LayoutDashboard class="icon-sm" /> Dashboard Peminjaman Aset
                 </div>
               </template>
             </div>

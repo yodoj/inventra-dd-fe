@@ -37,6 +37,7 @@ const statusFilter = ref('');
 const unitFilter = ref('');
 const categoryGroupFilter = ref('');
 const tanggalPeminjamanFilter = ref('');
+const tanggalPengembalianFilter = ref('');
 const currentPage = ref(0);
 const pageSize = ref(10);
 
@@ -84,10 +85,17 @@ const loadLoans = async () => {
     if (unitFilter.value) filters.unitTujuan = unitFilter.value;
     if (categoryGroupFilter.value) filters.kategoriAset = categoryGroupFilter.value;
     if (statusFilter.value) filters.statusPeminjaman = statusFilter.value;
+    if (searchQuery.value) filters.search = searchQuery.value;
     if (tanggalPeminjamanFilter.value) {
       const [y, m, d] = tanggalPeminjamanFilter.value.split('-');
       if (y && m && d) {
         filters.tanggalPeminjaman = `${d}-${m}-${y}`;
+      }
+    }
+    if (tanggalPengembalianFilter.value) {
+      const [y, m, d] = tanggalPengembalianFilter.value.split('-');
+      if (y && m && d) {
+        filters.tanggalPengembalian = `${d}-${m}-${y}`;
       }
     }
     await tinjauStore.fetchAll(filters);
@@ -142,6 +150,7 @@ const handleReset = () => {
   unitFilter.value = '';
   categoryGroupFilter.value = '';
   tanggalPeminjamanFilter.value = '';
+  tanggalPengembalianFilter.value = '';
   currentPage.value = 0;
   loadLoans();
 };
@@ -386,6 +395,31 @@ const isBeforeStart = (loan: any) => {
               />
             </div>
           </div>
+
+          <div class="filter-item">
+            <label class="c2-caption block" style="margin-bottom: 8px;">Tanggal Pengembalian</label>
+            <div class="search-box">
+              <Calendar class="search-icon" />
+              <input
+                v-model="tanggalPengembalianFilter"
+                type="date"
+                @keyup.enter="handleFilter"
+              />
+            </div>
+          </div>
+
+          <div class="filter-item flex-grow">
+            <label class="c2-caption block" style="margin-bottom: 8px;">Cari Peminjaman</label>
+            <div class="search-box">
+              <Search class="search-icon" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Cari nama, merk, atau kode aset"
+                @keyup.enter="handleFilter"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- Filter Peminjaman Default -->
@@ -434,7 +468,7 @@ const isBeforeStart = (loan: any) => {
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Cari nama aset..."
+                placeholder="Cari nama, merk, atau kode aset"
                 @keyup.enter="handleFilter"
               />
             </div>
