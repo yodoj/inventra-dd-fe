@@ -18,15 +18,22 @@ const unitFilter = ref('Semua Unit');
 
 const isAdmin = computed(() => authStore.userRole === 'ADMIN');
 
-const roles = [
-  { label: 'Semua Role', value: 'Semua Role' },
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Yayasan', value: 'YAYASAN' },
-  { label: 'Sarpras', value: 'SARPRAS' },
-  { label: 'Kepsek', value: 'KEPSEK' },
-  { label: 'Guru', value: 'GURU' },
-  { label: 'Siswa', value: 'SISWA' }
-];
+const roles = computed(() => {
+  const allRoles = [
+    { label: 'Semua Role', value: 'Semua Role' },
+    { label: 'Admin', value: 'ADMIN' },
+    { label: 'Yayasan', value: 'YAYASAN' },
+    { label: 'Sarpras', value: 'SARPRAS' },
+    { label: 'Kepsek', value: 'KEPSEK' },
+    { label: 'Guru', value: 'GURU' },
+    { label: 'Siswa', value: 'SISWA' }
+  ];
+
+  if (!isAdmin.value) {
+    return allRoles.filter(role => role.value !== 'ADMIN' && role.value !== 'YAYASAN');
+  }
+  return allRoles;
+});
 
 const units = [
   { label: 'Semua Unit', value: 'Semua Unit' },
@@ -162,7 +169,7 @@ const handleTambahAkun = () => {
                 <input 
                   v-model="searchQuery" 
                   type="text" 
-                  placeholder="Cari akun pengguna" 
+                  placeholder="Cari email, nama lengkap, atau nomor telepon pengguna" 
                   @keyup.enter="handleSearch"
                 />
               </div>
