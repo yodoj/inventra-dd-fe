@@ -238,6 +238,24 @@ const router = createRouter({
       meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
     },
     {
+      path: '/profile/pengelolaan-akun/:id',
+      name: 'detail-user',
+      component: () => import('../views/Profile/DetailUserView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
+      path: '/profile/pengelolaan-akun/:id/edit',
+      name: 'edit-user',
+      component: () => import('../views/Profile/EditUserView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
+      path: '/profile/pengelolaan-akun/:id/change-password',
+      name: 'change-user-password',
+      component: () => import('../views/Profile/ChangeUserPasswordView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
       path: '/pengadaan/dashboard',
       name: 'dashboard-pengadaan-aset',
       component: () => import('../views/Dashboard/DashboardPengadaanAset.vue'),

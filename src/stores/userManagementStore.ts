@@ -69,8 +69,11 @@ export const useUserManagementStore = defineStore('userManagement', () => {
 
   const fetchUserDetail = async (userId: string) => {
     loading.value = true
+    const authStore = useAuthStore()
     try {
-      const response = await userManagementService.getUserDetail(userId)
+      const response = authStore.userRole === 'ADMIN'
+        ? await userManagementService.getUserDetailByAdmin(userId)
+        : await userManagementService.getUserDetail(userId)
       if (response && response.data) {
         return { success: true, data: response.data }
       }
@@ -78,6 +81,36 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     } catch (error: any) {
       console.error('Error fetching user detail:', error)
       return { success: false, data: null }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateUser = async (userId: string, userData: any) => {
+    loading.value = true
+    const toastStore = useToastStore()
+    try {
+      const response = await userManagementService.updateUser(userId, userData)
+      toastStore.success('Success', response.message || 'Akun pengguna berhasil diperbarui')
+      return { success: true, message: response.message }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Gagal memperbarui akun pengguna'
+      return { success: false, message: errorMessage }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const changeUserPassword = async (userId: string, data: { new_password: string; confirm_password: string }) => {
+    loading.value = true
+    const toastStore = useToastStore()
+    try {
+      const response = await userManagementService.changeUserPassword(userId, data)
+      toastStore.success('Success', response.message || 'Password pengguna berhasil diperbarui')
+      return { success: true, message: response.message }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Gagal memperbarui password pengguna'
+      return { success: false, message: errorMessage }
     } finally {
       loading.value = false
     }
@@ -92,6 +125,8 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     fetchUsers,
     createUser,
     deleteUser,
-    fetchUserDetail
+    fetchUserDetail,
+    updateUser,
+    changeUserPassword
   }
 })

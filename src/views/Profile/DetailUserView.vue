@@ -3,7 +3,8 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useToastStore } from '@/stores/toast';
-import { Edit2, Trash2, ArrowLeft, User } from 'lucide-vue-next';
+import { useAuthStore } from '@/stores/auth';
+import { Edit2, Trash2, ArrowLeft, User, ChevronRight } from 'lucide-vue-next';
 import type { UserPerUnit } from '@/services/userManagementService';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
@@ -11,10 +12,12 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserManagementStore();
 const toastStore = useToastStore();
+const authStore = useAuthStore();
 
 const user = ref<UserPerUnit | null>(null);
 const loading = ref(true);
 const showDeleteConfirm = ref(false);
+const isDeleting = ref(false);
 
 const userId = computed(() => route.params.id as string);
 
@@ -50,7 +53,15 @@ onMounted(async () => {
 });
 
 const handleEdit = () => {
-  toastStore.info('Info', 'Fitur edit sedang dikembangkan');
+  router.push({ name: 'edit-user', params: { id: userId.value } });
+};
+
+const handleChangePassword = () => {
+  router.push({ name: 'change-user-password', params: { id: userId.value } });
+};
+
+const handlePasswordHistory = () => {
+  router.push({ name: 'password-history', query: { userId: userId.value } });
 };
 
 const handleDelete = () => {
@@ -58,15 +69,19 @@ const handleDelete = () => {
 };
 
 const confirmDelete = async () => {
+  if (userId.value === authStore.user?.id) {
+    toastStore.error('Error', 'Tidak dapat menghapus akun sendiri');
+    showDeleteConfirm.value = false;
+    return;
+  }
+  isDeleting.value = true;
+  const result = await userStore.deleteUser(userId.value);
+  isDeleting.value = false;
   showDeleteConfirm.value = false;
-  try {
-    const result = await userStore.deleteUser(userId.value);
-    if (result.success) {
-      toastStore.success('Success', 'Akun pengguna berhasil dihapus');
-      router.push('/profile/pengelolaan-akun');
-    }
-  } catch (error) {
-    toastStore.error('Error', 'Gagal menghapus akun pengguna');
+  if (!result.success) {
+    toastStore.error('Error', result.message || 'Gagal menghapus akun pengguna');
+  } else {
+    router.push('/profile/pengelolaan-akun');
   }
 };
 </script>
@@ -77,26 +92,26 @@ const confirmDelete = async () => {
 
       <!-- Back Button -->
       <button class="btn-back" @click="router.back()" title="Kembali">
-        <ArrowLeft :size="24" color="white" />
+        <ArrowLeft :size="20" color="white" />
       </button>
 
       <!-- Card -->
       <div class="card">
 
-        <!-- Edit & Delete — floating top-right above card -->
-        <div class="card-actions">
-          <button class="btn-action btn-edit" :disabled="loading" @click="handleEdit" title="Edit">
-            <Edit2 :size="18" />
-          </button>
-          <button class="btn-action btn-delete" :disabled="loading" @click="handleDelete" title="Hapus">
-            <Trash2 :size="18" />
-          </button>
-        </div>
-
-        <!-- Header -->
+        <!-- Header (includes Edit & Delete buttons) -->
         <div class="card-header">
           <User :size="22" class="header-icon" />
           <span class="card-title">Detail Profile - {{ displayRole }}</span>
+
+          <!-- Edit & Delete — inside header, pushed to the right -->
+          <div class="card-actions">
+            <button class="btn-action btn-edit" :disabled="loading" @click="handleEdit" title="Edit">
+              <Edit2 :size="18" />
+            </button>
+            <button class="btn-action btn-delete" :disabled="loading" @click="handleDelete" title="Hapus">
+              <Trash2 :size="18" />
+            </button>
+          </div>
         </div>
 
         <!-- Loading -->
@@ -141,6 +156,22 @@ const confirmDelete = async () => {
             <span class="field-label">Unit</span>
             <span class="field-value">{{ user.unit }}</span>
           </div>
+
+          <div class="field field-password">
+            <div class="password-left">
+              <span class="field-label">Password</span>
+              <span class="field-value password-dots">**********</span>
+            </div>
+            <div class="password-actions">
+              <button class="btn-change-password" @click="handleChangePassword">
+                Ubah Password
+                <ChevronRight :size="15" />
+              </button>
+              <button class="btn-password-history" @click="handlePasswordHistory">
+                Lihat Riwayat Perubahan Password
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Empty -->
@@ -153,11 +184,12 @@ const confirmDelete = async () => {
     <!-- Delete Confirmation -->
     <ConfirmationModal
       :show="showDeleteConfirm"
-      title="Konfirmasi Hapus"
-      message="Apakah Anda yakin ingin menghapus akun pengguna ini?"
-      confirm-text="Ya, Hapus"
+      title="Konfirmasi Delete Akun"
+      message="Apakah Anda yakin ingin delete data ini dari sistem?"
+      confirm-text="Ya, Delete"
       cancel-text="Batal"
       type="danger"
+      :isLoading="isDeleting"
       @confirm="confirmDelete"
       @cancel="showDeleteConfirm = false"
     />
@@ -181,15 +213,15 @@ const confirmDelete = async () => {
   align-items: flex-start;
   gap: 20px;
   width: 100%;
-  max-width: 590px; /* 52px btn + 20px gap + ~520px card */
+  max-width: 590px;
 }
 
 /* ── Back Button ──────────────────────────────────────── */
 .btn-back {
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  margin-top: 30px;          /* aligns vertically with card header text */
+  width: 44px;
+  height: 44px;
+  margin-top: 30px;
   border-radius: 50%;
   background-color: #00588f;
   border: none;
@@ -208,22 +240,41 @@ const confirmDelete = async () => {
 
 /* ── Card ─────────────────────────────────────────────── */
 .card {
-  position: relative;
   flex: 1;
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 4px 35px rgba(0, 0, 0, 0.08);
-  overflow: visible; /* let action buttons peek above */
+  overflow: hidden;
+}
+
+/* ── Card Header ──────────────────────────────────────── */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 24px 20px 20px 40px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.header-icon {
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-family: 'Inter', Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
 }
 
 /* ── Edit & Delete buttons ────────────────────────────── */
 .card-actions {
-  position: absolute;
-  top: -19px;
-  right: 16px;
+  margin-left: auto;
   display: flex;
   gap: 6px;
-  z-index: 5;
+  flex-shrink: 0;
 }
 
 .btn-action {
@@ -249,30 +300,8 @@ const confirmDelete = async () => {
   cursor: not-allowed;
 }
 
-.btn-edit   { background-color: #0ea5e9; color: #fff; }
-.btn-delete { background-color: #9e232f; color: #fff; }
-
-/* ── Card Header ──────────────────────────────────────── */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 32px 40px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.header-icon {
-  color: #1f2937;
-  flex-shrink: 0;
-}
-
-.card-title {
-  font-family: 'Inter', Helvetica, sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.35;
-}
+.btn-edit   { background-color: #00588f; color: #fff; }
+.btn-delete { background-color: #DC3544; color: #fff; }
 
 /* ── Fields ───────────────────────────────────────────── */
 .card-body {
@@ -305,6 +334,69 @@ const confirmDelete = async () => {
   font-weight: 400;
   color: #6b7280;
   line-height: 1.4;
+}
+
+/* ── Password field ───────────────────────────────────── */
+.field-password {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.password-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.password-dots {
+  letter-spacing: 3px;
+}
+
+.password-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.btn-change-password {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1.5px solid #00588f;
+  border-radius: 8px;
+  background-color: #ebf4fb;
+  color: #00588f;
+  font-family: 'Inter', Helvetica, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-change-password:hover {
+  background-color: #d6eaf8;
+}
+
+.btn-password-history {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #00588f;
+  font-family: 'Inter', Helvetica, sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.btn-password-history:hover {
+  color: #004d7a;
 }
 
 /* ── Loading ──────────────────────────────────────────── */
@@ -349,12 +441,21 @@ const confirmDelete = async () => {
 
   .btn-back {
     margin-top: 0;
-    width: 44px;
-    height: 44px;
   }
 
-  .card-header { padding: 28px 20px 16px; }
+  .card-header { padding: 20px 16px 16px 20px; }
   .card-body   { padding: 0 20px 28px; }
   .card-title  { font-size: 17px; }
+
+  .field-password {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .password-actions {
+    align-items: flex-start;
+    width: 100%;
+  }
 }
 </style>

@@ -7,7 +7,8 @@ import { useToastStore } from '@/stores/toast';
 import SearchIcon from '@/components/icons/SearchIcon.vue';
 import EditIcon from '@/components/icons/EditIcon.vue';
 import { ChevronDown, ChevronLeft, ChevronRight, Trash2, Eye, Users, UserCog, Plus } from 'lucide-vue-next';
-import type { UserPerUnit } from '@/services/userManagementService';
+import { userManagementService, type UserPerUnit } from '@/services/userManagementService';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const userStore = useUserManagementStore();
 const authStore = useAuthStore();
@@ -99,6 +100,115 @@ const handleTambahAkun = () => {
 const handleViewUser = (user: UserPerUnit) => {
   router.push({ name: 'detail-user', params: { id: user.id } });
 };
+
+const handleEditUser = (user: UserPerUnit) => {
+  router.push({ name: 'edit-user', params: { id: user.id } });
+};
+
+const showDeleteConfirm = ref(false);
+const userToDelete = ref<UserPerUnit | null>(null);
+const isDeleting = ref(false);
+
+const handleDeleteUser = (user: UserPerUnit) => {
+  userToDelete.value = user;
+  showDeleteConfirm.value = true;
+};
+
+const confirmDeleteUser = async () => {
+  if (!userToDelete.value) return;
+  if (userToDelete.value.id === authStore.user?.id) {
+    toastStore.error('Error', 'Tidak dapat menghapus akun sendiri');
+    showDeleteConfirm.value = false;
+    return;
+  }
+  isDeleting.value = true;
+  const result = await userStore.deleteUser(userToDelete.value.id);
+  isDeleting.value = false;
+  showDeleteConfirm.value = false;
+  userToDelete.value = null;
+  if (!result.success) {
+    toastStore.error('Error', result.message || 'Gagal menghapus akun pengguna');
+  } else {
+    if (userStore.users.length === 1 && currentPage.value > 1) {
+      currentPage.value--;
+    }
+    loadUsers();
+  }
+};
+
+// --- Unit Lain Tab ---
+const unitLainSearchQuery = ref('');
+const unitLainUnitFilter = ref('Semua Unit');
+const unitLainCurrentPage = ref(1);
+const unitLainPageSize = ref(10);
+const unitLainUsers = ref<UserPerUnit[]>([]);
+const unitLainLoading = ref(false);
+const unitLainTotalPages = ref(1);
+const unitLainInitialized = ref(false);
+
+const unitLainFilterOptions = computed(() => {
+  const all = [
+    { label: 'Semua Unit', value: 'Semua Unit' },
+    { label: 'KB-TK', value: 'KB-TK' },
+    { label: 'SD', value: 'SD' },
+    { label: 'SMP', value: 'SMP' },
+    { label: 'SMA', value: 'SMA' },
+  ];
+  return all.filter(u => u.value === 'Semua Unit' || u.value !== userUnit.value);
+});
+
+const loadSarprasLintasUnit = async () => {
+  unitLainLoading.value = true;
+  try {
+    const res = await userManagementService.getSarprasLintasUnit(
+      unitLainCurrentPage.value, unitLainPageSize.value,
+      unitLainSearchQuery.value, unitLainUnitFilter.value
+    );
+    if (res?.data) {
+      unitLainUsers.value = res.data.data;
+      unitLainTotalPages.value = res.data.total_pages;
+    }
+  } catch { /* handled by global interceptor */ }
+  finally { unitLainLoading.value = false; }
+};
+
+const handleUnitLainSearch = () => {
+  unitLainCurrentPage.value = 1;
+  loadSarprasLintasUnit();
+};
+
+const handleUnitLainReset = () => {
+  unitLainSearchQuery.value = '';
+  unitLainUnitFilter.value = 'Semua Unit';
+  unitLainCurrentPage.value = 1;
+  loadSarprasLintasUnit();
+};
+
+const nextPageUnitLain = () => {
+  if (unitLainCurrentPage.value < unitLainTotalPages.value) {
+    unitLainCurrentPage.value++;
+    loadSarprasLintasUnit();
+  }
+};
+
+const prevPageUnitLain = () => {
+  if (unitLainCurrentPage.value > 1) {
+    unitLainCurrentPage.value--;
+    loadSarprasLintasUnit();
+  }
+};
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'unit_lain' && !unitLainInitialized.value) {
+    unitLainInitialized.value = true;
+    loadSarprasLintasUnit();
+  }
+});
+
+watch(unitLainPageSize, () => {
+  unitLainCurrentPage.value = 1;
+  loadSarprasLintasUnit();
+});
 </script>
 
 <template>
@@ -214,12 +324,12 @@ const handleViewUser = (user: UserPerUnit) => {
                     </span>
                   </td>
                   <td v-if="isAdmin" class="font-bold text-center text-gray-800">{{ user.unit || '-' }}</td>
-                  <td @click.stop="handleViewUser(user)">
+                  <td>
                     <div class="flex justify-center gap-2">
-                       <button class="btn-icon btn-edit" title="Ubah">
+                      <button @click.stop="handleEditUser(user)" class="btn-icon btn-edit" title="Ubah">
                         <EditIcon class="w-3.5 h-3.5" />
                       </button>
-                      <button class="btn-icon btn-delete" title="Hapus">
+                      <button @click.stop="handleDeleteUser(user)" class="btn-icon btn-delete" title="Hapus">
                         <Trash2 class="w-3.5 h-3.5" />
                       </button>
                       <button @click.stop="handleViewUser(user)" class="btn-icon btn-view" title="Detail">
@@ -270,13 +380,120 @@ const handleViewUser = (user: UserPerUnit) => {
         </div>
       </div>
 
-      <div v-if="!isAdmin" v-show="activeTab === 'unit_lain'" class="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-500 mt-8 shadow-sm">
+      <div v-if="!isAdmin" v-show="activeTab === 'unit_lain'">
+        <!-- Filter Card -->
+        <div class="filter-card mb-20">
+          <h3 class="s2-subtitle" style="margin-bottom: 12px;">Filter Akun</h3>
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Pilih Unit</label>
+              <div class="custom-select">
+                <select v-model="unitLainUnitFilter" :class="{ 'placeholder-color': unitLainUnitFilter === 'Semua Unit' }">
+                  <option v-for="u in unitLainFilterOptions" :key="u.value" :value="u.value">{{ u.label }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
+            </div>
+            <div class="filter-item flex-grow">
+              <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Cari Akun</label>
+              <div class="search-box">
+                <SearchIcon class="search-icon" />
+                <input
+                  v-model="unitLainSearchQuery"
+                  type="text"
+                  placeholder="Cari akun"
+                  @keyup.enter="handleUnitLainSearch"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="filter-actions" style="margin-top: 10px;">
+            <button @click="handleUnitLainSearch" class="btn-apply btn-medium border border-transparent font-semibold">Terapkan Filter</button>
+            <button @click="handleUnitLainReset" class="btn-reset btn-medium border border-gray-300 font-semibold">Reset</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container shadow-sm border border-gray-200 rounded-xl bg-white overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th class="col-no">No</th>
+                  <th class="col-email">Email</th>
+                  <th class="col-nama">Nama Lengkap</th>
+                  <th class="col-telepon">No Telepon</th>
+                  <th class="col-unit text-center">Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="unitLainLoading">
+                  <td colspan="5" class="text-center py-8">Memuat data...</td>
+                </tr>
+                <tr v-else-if="unitLainUsers.length === 0">
+                  <td colspan="5" class="text-center py-8 text-gray-500 bg-gray-50">Data akun Sarpras tidak ditemukan</td>
+                </tr>
+                <tr
+                  v-else
+                  v-for="(user, index) in unitLainUsers"
+                  :key="user.id"
+                  class="border-b border-gray-100 hover:bg-blue-50 transition-colors"
+                >
+                  <td class="b3-body font-medium">{{ (unitLainCurrentPage - 1) * unitLainPageSize + index + 1 }}</td>
+                  <td class="b3-body font-medium text-gray-800">{{ user.email }}</td>
+                  <td class="b2-body text-gray-700">{{ user.nama_lengkap }}</td>
+                  <td class="b3-body text-gray-600">{{ user.nomor_telepon }}</td>
+                  <td class="text-center">
+                    <span class="badge status-role">{{ user.unit }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-section mt-20 mb-8">
+          <div class="flex items-center gap-4">
+            <p class="c2-caption text-gray-500">
+              Showing Page {{ unitLainTotalPages === 0 ? 0 : unitLainCurrentPage }} of {{ unitLainTotalPages }}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">Per page:</span>
+              <div class="custom-select page-size-wrapper">
+                <select v-model="unitLainPageSize" class="page-size-select">
+                  <option :value="10">10</option>
+                  <option :value="30">30</option>
+                  <option :value="50">50</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
+            </div>
+          </div>
+          <div class="pagination-btns">
+            <button @click="prevPageUnitLain" :disabled="unitLainCurrentPage <= 1" class="btn-page">
+              <ChevronLeft class="icon-sm" /> Previous
+            </button>
+            <button @click="nextPageUnitLain" :disabled="unitLainCurrentPage >= unitLainTotalPages" class="btn-page">
+              Next <ChevronRight class="icon-sm" />
+            </button>
+          </div>
+        </div>
       </div>
 
     </div>
 
-    <!-- User Detail Modal -->
-    <!-- Removed - now using DetailUserView page instead -->
+    <ConfirmationModal
+      :show="showDeleteConfirm"
+      title="Konfirmasi Delete Akun"
+      message="Apakah Anda yakin ingin delete data ini dari sistem?"
+      confirm-text="Ya, Delete"
+      cancel-text="Batal"
+      type="danger"
+      :isLoading="isDeleting"
+      @confirm="confirmDeleteUser"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
