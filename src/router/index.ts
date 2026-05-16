@@ -244,6 +244,12 @@ const router = createRouter({
       meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
     },
     {
+      path: '/assets/dashboard',
+      name: 'dashboard-asset',
+      component: () => import('../views/Dashboard/DashboardPeminjamanAset.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'ADMIN'] }
+    },
+    {
       path: '/pengadaan/laporan',
       name: 'laporan-pengadaan-aset',
       component: () => import('../views/Laporan/LaporanPengadaanAset.vue'),

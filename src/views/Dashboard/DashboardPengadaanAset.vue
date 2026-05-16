@@ -35,6 +35,8 @@ const selectedYear = ref<number>(2026)
 const selectedMonth = ref<number | null>(null)
 const selectedKategori = ref<string | null>(null)
 const selectedUnit = ref<string | null>(null)
+const selectedUnitBiaya = ref<string | null>(null)
+const selectedUnitJumlahAset = ref<string | null>(null)
 
 const isPrivileged = computed(() =>
   ['YAYASAN', 'ADMIN', 'ROLE_YAYASAN', 'ROLE_ADMIN'].includes(role.value)
@@ -49,16 +51,28 @@ watch([selectedYear, selectedMonth, selectedKategori, selectedUnit], () => {
   store.fetchAll()
 })
 
+watch(selectedUnitBiaya, (newUnit) => {
+  if (isPrivileged.value) {
+    store.fetchBiayaChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
+  }
+})
+
+watch(selectedUnitJumlahAset, (newUnit) => {
+  if (isPrivileged.value) {
+    store.fetchJumlahAsetChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
+  }
+})
+
 onMounted(() => {
   store.setYear(selectedYear.value)
   store.fetchAll()
 })
 
 const formatRupiah = (value?: number) => {
-  if (!value) return 'Rp 0'
+  if (!value) return 'Rp0'
   return new Intl.NumberFormat('id-ID', {
     style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-  }).format(value).replace(',00', '')
+  }).format(value).replace(',00', '').replace(/\s+/g, '')
 }
 
 const formatShortRupiah = (value: number) => {
@@ -87,7 +101,7 @@ const unitComparison = computed(() => {
   })
 })
 
-const fastMoving = computed(() => store.topPengadaan?.map(item => item.namaAset) || [])
+const fastMoving = computed(() => store.topCepatHabis || [])
 const expensiveData = computed(() => store.topBiaya?.map(item => ({
   name: item.namaAset,
   price: item.totalBiaya
@@ -98,11 +112,75 @@ const isExpensiveEmpty = computed(() => {
          expensiveData.value.every(item => item.price === 0)
 })
 
-// Dummy data untuk chart (nanti akan diganti dengan data asli dari API)
-const chartData = computed(() => [
-  { year: '2023', value: 30 }, { year: '2024', value: 55 },
-  { year: '2025', value: 75 }, { year: '2026', value: 70 }
-])
+const formatBiayaYAxisLabel = (value: number) => {
+  if (value === 0) return 'Rp0'
+  if (value >= 1000000000) {
+    const m = value / 1000000000
+    const str = Number.isInteger(m) ? m.toString() : m.toFixed(1).replace('.', ',')
+    return `Rp${str} M`
+  }
+  return `Rp${new Intl.NumberFormat('id-ID').format(value)}`
+}
+
+const formatJumlahAsetYAxisLabel = (value: number) => {
+  if (value === 0) return '0'
+  if (value >= 1000000) {
+    const jt = value / 1000000
+    const str = Number.isInteger(jt) ? jt.toString() : jt.toFixed(1).replace('.', ',')
+    return `${str} jt`
+  }
+  return new Intl.NumberFormat('id-ID').format(value)
+}
+
+const getAxisData = (maxValue: number, intervals = 4, isInteger = false) => {
+  if (maxValue === 0) {
+    return {
+      niceMax: 100,
+      ticks: [0, 1, 2, 3, 4].map(i => ({ value: 25 * i, pos: i * 25 }))
+    }
+  }
+
+  const roughStep = maxValue / intervals
+  const stepExponent = Math.floor(Math.log10(roughStep))
+  const stepFraction = roughStep / Math.pow(10, stepExponent)
+
+  let niceStep
+  if (stepFraction <= 1) niceStep = 1
+  else if (stepFraction <= 1.25) niceStep = 1.25
+  else if (stepFraction <= 1.5) niceStep = 1.5
+  else if (stepFraction <= 2) niceStep = 2
+  else if (stepFraction <= 2.5) niceStep = 2.5
+  else if (stepFraction <= 3) niceStep = 3
+  else if (stepFraction <= 4) niceStep = 4
+  else if (stepFraction <= 5) niceStep = 5
+  else niceStep = 10
+
+  let step = niceStep * Math.pow(10, stepExponent)
+  if (isInteger) {
+    step = Math.ceil(step)
+  }
+  const niceMax = step * intervals
+
+  const ticks = []
+  for (let i = 0; i <= intervals; i++) {
+    ticks.push({
+      value: step * i,
+      pos: (i / intervals) * 100
+    })
+  }
+
+  return { niceMax, ticks }
+}
+
+const biayaAxis = computed(() => {
+  const max = Math.max(...store.biayaPerTahun.map(item => item.totalBiaya), 0)
+  return getAxisData(max * 1.05, 4, false)
+})
+
+const jumlahAsetAxis = computed(() => {
+  const max = Math.max(...store.jumlahAsetPerTahun.map(item => item.jumlahAset), 0)
+  return getAxisData(max * 1.05, 4, true)
+})
 </script>
 
 <template>
@@ -139,7 +217,7 @@ const chartData = computed(() => [
         <div class="stat-card bg-blue-solid">
           <div class="icon-box"><i class="pi pi-wallet"></i></div>
           <div class="stat-info">
-            <span class="stat-label">Total Biaya Pengadaan Aset</span>
+            <span class="stat-label">Total Estimasi Biaya Pengadaan Aset</span>
             <span class="stat-number">{{ formatRupiah(totalBiaya) }}</span>
           </div>
         </div>
@@ -150,29 +228,70 @@ const chartData = computed(() => [
         <div class="comparison-grid">
           <div v-for="unit in unitComparison" :key="unit.name" class="comp-card">
             <p class="comp-unit-name">{{ unit.name }}</p>
-            <p class="comp-price">{{ formatShortRupiah(unit.price) }}</p>
+            <p class="comp-price">{{ formatRupiah(unit.price) }}</p>
             <p class="comp-items">{{ unit.items }} Barang</p>
           </div>
         </div>
       </div>
     </div>
-    <!-- Part untuk chart (nanti akan diganti dengan data asli dari API) -->
     <div class="charts-grid mb-24">
-      <div class="chart-card" v-for="title in ['Biaya Pengadaan Per Tahun', 'Jumlah Aset Pengadaan Per Tahun']" :key="title">
+      
+      <div class="chart-card">
         <div class="flex-between mb-20">
-          <h3 class="chart-title">{{ title }}</h3>
-          <select v-if="role === 'YAYASAN' || role === 'ADMIN'" class="custom-select-box small">
-            <option>Semua Unit</option>
+          <h3 class="chart-title">Estimasi Biaya Pengadaan Per Tahun</h3>
+          <select v-if="isPrivileged" v-model="selectedUnitBiaya" class="custom-select-box small">
+            <option :value="null">Semua Unit</option>
+            <option value="KB-TK">KB-TK</option>
+            <option value="SD">SD</option>
+            <option value="SMP">SMP</option>
+            <option value="SMA">SMA</option>
           </select>
         </div>
-        <div class="chart-container">
-          <div v-for="item in chartData" :key="item.year" class="bar-wrapper">
-            <span class="bar-value">{{ item.value }}</span>
-            <div class="bar-fill" :style="{ height: item.value + '%' }"></div>
-            <span class="bar-label">{{ item.year }}</span>
+        <div class="chart-main-wrapper">
+          <div class="y-axis">
+            <div class="y-tick" v-for="tick in biayaAxis.ticks" :key="tick.pos" :style="{ bottom: `${tick.pos}%` }">
+              <span class="y-tick-label">{{ formatBiayaYAxisLabel(tick.value) }}</span>
+              <div class="y-tick-mark"></div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div v-for="item in store.biayaPerTahun" :key="item.tahun" class="bar-wrapper">
+              <span class="bar-value">{{ formatRupiah(item.totalBiaya) }}</span>
+              <div class="bar-fill" :style="{ height: `${(item.totalBiaya / biayaAxis.niceMax) * 100}%` }"></div>
+              <span class="bar-label">{{ item.tahun }}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="chart-card">
+        <div class="flex-between mb-20">
+          <h3 class="chart-title">Jumlah Aset Pengadaan Per Tahun</h3>
+          <select v-if="isPrivileged" v-model="selectedUnitJumlahAset" class="custom-select-box small">
+            <option :value="null">Semua Unit</option>
+            <option value="KB-TK">KB-TK</option>
+            <option value="SD">SD</option>
+            <option value="SMP">SMP</option>
+            <option value="SMA">SMA</option>
+          </select>
+        </div>
+        <div class="chart-main-wrapper">
+          <div class="y-axis">
+            <div class="y-tick" v-for="tick in jumlahAsetAxis.ticks" :key="tick.pos" :style="{ bottom: `${tick.pos}%` }">
+              <span class="y-tick-label">{{ formatJumlahAsetYAxisLabel(tick.value) }}</span>
+              <div class="y-tick-mark"></div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div v-for="item in store.jumlahAsetPerTahun" :key="item.tahun" class="bar-wrapper">
+              <span class="bar-value">{{ new Intl.NumberFormat('id-ID').format(item.jumlahAset) }}</span>
+              <div class="bar-fill" :style="{ height: `${(item.jumlahAset / jumlahAsetAxis.niceMax) * 100}%` }"></div>
+              <span class="bar-label">{{ item.tahun }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="white-container">
@@ -201,15 +320,25 @@ const chartData = computed(() => [
         <div class="list-box bg-navy">
           <h3 class="list-title">Top 5 Aset Paling Cepat Habis</h3>
           <div class="items-stack">
-            <div v-for="(name, i) in fastMoving" :key="i" class="pill-item">
-              <div class="blue-bullet">{{ i + 1 }}.</div>
-              <span class="pill-text">{{ name }}</span>
+            <div v-if="!fastMoving || fastMoving.length === 0" class="empty-list">
+              Tidak ada data
             </div>
+            <template v-else>
+              <div v-for="(item, i) in fastMoving" :key="i" class="pill-item justify-between">
+                <div class="flex-items-center">
+                  <div class="blue-bullet">{{ i + 1 }}.</div>
+                  <span class="pill-text">{{ item.namaAset }}</span>
+                </div>
+                <span class="price-tag">
+                  {{ item.jumlahPengadaan }} kali pengadaan
+                </span>
+              </div>
+            </template>
           </div>
         </div>
 
         <div class="list-box bg-blue">
-          <h3 class="list-title">Top 5 Pengadaan Biaya Terbesar</h3>
+          <h3 class="list-title">Top 5 Estimasi Biaya Pengadaan Terbesar</h3>
           <div class="items-stack">
             <!-- Empty state -->
             <div v-if="isExpensiveEmpty" class="empty-list">
@@ -426,13 +555,61 @@ const chartData = computed(() => [
   padding-bottom: 20px;
 }
 
+.chart-main-wrapper {
+  display: flex;
+  align-items: flex-end;
+  height: 180px;
+  margin-top: 15px;
+  margin-bottom: 25px;
+}
+
+.y-axis {
+  position: relative;
+  height: 160px;
+  width: 90px;
+  border-right: 2px solid #8e9bb0;
+  flex-shrink: 0;
+}
+
+.y-axis::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  right: -2px;
+  width: 2px;
+  height: 15px;
+  background-color: #8e9bb0;
+}
+
+.y-tick {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  display: flex;
+  align-items: center;
+}
+
+.y-tick-label {
+  font-size: 10px;
+  color: #4b5563;
+  margin-right: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.y-tick-mark {
+  width: 5px;
+  height: 2px;
+  background-color: #8e9bb0;
+}
+
 .chart-container {
   height: 160px;
+  flex-grow: 1;
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  border-bottom: 2px solid #f1f1f1;
-  /* padding-bottom: 10px; */
+  border-bottom: 2px solid #8e9bb0;
 }
 
 .bar-wrapper {
