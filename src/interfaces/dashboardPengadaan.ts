@@ -22,7 +22,7 @@ export interface DashboardPengadaan {
   total: TotalPengadaan
   breakdownUnit: BreakdownUnit[]
   topBiaya: TopBiaya[]
-  // topPengadaan: TopDashboard[]
+  topPengadaan: TopCepatHabis[]
 }
 
 export interface BiayaPengadaanChart {

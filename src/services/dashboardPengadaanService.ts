@@ -36,9 +36,9 @@ export const dashboardPengadaanService = {
     bulan?: number
     kategori?: string
     unit?: string
-  }): Promise<{ topBiaya: TopBiaya[] }> {
+  }): Promise<{ topBiaya: TopBiaya[], topPengadaan: TopCepatHabis[] }> {
     try {
-      const res = await api.get<BaseResponseDTO<{ topBiaya: TopBiaya[] }>>(
+      const res = await api.get<BaseResponseDTO<{ topBiaya: TopBiaya[], topPengadaan: TopCepatHabis[] }>>(
         '/api/dashboard/pengadaan/top5-pengadaan',
         {
           params: {
