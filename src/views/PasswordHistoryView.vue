@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { ArrowLeft } from 'lucide-vue-next';
 import api from '@/services/api';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 interface PasswordHistoryItem {
@@ -52,6 +54,10 @@ const fetchPasswordHistory = async () => {
   }
 
   const userRole = authStore.user?.role;
+  if (!userRole) {
+    router.push('/login');
+    return;
+  }
   if (!allowedRoles.includes(userRole)) {
     accessDenied.value = true;
     return;
@@ -59,7 +65,11 @@ const fetchPasswordHistory = async () => {
 
   isLoading.value = true;
   try {
-    const response = await api.get('/api/profile/password-history');
+    const targetUserId = route.query.userId as string | undefined;
+    const url = targetUserId
+      ? `/api/profile/password-history?userId=${targetUserId}`
+      : '/api/profile/password-history';
+    const response = await api.get(url);
     historyList.value = response.data.data || [];
   } catch (err: unknown) {
     const axiosErr = err as { response?: { status?: number } };
@@ -79,11 +89,6 @@ onMounted(() => {
 
 <template>
   <div class="history-page">
-
-    <!-- Back Button -->
-    <button @click="() => router.push('/profile/edit')" class="back-btn" title="Kembali">
-      <img src="@/assets/button_back.png" alt="Back" class="back-icon" />
-    </button>
 
     <!-- Access Denied -->
     <div v-if="accessDenied" class="access-denied-card">
@@ -106,6 +111,11 @@ onMounted(() => {
 
     <!-- Main Content -->
     <div v-else class="history-container">
+
+      <!-- Back Button -->
+      <button @click="() => router.back()" class="back-btn" title="Kembali">
+        <ArrowLeft :size="20" color="white" />
+      </button>
 
       <!-- Title -->
       <h1 class="page-title">Riwayat Perubahan Password</h1>
@@ -173,31 +183,23 @@ onMounted(() => {
 
 /* ── BACK BUTTON ── */
 .back-btn {
-  background: #00588f;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #00588f;
   border: none;
   cursor: pointer;
-  padding: 8px;
-  margin-bottom: 24px;
-  border-radius: 50%;
-  transition: background 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  align-self: flex-start;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(0, 88, 143, 0.35);
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .back-btn:hover {
-  background: #003f5a;
+  background-color: #004d7a;
   transform: scale(1.05);
-}
-
-.back-icon {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  display: block;
 }
 
 /* ── PAGE TITLE ── */
@@ -207,7 +209,7 @@ onMounted(() => {
   color: #1a1a1a;
   margin: 0 0 32px 0;
   text-align: left;
-  width: 100%;
+  align-self: stretch;
 }
 
 /* ── CONTAINER ── */
@@ -215,10 +217,14 @@ onMounted(() => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 /* ── TABLE WRAPPER ── */
 .table-wrapper {
+  width: 100%;
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
@@ -330,6 +336,7 @@ onMounted(() => {
 
 /* ── EMPTY STATE ── */
 .empty-state {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -412,17 +419,6 @@ onMounted(() => {
 @media (max-width: 768px) {
   .history-page {
     padding: 20px 16px;
-  }
-
-  .back-btn {
-    width: 48px;
-    height: 48px;
-    padding: 6px;
-  }
-
-  .back-icon {
-    width: 36px;
-    height: 36px;
   }
 
   .page-title {

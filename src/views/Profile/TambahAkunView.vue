@@ -13,6 +13,7 @@ const authStore = useAuthStore();
 const isAdmin = computed(() => authStore.userRole === 'ADMIN');
 const isSarpras = computed(() => authStore.userRole === 'SARPRAS');
 const emailError = ref('');
+const phoneError = ref('');
 
 const form = reactive({
   email: '',
@@ -78,9 +79,15 @@ const isPasswordValid = computed(() => {
   return lengthValid && noWhitespace && categories >= 4;
 });
 
+const isPhoneValid = computed(() => {
+  const phone = form.nomor_telepon.trim();
+  if (!phone) return true;
+  return /^08[0-9]+$/.test(phone);
+});
+
 const isFormValid = computed(() => {
   const needsUnit = form.role !== 'ADMIN' && form.role !== 'YAYASAN';
-  const basicFields = form.email && form.nama_lengkap && form.role && (needsUnit ? form.unit : true) && isPasswordValid.value;
+  const basicFields = form.email && form.nama_lengkap && form.role && (needsUnit ? form.unit : true) && isPasswordValid.value && isPhoneValid.value;
   if (form.role === 'SISWA') {
     return basicFields && form.nisn && form.kelas && /^[0-9]+$/.test(form.nisn);
   }
@@ -118,6 +125,8 @@ const submitForm = async () => {
       const msg = result.message?.toLowerCase() || '';
       if (msg.includes('email') && msg.includes('terdaftar')) {
         emailError.value = result.message;
+      } else if (msg.includes('telepon')) {
+        phoneError.value = result.message;
       }
     }
   } catch (error) {
@@ -185,11 +194,17 @@ watch(() => form.role, (newRole) => {
           <div class="form-group">
             <label class="label-text">Nomor Telepon</label>
             <input 
-              v-model="form.nomor_telepon" 
+              v-model.trim="form.nomor_telepon" 
               type="tel" 
-              placeholder="Masukkan nomor telepon aktif" 
+              placeholder="08123456789" 
               class="form-input"
+              :class="{ 'border-error': phoneError || (form.nomor_telepon && !isPhoneValid) }"
+              @input="phoneError = ''"
             />
+            <Transition name="fade">
+              <p v-if="phoneError" class="error-text">{{ phoneError }}</p>
+              <p v-else-if="form.nomor_telepon && !isPhoneValid" class="error-text">Format harus berupa angka dan diawali 08 (contoh: 08123456789)</p>
+            </Transition>
           </div>
 
           <!-- Role -->

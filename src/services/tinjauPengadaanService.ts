@@ -91,23 +91,23 @@ export const tinjauPengadaanService = {
 
   async beliPengadaan(
     pengadaanId: string | number,
-    payload: { harga: number | string; buktiPembelian: File }
+    payload: FormData
   ): Promise<TinjauPengadaanResponseDTO> {
     try {
-      const formData = new FormData();
+      // const formData = new FormData();
 
-      formData.append("harga", payload.harga.toString());
+      // formData.append("harga", payload.harga.toString());
 
-      if (payload.buktiPembelian) {
-        formData.append("buktiPembelian", payload.buktiPembelian);
-      }
+      // if (payload.buktiPembelian) {
+      //   formData.append("buktiPembelian", payload.buktiPembelian);
+      // }
 
       const res = await api.post<BaseResponseDTO<TinjauPengadaanResponseDTO>>(
         `/api/pengadaan/tinjau/bukti/${pengadaanId}`,
-        formData,
+        payload,
         {
           headers: {
-
+            "Content-Type": "multipart/form-data"
           },
         }
       );
