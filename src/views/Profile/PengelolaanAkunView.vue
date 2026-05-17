@@ -343,7 +343,10 @@ watch(unitLainPageSize, () => {
                       {{ formatRoleDisplay(user.role) }}
                     </span>
                   </td>
-                  <td v-if="isAdmin" class="font-bold text-center text-gray-800">{{ user.unit || '-' }}</td>
+                  <td v-if="isAdmin" class="text-center">
+                    <span v-if="user.unit" class="badge unit-badge">{{ user.unit }}</span>
+                    <span v-else class="text-gray-500">-</span>
+                  </td>
                   <td>
                     <div class="flex justify-center gap-2">
                       <button @click.stop="handleEditUser(user)" class="btn-icon btn-edit" title="Ubah">
@@ -728,13 +731,19 @@ table tbody tr:last-child td {
   line-height: 1.2;
 }
 
-.role-admin { background-color: white; border: 2px solid #00588F; color: #002845; }
-.role-yayasan { background-color: white; border: 2px solid #3730A3; color: #002845; }
-.role-sarpras { background-color: white; border: 2px solid #D8B4F8; color: #002845; }
-.role-kepsek { background-color: white; border: 2px solid #A5B4FC; color: #002845; }
-.role-guru { background-color: white; border: 2px solid #804674; color: #002845; }
-.role-siswa { background-color: white; border: 2px solid #5C6BE1; color: #002845; }
-.role-default { background-color: white; border: 2px solid #9CA3AF; color: #002845; }
+.role-admin,
+.role-yayasan,
+.role-sarpras,
+.role-kepsek,
+.role-guru,
+.role-siswa,
+.role-default,
+.unit-badge,
+.status-role {
+  background-color: #00588F;
+  border: none;
+  color: white;
+}
 
 .btn-icon {
   width: 28px;
