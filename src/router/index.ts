@@ -58,6 +58,12 @@ const router = createRouter({
       meta: { roles: ['ALL'] }
     },
     {
+      path: '/assets/laporan',
+      name: 'laporan-peminjaman-aset',
+      component: () => import('../views/Laporan/LaporanUtilisasiView.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
       component: () => import('../views/MengelolaAset/AddAssetBarangView.vue'),
@@ -260,6 +266,12 @@ const router = createRouter({
       name: 'dashboard-pengadaan-aset',
       component: () => import('../views/Dashboard/DashboardPengadaanAset.vue'),
       meta: { roles: [ 'SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
+      path: '/assets/dashboard',
+      name: 'dashboard-asset',
+      component: () => import('../views/Dashboard/DashboardPeminjamanAset.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'ADMIN'] }
     },
     {
       path: '/pengadaan/laporan',

@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { dashboardPengadaanService } from '@/services/dashboardPengadaanService'
-import type { DashboardPengadaan, TopBiaya } from '@/types/dashboard'
+import type { DashboardPengadaan, TopBiaya, BiayaPengadaanChart, JumlahAsetChart, TopCepatHabis } from '@/types/dashboard'
 
 export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore', () => {
   const dashboard = ref<DashboardPengadaan | null>(null)
   const topBiaya = ref<TopBiaya[]>([])
   const topPengadaan = ref<TopBiaya[]>([])
-  const biayaPerTahun = ref<{ tahun: number; totalBiaya: number }[]>([])
-
+  const biayaPerTahun = ref<BiayaPengadaanChart[]>([])
+  const jumlahAsetPerTahun = ref<JumlahAsetChart[]>([])
+  const topCepatHabis = ref<TopCepatHabis[]>([])
   const loading = ref(false)
   const errorMessage = ref('')
 
@@ -25,6 +26,7 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
   function reset() {
     dashboard.value = null
     topBiaya.value = []
+    topCepatHabis.value = []
     topPengadaan.value = []
     biayaPerTahun.value = []
     errorMessage.value = ''
@@ -71,7 +73,7 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
       if (thisVersion !== fetchVersion) return
 
       topBiaya.value = result.topBiaya || []
-      // topPengadaan.value = result.topBiaya || [];
+      topCepatHabis.value = result.topPengadaan || [];
 
       console.log(result.topBiaya)
     } catch (e: any) {
@@ -84,8 +86,40 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
     }
   }
 
+  async function fetchBiayaChart(unit?: string) {
+    try {
+      biayaPerTahun.value = await dashboardPengadaanService.getBiayaPengadaanChart({ unit })
+    } catch (e: any) {
+      console.error('Gagal mengambil data chart biaya:', e)
+    }
+  }
+
+  async function fetchJumlahAsetChart(unit?: string) {
+    try {
+      jumlahAsetPerTahun.value = await dashboardPengadaanService.getJumlahAsetChart({ unit })
+    } catch (e: any) {
+      console.error('Gagal mengambil data chart jumlah aset:', e)
+    }
+  }
+
+  async function fetchTopCepatHabis() {
+    try {
+      const result = await dashboardPengadaanService.getTopCepatHabis({
+        tahun: selectedYear.value ?? undefined,
+        // Pastikan null/undefined dikirim kalau filter unit 'ALL'
+        unit: selectedUnit.value === 'ALL' ? undefined : (selectedUnit.value ?? undefined),
+      })
+      topCepatHabis.value = result || []
+    } catch (e: any) {
+      console.error('Gagal mengambil data top cepat habis:', e)
+    }
+  }
+
   async function fetchAll() {
     await fetchDashboard()
+    await fetchBiayaChart()
+    // await fetchTopCepatHabis()
+    await fetchJumlahAsetChart()
     await fetchTopDashboard()
   }
 
@@ -110,7 +144,9 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
     dashboard,
     topBiaya,
     topPengadaan,
-    // biayaPerTahun,
+    biayaPerTahun,
+    jumlahAsetPerTahun,
+    topCepatHabis,
     loading,
     errorMessage,
 
@@ -127,7 +163,9 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
     // actions
     fetchDashboard,
     fetchTopDashboard,
-    // fetchBiayaPerTahun,
+    fetchBiayaChart,
+    fetchJumlahAsetChart,
+    fetchTopCepatHabis,
     fetchAll,
     reset,
 

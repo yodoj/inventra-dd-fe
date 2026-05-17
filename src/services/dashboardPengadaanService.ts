@@ -2,7 +2,7 @@ import api from '@/services/api'
 import type { AxiosResponse, AxiosError } from 'axios'
 import type { BaseResponseDTO } from '@/interfaces/BaseResponseDTO'
 
-import type { DashboardPengadaan, TopBiaya, BreakdownUnit, TotalPengadaan } from '@/types/dashboard'
+import type { DashboardPengadaan, TopBiaya, BreakdownUnit, TotalPengadaan, BiayaPengadaanChart, JumlahAsetChart, TopCepatHabis } from '@/types/dashboard'
 
 function unwrap<T>(res: AxiosResponse<BaseResponseDTO<T>>): T {
   const body = res.data
@@ -36,9 +36,9 @@ export const dashboardPengadaanService = {
     bulan?: number
     kategori?: string
     unit?: string
-  }): Promise<{ topBiaya: TopBiaya[] }> {
+  }): Promise<{ topBiaya: TopBiaya[], topPengadaan: TopCepatHabis[] }> {
     try {
-      const res = await api.get<BaseResponseDTO<{ topBiaya: TopBiaya[] }>>(
+      const res = await api.get<BaseResponseDTO<{ topBiaya: TopBiaya[], topPengadaan: TopCepatHabis[] }>>(
         '/api/dashboard/pengadaan/top5-pengadaan',
         {
           params: {
@@ -73,6 +73,21 @@ export const dashboardPengadaanService = {
     }
   },
 
+  async getBiayaPengadaanChart(params?: { unit?: string }): Promise<BiayaPengadaanChart[]> {
+    try {
+      const res = await api.get<BaseResponseDTO<BiayaPengadaanChart[]>>(
+        '/api/dashboard/pengadaan/biaya',
+        {
+          params: { unit: params?.unit || undefined }
+        }
+      )
+      return unwrap(res)
+    } catch (err) {
+      throw new Error(getErrorMessage(err))
+    }
+  },
+
+
   async getTopBiaya(): Promise<TopBiaya[]> {
     try {
       const res = await api.get<BaseResponseDTO<TopBiaya[]>>(
@@ -84,4 +99,35 @@ export const dashboardPengadaanService = {
       throw new Error(getErrorMessage(err))
     }
   },
+
+  async getJumlahAsetChart(params?: { unit?: string }): Promise<JumlahAsetChart[]> {
+    try {
+      const res = await api.get<BaseResponseDTO<JumlahAsetChart[]>>(
+        '/api/dashboard/pengadaan/jumlah-aset',
+        {
+          params: { unit: params?.unit || undefined }
+        }
+      )
+      return unwrap(res)
+    } catch (err) {
+      throw new Error(getErrorMessage(err))
+    }
+  },
+
+  async getTopCepatHabis(params?: { tahun?: number; unit?: string }): Promise<TopCepatHabis[]> {
+    try {
+      const res = await api.get<BaseResponseDTO<TopCepatHabis[]>>(
+        '/api/dashboard/pengadaan/top-cepat-habis',
+        {
+          params: {
+            tahun: params?.tahun || undefined,
+            unit: params?.unit || undefined,
+          },
+        }
+      )
+      return unwrap(res)
+    } catch (err) {
+      throw new Error(getErrorMessage(err))
+    }
+  }
 }

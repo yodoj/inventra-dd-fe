@@ -281,10 +281,112 @@ async function handleExportPDF() {
     const data = await laporanPengadaanService.getAllLaporanForExport(buildParams())
 
     const doc = new jsPDF({ orientation: 'landscape' })
-    doc.setFontSize(14)
-    doc.text('Laporan Pengadaan Aset', 14, 15)
-    doc.setFontSize(9)
-    doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 14, 22)
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // ── Title (centered, Times New Roman) ──
+    doc.setFont('times', 'bold')
+    doc.setFontSize(16)
+    doc.setTextColor(0, 88, 143)
+    doc.text('LAPORAN PENGADAAN ASET', pageW / 2, 14, { align: 'center' })
+
+    // Decorative underline under title
+    doc.setDrawColor(0, 88, 143)
+    doc.setLineWidth(0.5)
+    doc.line(pageW / 2 - 50, 16.5, pageW / 2 + 50, 16.5)
+
+    // ── Build active-filter pairs ──
+    const sortLabelMap: Record<string, string> = {
+      waktuPengajuan: 'Waktu Pengajuan',
+      namaAset: 'Nama Aset',
+      estimasiHarga: 'Estimasi Harga',
+      harga: 'Harga Aktual',
+    }
+    const activeFilters: Array<[string, string]> = []
+    if (q.value) activeFilters.push(['Pencarian', `"${q.value}"`])
+    if (statusFilter.value) {
+      activeFilters.push(['Status', statusLabel[statusFilter.value] ?? statusFilter.value])
+    }
+    if (kategoriFilter.value) {
+      const k = kategoriList.find((x) => x.value === kategoriFilter.value)
+      activeFilters.push(['Kategori Aset', k?.label ?? kategoriFilter.value])
+    }
+    if (isAdminOrYayasan.value && unitFilter.value) {
+      activeFilters.push(['Unit', unitFilter.value])
+    }
+    if (bulanFilter.value && tahunFilter.value) {
+      activeFilters.push(['Periode', `${bulanNames[Number(bulanFilter.value) - 1]} ${tahunFilter.value}`])
+    } else if (tahunFilter.value) {
+      activeFilters.push(['Tahun', String(tahunFilter.value)])
+    } else if (bulanFilter.value) {
+      activeFilters.push(['Bulan', bulanNames[Number(bulanFilter.value) - 1]])
+    }
+    if (dateFrom.value || dateTo.value) {
+      activeFilters.push(['Rentang Tanggal', `${dateFrom.value || '...'}  s/d  ${dateTo.value || '...'}`])
+    }
+    if (store.sortBy !== 'waktuPengajuan' || store.direction !== 'DESC') {
+      const sortLbl = sortLabelMap[store.sortBy] ?? store.sortBy
+      activeFilters.push(['Urutan', `${sortLbl} (${store.direction})`])
+    }
+
+    // ── Render structured filter table (only if any filter active) ──
+    let tableStartY = 22
+    if (activeFilters.length > 0) {
+      const boxX = 14
+      const boxY = 22
+      const boxW = pageW - 28
+      const headerH = 7
+      const rowH = 6
+      const labelColW = 55
+      const padding = 3
+
+      // Header bar (filled blue)
+      doc.setFillColor(0, 88, 143)
+      doc.rect(boxX, boxY, boxW, headerH, 'F')
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(255, 255, 255)
+      doc.text('FILTER YANG DITERAPKAN', boxX + padding, boxY + headerH - 2)
+
+      // Body rows (zebra striping + key/value columns)
+      let y = boxY + headerH
+      doc.setFontSize(9.5)
+      activeFilters.forEach((pair, idx) => {
+        if (idx % 2 === 0) {
+          doc.setFillColor(241, 245, 249)
+        } else {
+          doc.setFillColor(255, 255, 255)
+        }
+        doc.rect(boxX, y, boxW, rowH, 'F')
+
+        // Vertical divider between label & value
+        doc.setDrawColor(203, 213, 225)
+        doc.setLineWidth(0.2)
+        doc.line(boxX + labelColW, y, boxX + labelColW, y + rowH)
+
+        // Horizontal divider
+        if (idx > 0) doc.line(boxX, y, boxX + boxW, y)
+
+        // Label (bold)
+        doc.setFont('times', 'bold')
+        doc.setTextColor(15, 23, 42)
+        doc.text(pair[0], boxX + padding, y + rowH - 1.8)
+
+        // Value (normal)
+        doc.setFont('times', 'normal')
+        doc.setTextColor(51, 65, 85)
+        const valueText = doc.splitTextToSize(pair[1], boxW - labelColW - padding * 2) as string[]
+        doc.text(valueText[0] ?? '', boxX + labelColW + padding, y + rowH - 1.8)
+
+        y += rowH
+      })
+
+      // Outer border
+      doc.setDrawColor(0, 88, 143)
+      doc.setLineWidth(0.4)
+      doc.rect(boxX, boxY, boxW, headerH + activeFilters.length * rowH)
+
+      tableStartY = y + 5
+    }
 
     const head = isAdminOrYayasan.value
       ? [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Unit', 'Status', 'Alasan']]
@@ -307,7 +409,64 @@ async function handleExportPDF() {
       return base
     })
 
-    autoTable(doc, { head, body, startY: 28, styles: { fontSize: 7 }, headStyles: { fillColor: [0, 88, 143] } })
+    // Status pill colors (mirror of CSS .status-pill classes)
+    const statusColors: Record<string, { fill: [number, number, number]; text: [number, number, number] }> = {
+      DIAJUKAN:           { fill: [243, 244, 246], text: [75, 85, 99] },     // gray
+      DISETUJUI_KEPSEK:   { fill: [224, 242, 254], text: [2, 132, 199] },    // sky blue
+      DISETUJUI_YAYASAN:  { fill: [255, 244, 229], text: [217, 119, 6] },    // amber
+      DITOLAK:            { fill: [255, 228, 230], text: [225, 29, 72] },    // rose
+      DIBELI:             { fill: [220, 252, 231], text: [22, 163, 74] },    // green
+    }
+    // Status column index — depends on whether Unit column is present
+    const statusColIdx = isAdminOrYayasan.value ? 10 : 9
+
+    autoTable(doc, {
+      head,
+      body,
+      startY: tableStartY,
+      styles: { fontSize: 8, font: 'times', textColor: [30, 41, 59], cellPadding: 2 },
+      headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'times', fontStyle: 'bold', fontSize: 8.5 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { bottom: 18, left: 14, right: 14 },
+      didParseCell: (cellData) => {
+        if (cellData.section === 'body' && cellData.column.index === statusColIdx) {
+          const rowData = data[cellData.row.index]
+          const colors = statusColors[rowData?.status_pengajuan ?? '']
+          if (colors) {
+            cellData.cell.styles.fillColor = colors.fill
+            cellData.cell.styles.textColor = colors.text
+            cellData.cell.styles.fontStyle = 'bold'
+            cellData.cell.styles.halign = 'center'
+          }
+        }
+      },
+    })
+
+    // ── Footer di setiap halaman ──
+    const totalPages = doc.internal.getNumberOfPages()
+    const userName = auth.userName || '-'
+    const userRoleRaw = (auth.userRole || '-').toUpperCase()
+    const now = new Date()
+    const tgl = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+    const jam = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+    const footerRight = `Dicetak oleh ${userName} (${userRoleRaw}) pada ${tgl}, ${jam}.`
+
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i)
+      const pgW = doc.internal.pageSize.getWidth()
+      const pageH = doc.internal.pageSize.getHeight()
+
+      // Thin separator line above footer
+      doc.setDrawColor(203, 213, 225)
+      doc.setLineWidth(0.2)
+      doc.line(14, pageH - 12, pgW - 14, pageH - 12)
+
+      doc.setFont('times', 'italic')
+      doc.setFontSize(9)
+      doc.setTextColor(100, 116, 139)
+      doc.text(`Halaman ${i} dari ${totalPages}`, 14, pageH - 6)
+      doc.text(footerRight, pgW - 14, pageH - 6, { align: 'right' })
+    }
 
     // Filename: laporan-pengadaan-YYYYMMDD.pdf (PBI-66)
     const today = new Date()

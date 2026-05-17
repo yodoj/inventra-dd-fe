@@ -22,5 +22,21 @@ export interface DashboardPengadaan {
   total: TotalPengadaan
   breakdownUnit: BreakdownUnit[]
   topBiaya: TopBiaya[]
-  // topPengadaan: TopDashboard[]
+  topPengadaan: TopCepatHabis[]
+}
+
+export interface BiayaPengadaanChart {
+  tahun: number
+  totalBiaya: number
+}
+
+export interface JumlahAsetChart {
+  tahun: number
+  jumlahAset: number
+}
+
+export interface TopCepatHabis {
+  namaAset: string
+  jumlahPengadaan: number
+  totalQty: number
 }
