@@ -409,17 +409,6 @@ async function handleExportPDF() {
       return base
     })
 
-    // Status pill colors (mirror of CSS .status-pill classes)
-    const statusColors: Record<string, { fill: [number, number, number]; text: [number, number, number] }> = {
-      DIAJUKAN:           { fill: [243, 244, 246], text: [75, 85, 99] },     // gray
-      DISETUJUI_KEPSEK:   { fill: [224, 242, 254], text: [2, 132, 199] },    // sky blue
-      DISETUJUI_YAYASAN:  { fill: [255, 244, 229], text: [217, 119, 6] },    // amber
-      DITOLAK:            { fill: [255, 228, 230], text: [225, 29, 72] },    // rose
-      DIBELI:             { fill: [220, 252, 231], text: [22, 163, 74] },    // green
-    }
-    // Status column index — depends on whether Unit column is present
-    const statusColIdx = isAdminOrYayasan.value ? 10 : 9
-
     autoTable(doc, {
       head,
       body,
@@ -428,18 +417,6 @@ async function handleExportPDF() {
       headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'times', fontStyle: 'bold', fontSize: 8.5 },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       margin: { bottom: 18, left: 14, right: 14 },
-      didParseCell: (cellData) => {
-        if (cellData.section === 'body' && cellData.column.index === statusColIdx) {
-          const rowData = data[cellData.row.index]
-          const colors = statusColors[rowData?.status_pengajuan ?? '']
-          if (colors) {
-            cellData.cell.styles.fillColor = colors.fill
-            cellData.cell.styles.textColor = colors.text
-            cellData.cell.styles.fontStyle = 'bold'
-            cellData.cell.styles.halign = 'center'
-          }
-        }
-      },
     })
 
     // ── Footer di setiap halaman ──
@@ -711,9 +688,9 @@ onUnmounted(() => clearInterval(phTimer))
           <span class="info-text">Per halaman:</span>
           <div class="custom-select size-select">
             <select v-model="store.pageSize">
-              <option :value="5">5</option>
               <option :value="10">10</option>
-              <option :value="25">25</option>
+              <option :value="30">30</option>
+              <option :value="50">50</option>
             </select>
             <ChevronDown class="select-icon" />
           </div>
