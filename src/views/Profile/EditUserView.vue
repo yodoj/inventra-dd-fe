@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
-import { ArrowLeft, ChevronDown, User } from 'lucide-vue-next';
+import { ArrowLeft, ChevronDown, User, Lock } from 'lucide-vue-next';
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
@@ -18,6 +18,8 @@ const loading = ref(true);
 const isSubmitting = ref(false);
 const showConfirmModal = ref(false);
 const emailError = ref('');
+
+const isSelfEdit = computed(() => userId.value === authStore.user?.id);
 
 const form = reactive({
   email: '',
@@ -122,10 +124,9 @@ const handleChangePassword = () => {
 };
 
 const openConfirmModal = () => {
-  if (isFormValid.value) {
-    emailError.value = '';
-    showConfirmModal.value = true;
-  }
+  if (!isFormValid.value) return;
+  emailError.value = '';
+  showConfirmModal.value = true;
 };
 
 const submitForm = async () => {
@@ -237,14 +238,24 @@ const submitForm = async () => {
 
           <!-- Role -->
           <div class="form-group">
-            <label class="label-text">Role <span class="required">*</span></label>
+            <label class="label-text">
+              Role <span class="required">*</span>
+              <Lock v-if="isSelfEdit" :size="12" class="label-lock-icon" />
+            </label>
             <div class="custom-select">
-              <select v-model="form.role" :class="{ placeholder: !form.role }">
+              <select
+                v-model="form.role"
+                :class="{ placeholder: !form.role, disabled: isSelfEdit }"
+                :disabled="isSelfEdit"
+              >
                 <option value="" disabled>Pilih role</option>
                 <option v-for="r in roles" :key="r.value" :value="r.value">{{ r.label }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
+            <p v-if="isSelfEdit" class="field-hint">
+              Role tidak dapat diubah pada akun sendiri. Minta Sarpras lain di unit Anda atau Superadmin untuk mengubahnya.
+            </p>
           </div>
 
           <!-- Kelas (SISWA only) -->
@@ -262,7 +273,10 @@ const submitForm = async () => {
 
           <!-- Unit (always visible; locked to Superadmin for ADMIN/YAYASAN roles) -->
           <div class="form-group">
-            <label class="label-text">Unit<span v-if="isAdmin && form.role !== 'ADMIN' && form.role !== 'YAYASAN'" class="required"> *</span></label>
+            <label class="label-text">
+              Unit<span v-if="isAdmin && form.role !== 'ADMIN' && form.role !== 'YAYASAN'" class="required"> *</span>
+              <Lock v-if="isSarpras" :size="12" class="label-lock-icon" />
+            </label>
             <div class="custom-select">
               <select v-if="form.role === 'ADMIN'" disabled class="disabled">
                 <option value="SUPERADMIN">Superadmin</option>
@@ -283,6 +297,9 @@ const submitForm = async () => {
               </select>
               <ChevronDown class="select-icon" />
             </div>
+            <p v-if="isSarpras" class="field-hint">
+              Sebagai Sarpras, Anda hanya memiliki wewenang untuk mengelola akun di unit Anda sendiri.
+            </p>
           </div>
 
           <!-- Ubah Password button -->
@@ -322,6 +339,7 @@ const submitForm = async () => {
       message="Apakah Anda yakin ingin menyimpan perubahan data akun ini?"
       confirmText="Ya, Simpan"
       cancelText="Batal"
+      :isLoading="isSubmitting"
       @confirm="submitForm"
       @cancel="showConfirmModal = false"
     />
@@ -433,8 +451,30 @@ const submitForm = async () => {
   font-size: 14px;
   font-weight: 700;
   color: #374151;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-bottom: 6px;
+}
+
+.label-lock-icon {
+  color: #9CA3AF;
+  margin-left: 4px;
+}
+
+.field-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+  background-color: #F9FAFB;
+  border-left: 3px solid #00588F;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 8px 0 0;
+  line-height: 1.5;
 }
 
 .form-input {

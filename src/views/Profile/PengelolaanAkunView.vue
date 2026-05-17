@@ -126,21 +126,29 @@ const handleEditUser = (user: UserPerUnit) => {
 };
 
 const showDeleteConfirm = ref(false);
+const showSelfDeleteBlock = ref(false);
 const userToDelete = ref<UserPerUnit | null>(null);
 const isDeleting = ref(false);
 
+const selfDeleteMessage = computed(() => {
+  const base = 'Anda tidak bisa menghapus akun Anda sendiri.';
+  if (authStore.userRole === 'SUPERADMIN') {
+    return `${base} Silakan minta Superadmin lain untuk menghapus akun Anda.`;
+  }
+  return `${base} Silakan minta Sarpras lain di unit Anda atau Superadmin untuk menghapus akun Anda.`;
+});
+
 const handleDeleteUser = (user: UserPerUnit) => {
+  if (user.id === authStore.user?.id) {
+    showSelfDeleteBlock.value = true;
+    return;
+  }
   userToDelete.value = user;
   showDeleteConfirm.value = true;
 };
 
 const confirmDeleteUser = async () => {
   if (!userToDelete.value) return;
-  if (userToDelete.value.id === authStore.user?.id) {
-    toastStore.error('Error', 'Tidak dapat menghapus akun sendiri');
-    showDeleteConfirm.value = false;
-    return;
-  }
   isDeleting.value = true;
   const result = await userStore.deleteUser(userToDelete.value.id);
   isDeleting.value = false;
@@ -332,11 +340,17 @@ watch(unitLainPageSize, () => {
                   v-for="(user, index) in userStore.users"
                   :key="user.id"
                   class="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
+                  :class="{ 'is-current-user': user.id === authStore.user?.id }"
                   @click="handleViewUser(user)"
                 >
                   <td class="b3-body font-medium">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td class="b3-body font-medium text-gray-800">{{ user.email }}</td>
-                  <td class="b2-body text-gray-700">{{ user.nama_lengkap }}</td>
+                  <td class="b2-body text-gray-700">
+                    <span class="name-cell">
+                      {{ user.nama_lengkap }}
+                      <span v-if="user.id === authStore.user?.id" class="self-badge">Akun Anda</span>
+                    </span>
+                  </td>
                   <td class="b3-body text-gray-600">{{ user.nomor_telepon }}</td>
                   <td class="text-center">
                     <span class="badge" :class="getRoleBadgeClass(user.role)">
@@ -516,6 +530,17 @@ watch(unitLainPageSize, () => {
       :isLoading="isDeleting"
       @confirm="confirmDeleteUser"
       @cancel="showDeleteConfirm = false"
+    />
+
+    <ConfirmationModal
+      :show="showSelfDeleteBlock"
+      title="Tidak Dapat Menghapus Akun"
+      :message="selfDeleteMessage"
+      confirm-text="Mengerti"
+      type="danger"
+      hide-cancel
+      @confirm="showSelfDeleteBlock = false"
+      @cancel="showSelfDeleteBlock = false"
     />
   </div>
 </template>
@@ -762,6 +787,37 @@ table tbody tr:last-child td {
 .btn-view { background-color: #9CA3AF; color: white; }
 
 .btn-icon:hover { transform: scale(1.1); }
+
+/* ── Current user row indicator ── */
+.is-current-user {
+  background-color: #F0F7FC;
+  box-shadow: inset 3px 0 0 0 #00588F;
+}
+.is-current-user:hover {
+  background-color: #E4F0F8 !important;
+}
+
+.name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.self-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background-color: #E4F0F8;
+  color: #00588F;
+  border: 1px solid #BFDCEC;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
 
 .pagination-section {
   display: flex;

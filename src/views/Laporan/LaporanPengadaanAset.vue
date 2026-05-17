@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ChevronDown, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-vue-next'
 import SearchIcon from '@/components/icons/SearchIcon.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import 'primeicons/primeicons.css'
 import { useAuthStore } from '@/stores/auth'
 import { useLaporanPengadaanStore } from '@/stores/laporanPengadaan'
 import { laporanPengadaanService } from '@/services/laporanPengadaanService'
-import type { LaporanFilterParams } from '@/interfaces/laporanPengadaan'
+import { API_BASE_URL } from '@/services/api'
+import type { LaporanFilterParams, DateField } from '@/interfaces/laporanPengadaan'
 
 const store = useLaporanPengadaanStore()
 const auth = useAuthStore()
@@ -22,6 +24,12 @@ const tahunFilter = ref<number | ''>('')
 const dateFrom = ref('')
 const dateTo = ref('')
 const kategoriFilter = ref('')
+const dateField = ref<DateField>('waktu_pengajuan')
+
+const dateFieldLabels: Record<DateField, string> = {
+  waktu_pengajuan: 'Waktu Pengajuan',
+  tanggal_pengadaan: 'Tanggal Pengadaan',
+}
 
 /* ── Preview modal ── */
 const previewUrl = ref<string | null>(null)
@@ -85,7 +93,8 @@ function onFromToChange() {
 /* ── Active filter check (untuk empty state message) ── */
 const hasActiveFilters = computed(() =>
   !!(q.value || statusFilter.value || kategoriFilter.value || unitFilter.value
-     || bulanFilter.value || tahunFilter.value || dateFrom.value || dateTo.value),
+     || bulanFilter.value || tahunFilter.value || dateFrom.value || dateTo.value
+     || dateField.value !== 'waktu_pengajuan'),
 )
 
 /* ── Build filter params ── */
@@ -101,6 +110,7 @@ function buildParams(): LaporanFilterParams {
     tahun: !hasFromTo && tahunFilter.value !== '' ? Number(tahunFilter.value) : null,
     from: dateFrom.value || null,
     to: dateTo.value || null,
+    dateField: dateField.value,
     sortBy: store.sortBy,
     direction: store.direction,
   }
@@ -122,6 +132,7 @@ function handleReset() {
   tahunFilter.value = ''
   dateFrom.value = ''
   dateTo.value = ''
+  dateField.value = 'waktu_pengajuan'
   // Reset sort ke default (PBI-65)
   store.sortBy = 'waktuPengajuan'
   store.direction = 'DESC'
@@ -269,7 +280,12 @@ let phTimer: ReturnType<typeof setInterval>
 /* ── Export PDF ── */
 const exportLoading = ref(false)
 const exportError = ref<string | null>(null)
+const isExportModalOpen = ref(false)
 let exportErrorTimer: ReturnType<typeof setTimeout> | null = null
+
+function openExportModal() {
+  isExportModalOpen.value = true
+}
 
 async function handleExportPDF() {
   exportLoading.value = true
@@ -283,9 +299,9 @@ async function handleExportPDF() {
     const doc = new jsPDF({ orientation: 'landscape' })
     const pageW = doc.internal.pageSize.getWidth()
 
-    // ── Title (centered, Times New Roman) ──
-    doc.setFont('times', 'bold')
-    doc.setFontSize(16)
+    // ── Title (centered, Helvetica) ──
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
     doc.setTextColor(0, 88, 143)
     doc.text('LAPORAN PENGADAAN ASET', pageW / 2, 14, { align: 'center' })
 
@@ -302,6 +318,10 @@ async function handleExportPDF() {
       harga: 'Harga Aktual',
     }
     const activeFilters: Array<[string, string]> = []
+    const hasDateFilter = !!(bulanFilter.value || tahunFilter.value || dateFrom.value || dateTo.value)
+    if (hasDateFilter) {
+      activeFilters.push(['Filter Tanggal', dateFieldLabels[dateField.value]])
+    }
     if (q.value) activeFilters.push(['Pencarian', `"${q.value}"`])
     if (statusFilter.value) {
       activeFilters.push(['Status', statusLabel[statusFilter.value] ?? statusFilter.value])
@@ -342,7 +362,7 @@ async function handleExportPDF() {
       // Header bar (filled blue)
       doc.setFillColor(0, 88, 143)
       doc.rect(boxX, boxY, boxW, headerH, 'F')
-      doc.setFont('times', 'bold')
+      doc.setFont('helvetica', 'bold')
       doc.setFontSize(10)
       doc.setTextColor(255, 255, 255)
       doc.text('FILTER YANG DITERAPKAN', boxX + padding, boxY + headerH - 2)
@@ -367,12 +387,12 @@ async function handleExportPDF() {
         if (idx > 0) doc.line(boxX, y, boxX + boxW, y)
 
         // Label (bold)
-        doc.setFont('times', 'bold')
+        doc.setFont('helvetica', 'bold')
         doc.setTextColor(15, 23, 42)
         doc.text(pair[0], boxX + padding, y + rowH - 1.8)
 
         // Value (normal)
-        doc.setFont('times', 'normal')
+        doc.setFont('helvetica', 'normal')
         doc.setTextColor(51, 65, 85)
         const valueText = doc.splitTextToSize(pair[1], boxW - labelColW - padding * 2) as string[]
         doc.text(valueText[0] ?? '', boxX + labelColW + padding, y + rowH - 1.8)
@@ -389,11 +409,45 @@ async function handleExportPDF() {
     }
 
     const head = isAdminOrYayasan.value
-      ? [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Unit', 'Status', 'Alasan']]
-      : [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Status', 'Alasan']]
+      ? [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Unit', 'Status', 'Bukti', 'Alasan']]
+      : [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Status', 'Bukti', 'Alasan']]
+
+    const buktiColIdx = isAdminOrYayasan.value ? 11 : 10
+
+    // Status pill colors — mirror UI .status-pill CSS classes
+    const STATUS_PILL_COLORS: Record<string, { fill: [number, number, number]; text: [number, number, number] }> = {
+      DIAJUKAN:          { fill: [243, 244, 246], text: [75, 85, 99] },
+      DISETUJUI_KEPSEK:  { fill: [224, 242, 254], text: [2, 132, 199] },
+      DISETUJUI_YAYASAN: { fill: [255, 244, 229], text: [217, 119, 6] },
+      DITOLAK:           { fill: [255, 228, 230], text: [225, 29, 72] },
+      DIBELI:            { fill: [220, 252, 231], text: [22, 163, 74] },
+    }
+
+    // Pre-fetch bukti pembelian as base64 (parallel)
+    const buktiFilenames = [...new Set(data.filter((d) => d.bukti_pembelian).map((d) => d.bukti_pembelian as string))]
+    const buktiMap = new Map<string, { data: string; format: 'JPEG' | 'PNG' }>()
+    await Promise.all(
+      buktiFilenames.map(async (filename) => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/uploads/bukti-pembelian/${filename}`)
+          if (!res.ok) return
+          const blob = await res.blob()
+          const format: 'JPEG' | 'PNG' = blob.type.includes('png') ? 'PNG' : 'JPEG'
+          const reader = new FileReader()
+          const dataUrl: string = await new Promise((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+          buktiMap.set(filename, { data: dataUrl, format })
+        } catch (err) {
+          console.warn('Gagal load bukti pembelian:', filename, err)
+        }
+      }),
+    )
 
     const body = data.map((it) => {
-      const base = [
+      const base: any[] = [
         formatDateTime(it.waktu_pengajuan),
         it.nama_pengaju ?? '-',
         it.nama_aset ?? '-',
@@ -405,7 +459,20 @@ async function handleExportPDF() {
         formatKategori(it.kategori_aset ?? '-'),
       ]
       if (isAdminOrYayasan.value) base.push(it.unit ?? '-')
-      base.push(statusLabel[it.status_pengajuan] ?? it.status_pengajuan, it.alasan ?? '-')
+
+      // Status as styled pill cell
+      const statusKey = it.status_pengajuan
+      const statusText = statusLabel[statusKey] ?? statusKey
+      const pillColor = STATUS_PILL_COLORS[statusKey]
+      base.push(
+        pillColor
+          ? { content: statusText, styles: { fillColor: pillColor.fill, textColor: pillColor.text, fontStyle: 'bold', halign: 'center' } }
+          : statusText,
+      )
+
+      // Bukti: raw filename, text suppressed in didParseCell; image drawn in didDrawCell
+      base.push(it.bukti_pembelian ?? '')
+      base.push(it.alasan ?? '-')
       return base
     })
 
@@ -413,10 +480,45 @@ async function handleExportPDF() {
       head,
       body,
       startY: tableStartY,
-      styles: { fontSize: 8, font: 'times', textColor: [30, 41, 59], cellPadding: 2 },
-      headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'times', fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 10, font: 'helvetica', textColor: [30, 41, 59], cellPadding: 2 },
+      headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'helvetica', fontStyle: 'bold', fontSize: 10 },
       alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: {
+        [buktiColIdx]: { minCellHeight: 18, halign: 'center', cellWidth: 22 },
+      },
       margin: { bottom: 18, left: 14, right: 14 },
+      didParseCell: (cellData) => {
+        // Suppress filename text in bukti column — image rendered in didDrawCell instead
+        if (cellData.section === 'body' && cellData.column.index === buktiColIdx) {
+          cellData.cell.text = []
+        }
+      },
+      didDrawCell: (cellData) => {
+        if (cellData.section !== 'body' || cellData.column.index !== buktiColIdx) return
+        const filename = cellData.cell.raw as string
+        if (!filename) return
+        const img = buktiMap.get(filename)
+        if (!img) {
+          // Fallback: draw '-' placeholder text manually
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(8)
+          doc.setTextColor(148, 163, 184)
+          doc.text('-', cellData.cell.x + cellData.cell.width / 2, cellData.cell.y + cellData.cell.height / 2 + 1, { align: 'center' })
+          return
+        }
+        const padding = 1.5
+        const maxW = cellData.cell.width - padding * 2
+        const maxH = cellData.cell.height - padding * 2
+        const imgW = Math.min(18, maxW)
+        const imgH = Math.min(14, maxH)
+        const x = cellData.cell.x + (cellData.cell.width - imgW) / 2
+        const y = cellData.cell.y + (cellData.cell.height - imgH) / 2
+        try {
+          doc.addImage(img.data, img.format, x, y, imgW, imgH)
+        } catch (err) {
+          console.warn('Gagal embed gambar bukti:', filename, err)
+        }
+      },
     })
 
     // ── Footer di setiap halaman ──
@@ -438,7 +540,7 @@ async function handleExportPDF() {
       doc.setLineWidth(0.2)
       doc.line(14, pageH - 12, pgW - 14, pageH - 12)
 
-      doc.setFont('times', 'italic')
+      doc.setFont('helvetica', 'italic')
       doc.setFontSize(9)
       doc.setTextColor(100, 116, 139)
       doc.text(`Halaman ${i} dari ${totalPages}`, 14, pageH - 6)
@@ -449,11 +551,13 @@ async function handleExportPDF() {
     const today = new Date()
     const yyyymmdd = `${today.getFullYear()}${pad(today.getMonth() + 1)}${pad(today.getDate())}`
     doc.save(`laporan-pengadaan-${yyyymmdd}.pdf`)
+    isExportModalOpen.value = false
   } catch (err: any) {
     console.error('Export PDF gagal:', err)
     exportError.value = `Gagal mengunduh PDF: ${err?.message || 'unknown error'}`
     if (exportErrorTimer) clearTimeout(exportErrorTimer)
     exportErrorTimer = setTimeout(() => { exportError.value = null }, 6000)
+    isExportModalOpen.value = false
   } finally {
     exportLoading.value = false
   }
@@ -492,6 +596,18 @@ onUnmounted(() => clearInterval(phTimer))
             <select v-model="unitFilter">
               <option value="">Semua Unit</option>
               <option v-for="u in unitList" :key="u" :value="u">{{ u }}</option>
+            </select>
+            <ChevronDown class="select-icon" />
+          </div>
+        </div>
+
+        <!-- Filter Tanggal Berdasarkan -->
+        <div class="filter-item">
+          <label class="filter-label">Filter Tanggal Berdasarkan</label>
+          <div class="custom-select">
+            <select v-model="dateField">
+              <option value="waktu_pengajuan">Waktu Pengajuan</option>
+              <option value="tanggal_pengadaan">Tanggal Pengadaan</option>
             </select>
             <ChevronDown class="select-icon" />
           </div>
@@ -577,7 +693,7 @@ onUnmounted(() => clearInterval(phTimer))
     <!-- Table Header -->
     <div class="table-header-row">
       <h2 class="table-section-title">Daftar Riwayat Pengajuan Pengadaan</h2>
-      <button class="btn-export" @click="handleExportPDF" :disabled="exportLoading">
+      <button class="btn-export" @click="openExportModal" :disabled="exportLoading">
         <i class="pi pi-file-pdf"></i>
         {{ exportLoading ? 'Mengekspor...' : 'Export PDF' }}
       </button>
@@ -713,6 +829,18 @@ onUnmounted(() => clearInterval(phTimer))
         <img :src="previewUrl" class="modal-img" />
       </div>
     </div>
+
+    <!-- Export Confirmation Modal -->
+    <ConfirmationModal
+      :show="isExportModalOpen"
+      title="Konfirmasi Export PDF"
+      message="Apakah Anda ingin mengunduh laporan riwayat pengadaan aset ini dalam format PDF?"
+      confirmText="Unduh PDF"
+      cancelText="Batal"
+      :isLoading="exportLoading"
+      @confirm="handleExportPDF"
+      @cancel="isExportModalOpen = false"
+    />
   </main>
 </template>
 

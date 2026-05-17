@@ -17,9 +17,18 @@ const authStore = useAuthStore();
 const user = ref<UserPerUnit | null>(null);
 const loading = ref(true);
 const showDeleteConfirm = ref(false);
+const showSelfDeleteBlock = ref(false);
 const isDeleting = ref(false);
 
 const userId = computed(() => route.params.id as string);
+
+const selfDeleteMessage = computed(() => {
+  const base = 'Anda tidak bisa menghapus akun Anda sendiri.';
+  if (authStore.userRole === 'SUPERADMIN') {
+    return `${base} Silakan minta Superadmin lain untuk menghapus akun Anda.`;
+  }
+  return `${base} Silakan minta Sarpras lain di unit Anda atau Superadmin untuk menghapus akun Anda.`;
+});
 
 const displayRole = computed(() => {
   if (!user.value?.role) return '-';
@@ -65,15 +74,14 @@ const handlePasswordHistory = () => {
 };
 
 const handleDelete = () => {
+  if (userId.value === authStore.user?.id) {
+    showSelfDeleteBlock.value = true;
+    return;
+  }
   showDeleteConfirm.value = true;
 };
 
 const confirmDelete = async () => {
-  if (userId.value === authStore.user?.id) {
-    toastStore.error('Error', 'Tidak dapat menghapus akun sendiri');
-    showDeleteConfirm.value = false;
-    return;
-  }
   isDeleting.value = true;
   const result = await userStore.deleteUser(userId.value);
   isDeleting.value = false;
@@ -192,6 +200,18 @@ const confirmDelete = async () => {
       :isLoading="isDeleting"
       @confirm="confirmDelete"
       @cancel="showDeleteConfirm = false"
+    />
+
+    <!-- Self-delete Block -->
+    <ConfirmationModal
+      :show="showSelfDeleteBlock"
+      title="Tidak Dapat Menghapus Akun"
+      :message="selfDeleteMessage"
+      confirm-text="Mengerti"
+      type="danger"
+      hide-cancel
+      @confirm="showSelfDeleteBlock = false"
+      @cancel="showSelfDeleteBlock = false"
     />
   </div>
 </template>

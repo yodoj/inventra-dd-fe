@@ -29,6 +29,8 @@ export interface LaporanPengadaanPageDTO {
   page_size: number;
 }
 
+export type DateField = 'waktu_pengajuan' | 'tanggal_pengadaan';
+
 export interface LaporanFilterParams {
   search?: string | null;
   status?: string | null;
@@ -38,6 +40,7 @@ export interface LaporanFilterParams {
   tahun?: number | null;
   from?: string | null;
   to?: string | null;
+  dateField?: DateField | null;
   sortBy?: string;
   direction?: string;
   page?: number;
