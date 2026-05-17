@@ -9,13 +9,15 @@ interface Props {
   cancelText?: string;
   type?: 'confirm' | 'danger' | 'success';
   isLoading?: boolean;
+  hideCancel?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   confirmText: 'Konfirmasi',
   cancelText: 'Batal',
   type: 'confirm',
-  isLoading: false
+  isLoading: false,
+  hideCancel: false
 });
 
 const emit = defineEmits<{
@@ -45,15 +47,16 @@ const emit = defineEmits<{
       </div>
 
       <div class="modal-footer flex justify-end gap-3 pt-4">
-        <button 
-          @click="emit('cancel')" 
-          class="btn-secondary" 
+        <button
+          v-if="!hideCancel"
+          @click="emit('cancel')"
+          class="btn-secondary"
           :disabled="isLoading"
         >
           {{ cancelText }}
         </button>
-        <button 
-          @click="emit('confirm')" 
+        <button
+          @click="emit('confirm')"
           :class="['btn-main', type]"
           :disabled="isLoading"
         >

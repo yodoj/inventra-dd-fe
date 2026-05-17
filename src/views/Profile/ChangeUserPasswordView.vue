@@ -62,7 +62,7 @@ const submitForm = async () => {
       confirm_password: form.value.confirm_password
     });
     if (result.success) {
-      router.push({ name: 'edit-user', params: { id: userId.value } });
+      router.replace({ name: 'detail-user', params: { id: userId.value } });
     }
   } finally {
     isLoading.value = false;
