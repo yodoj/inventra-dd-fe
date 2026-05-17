@@ -5,19 +5,43 @@ export type Status =
   | "DITOLAK"
   | "DIBELI";
 
-export interface LaporanPengadaanDTO {
-  waktuPengajuan: string;
-  idPengadaan: string;
-  namaAset: string;
+export interface LaporanPengadaanItemDTO {
+  waktu_pengajuan: string;
+  nama_pengaju: string;
+  nama_aset: string;
   merk: string;
   qty: number;
-  tanggalPengadaan: string;
-  estimasiHarga: number;
-  kategoriAset: string;
-  unit?: string; // opsional (karena Kepsek & Sarpras ga lihat)
-  statusPengadaan: Status;
-  buktiPembelian?: string | null;
+  tanggal_pengadaan: string;
+  estimasi_harga: number;
+  harga_aktual: number | null;
+  kategori_aset: string;
+  unit?: string;
+  status_pengajuan: Status;
+  bukti_pembelian?: string | null;
   alasan?: string | null;
+}
+
+export interface LaporanPengadaanPageDTO {
+  content: LaporanPengadaanItemDTO[];
+  total_elements: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+}
+
+export interface LaporanFilterParams {
+  search?: string | null;
+  status?: string | null;
+  kategori?: string | null;
+  unit?: string | null;
+  bulan?: number | null;
+  tahun?: number | null;
+  from?: string | null;
+  to?: string | null;
+  sortBy?: string;
+  direction?: string;
+  page?: number;
+  size?: number;
 }
 
 export interface BaseResponseDTO<T> {
