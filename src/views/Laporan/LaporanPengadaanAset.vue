@@ -781,10 +781,10 @@ onUnmounted(() => clearInterval(phTimer))
               <div
                 v-if="row.bukti"
                 class="img-box"
-                @click="previewUrl = `http://localhost:8080/uploads/bukti-pembelian/${row.bukti}`"
+                @click="previewUrl = `${API_BASE_URL}/uploads/bukti-pembelian/${row.bukti}`"
               >
                 <img
-                  :src="`http://localhost:8080/uploads/bukti-pembelian/${row.bukti}`"
+                  :src="`${API_BASE_URL}/uploads/bukti-pembelian/${row.bukti}`"
                   @error="(e: Event) => ((e.target as HTMLElement).closest('.img-box')!.innerHTML = '<span class=\'color-subtle\'>-</span>')"
                 />
               </div>
