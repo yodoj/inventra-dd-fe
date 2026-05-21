@@ -90,6 +90,13 @@ function onFromToChange() {
   tahunFilter.value = ''
 }
 
+const isDateRangeInvalid = computed(() => {
+  if (dateFrom.value && dateTo.value) {
+    return new Date(dateFrom.value) > new Date(dateTo.value)
+  }
+  return false
+})
+
 /* ── Active filter check (untuk empty state message) ── */
 const hasActiveFilters = computed(() =>
   !!(q.value || statusFilter.value || kategoriFilter.value || unitFilter.value
@@ -634,16 +641,23 @@ onUnmounted(() => clearInterval(phTimer))
           </div>
         </div>
 
-        <!-- From -->
-        <div class="filter-item">
-          <label class="filter-label">From</label>
-          <input type="date" v-model="dateFrom" class="custom-input" @change="onFromToChange" />
-        </div>
-
-        <!-- To -->
-        <div class="filter-item">
-          <label class="filter-label">To</label>
-          <input type="date" v-model="dateTo" class="custom-input" @change="onFromToChange" />
+        <!-- From / To -->
+        <div class="filter-item" style="min-width: 260px; flex: 2; position: relative; max-width: 300px;">
+          <div class="flex gap-2">
+            <div class="flex-1">
+              <label class="filter-label" style="margin-bottom: 8px;">From</label>
+              <input type="date" v-model="dateFrom" class="custom-input" :class="{ 'border-red-500': isDateRangeInvalid }" @change="onFromToChange" />
+            </div>
+            <div class="flex-1">
+              <label class="filter-label" style="margin-bottom: 8px;">To</label>
+              <input type="date" v-model="dateTo" class="custom-input" :class="{ 'border-red-500': isDateRangeInvalid }" @change="onFromToChange" />
+            </div>
+          </div>
+          <div class="relative h-0">
+            <p v-if="isDateRangeInvalid" class="absolute top-1 left-0 text-red-500 text-[10px] italic leading-tight whitespace-nowrap">
+              Rentang tanggal tidak valid: 'From' tidak boleh lebih besar dari 'To'
+            </p>
+          </div>
         </div>
 
         <!-- Kategori -->
@@ -685,7 +699,7 @@ onUnmounted(() => clearInterval(phTimer))
       </div>
 
       <div class="filter-actions">
-        <button @click="handleApplyFilter" class="btn-apply">Terapkan Filter</button>
+        <button @click="handleApplyFilter" class="btn-apply" :disabled="isDateRangeInvalid" :class="{ 'opacity-50 cursor-not-allowed': isDateRangeInvalid }">Terapkan Filter</button>
         <button @click="handleReset" class="btn-reset">Reset</button>
       </div>
     </section>
@@ -932,7 +946,7 @@ onUnmounted(() => clearInterval(phTimer))
 }
 
 /* ── Table ── */
-.table-wrapper { background: white; border-radius: 0.75rem; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }
+.table-wrapper { background: white; border-radius: 0.75rem; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 thead { background: #00588f; color: white; }
 th { font-size: 0.7rem; font-weight: 600; padding: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 0.025em; }
