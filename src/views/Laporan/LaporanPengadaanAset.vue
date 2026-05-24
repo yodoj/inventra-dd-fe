@@ -913,7 +913,7 @@ onUnmounted(() => clearInterval(phTimer))
 .table-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .table-section-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
 .btn-export {
-  background: #e11d48; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem;
+  background: #e11d48; color: white; padding: 0.5rem 1rem; border-radius: 40px;
   border: none; font-size: 0.875rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
 }
 .btn-export:disabled { opacity: 0.6; cursor: not-allowed; }
