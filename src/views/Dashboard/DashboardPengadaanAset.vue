@@ -35,8 +35,6 @@ const selectedYear = ref<number>(2026)
 const selectedMonth = ref<number | null>(null)
 const selectedKategori = ref<string | null>(null)
 const selectedUnit = ref<string | null>(null)
-const selectedUnitBiaya = ref<string | null>(null)
-const selectedUnitJumlahAset = ref<string | null>(null)
 
 const isPrivileged = computed(() =>
   ['YAYASAN', 'ADMIN', 'ROLE_YAYASAN', 'ROLE_ADMIN'].includes(role.value)
@@ -51,13 +49,13 @@ watch([selectedYear, selectedMonth, selectedKategori, selectedUnit], () => {
   store.fetchAll()
 })
 
-watch(selectedUnitBiaya, (newUnit) => {
+watch(selectedUnit, (newUnit) => {
   if (isPrivileged.value) {
     store.fetchBiayaChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
   }
 })
 
-watch(selectedUnitJumlahAset, (newUnit) => {
+watch(selectedUnit, (newUnit) => {
   if (isPrivileged.value) {
     store.fetchJumlahAsetChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
   }
@@ -203,7 +201,7 @@ const jumlahAsetAxis = computed(() => {
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card bg-gradient-dark">
+        <div class="stat-card bg-blue-solid">
           <div class="icon-box"><i class="pi pi-box"></i></div>
           <div class="stat-info">
             <span class="stat-label">Total Pengadaan Aset</span>
@@ -235,11 +233,11 @@ const jumlahAsetAxis = computed(() => {
       </div>
     </div>
     <div class="charts-grid mb-24">
-      
+
       <div class="chart-card">
         <div class="flex-between mb-20">
           <h3 class="chart-title">Estimasi Biaya Pengadaan Per Tahun</h3>
-          <select v-if="isPrivileged" v-model="selectedUnitBiaya" class="custom-select-box small">
+          <select v-if="isPrivileged" v-model="selectedUnit" class="custom-select-box small">
             <option :value="null">Semua Unit</option>
             <option value="KB-TK">KB-TK</option>
             <option value="SD">SD</option>
@@ -267,7 +265,7 @@ const jumlahAsetAxis = computed(() => {
       <div class="chart-card">
         <div class="flex-between mb-20">
           <h3 class="chart-title">Jumlah Aset Pengadaan Per Tahun</h3>
-          <select v-if="isPrivileged" v-model="selectedUnitJumlahAset" class="custom-select-box small">
+          <select v-if="isPrivileged" v-model="selectedUnit" class="custom-select-box small">
             <option :value="null">Semua Unit</option>
             <option value="KB-TK">KB-TK</option>
             <option value="SD">SD</option>
