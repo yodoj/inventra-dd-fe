@@ -183,7 +183,7 @@ const jumlahAsetAxis = computed(() => {
 
 <template>
   <main class="dashboard-page">
-    <h1 class="main-title">Dashboard Pengadaan Aset</h1>
+    <h1 class="main-title">Dashboard Pengadaan Aset Tahun {{ selectedYear }}</h1>
 
     <div class="white-container mb-24">
       <div class="header-filter">
