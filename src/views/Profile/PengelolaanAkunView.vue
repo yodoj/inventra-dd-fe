@@ -357,8 +357,8 @@ watch(unitLainPageSize, () => {
                       {{ formatRoleDisplay(user.role) }}
                     </span>
                   </td>
-                  <td v-if="isAdmin" class="text-center">
-                    <span v-if="user.unit" class="badge unit-badge">{{ user.unit }}</span>
+                  <td v-if="isAdmin" class="text-center b3-body font-semibold text-gray-800">
+                    <span v-if="user.unit">{{ user.unit }}</span>
                     <span v-else class="text-gray-500">-</span>
                   </td>
                   <td>
@@ -480,8 +480,8 @@ watch(unitLainPageSize, () => {
                   <td class="b3-body font-medium text-gray-800">{{ user.email }}</td>
                   <td class="b2-body text-gray-700">{{ user.nama_lengkap }}</td>
                   <td class="b3-body text-gray-600">{{ user.nomor_telepon }}</td>
-                  <td class="text-center">
-                    <span class="badge status-role">{{ user.unit }}</span>
+                  <td class="text-center b3-body font-semibold text-gray-800">
+                    {{ user.unit }}
                   </td>
                 </tr>
               </tbody>
@@ -746,28 +746,50 @@ table tbody tr:last-child td {
 }
 
 .badge {
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   display: inline-block;
   text-align: center;
-  min-width: 80px;
-  line-height: 1.2;
+  min-width: 85px;
+  line-height: 1.4;
+  background-color: #FFFFFF;
 }
 
-.role-admin,
-.role-yayasan,
-.role-sarpras,
-.role-kepsek,
-.role-guru,
-.role-siswa,
-.role-default,
-.unit-badge,
-.status-role {
-  background-color: #00588F;
-  border: none;
-  color: white;
+.role-admin {
+  border: 2px solid #00588F;
+  color: #003B6D;
+}
+
+.role-yayasan {
+  border: 2px solid #4C3788;
+  color: #003B6D;
+}
+
+.role-kepsek {
+  border: 2px solid #ADC7FF;
+  color: #003B6D;
+}
+
+.role-sarpras {
+  border: 2px solid #D4C5F9;
+  color: #003B6D;
+}
+
+.role-guru {
+  border: 2px solid #9C4A8E;
+  color: #003B6D;
+}
+
+.role-siswa {
+  border: 2px solid #5568D8;
+  color: #003B6D;
+}
+
+.role-default {
+  border: 2px solid #9CA3AF;
+  color: #003B6D;
 }
 
 .btn-icon {
