@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, markRaw } from 'vue';
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import SearchIcon from '@/components/icons/SearchIcon.vue';
@@ -84,6 +85,14 @@ const totalColumns = computed(() => {
   if (activeTab.value === 'barang') cols++; // For merk column which is only in barang
   return cols;
 });
+
+// Fungsi untuk menangani error saat memuat gambar, mengganti dengan gambar default
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
 
 const handleTabChange = (tab: 'barang' | 'ruangan') => {
   activeTab.value = tab;
@@ -192,7 +201,7 @@ const formatStatusDisplay = (status: string) => {
 };
 
 const transformImageUrl = (url: string) => {
-  if (!url) return 'https://via.placeholder.com/80x60?text=No+Image';
+  if (!url) return defaultImage;
   
   // Handle relative upload paths
   if (url.startsWith('/uploads/')) {
@@ -347,7 +356,12 @@ const handleEdit = (asset: any) => {
               <tr v-for="asset in assetStore.assets" :key="asset.id_aset">
                 <td class="b3-body">{{ asset.kode_aset }}</td>
                 <td>
-                  <img :src="transformImageUrl(asset.gambar_url_aset)" class="asset-img" />
+                  <img 
+                    :src="transformImageUrl(asset.gambar_url_aset) || defaultImage" 
+                    @error="onImageError" 
+                    :alt="asset.nama_aset"
+                    class="asset-img" 
+                  />
                 </td>
                 <td class="b2-body">{{ asset.nama_aset }}</td>
                 <td v-if="activeTab === 'barang'">{{ asset.merk_aset || '-' }}</td>

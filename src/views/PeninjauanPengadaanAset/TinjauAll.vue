@@ -8,6 +8,8 @@ import 'primeicons/primeicons.css'
 
 import { useTinjauPengadaanStore } from '@/stores/tinjauPengadaanStore'
 import { useAuthStore } from '@/stores/auth'
+import defaultImage from '@/assets/no-image.png'
+import { API_BASE_URL } from '@/services/api'
 
 type TableRow = {
   idPengadaan: string
@@ -101,6 +103,21 @@ function formatRupiah(n: number | string) {
     currency: 'IDR',
     maximumFractionDigits: 0,
   }).format(Number(n || 0))
+}
+
+function getFullImageUrl(url: string) {
+  if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    return API_BASE_URL + url;
+  }
+  return url;
+}
+
+function onImageError(event: Event) {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
 }
 
 async function fetchAll() {
@@ -316,7 +333,7 @@ function getActionType(row: TableRow) {
             </td>
             <td>
               <div class="img-box">
-                <img :src="row.gambar" />
+                <img :src="getFullImageUrl(row.gambar) || defaultImage" @error="onImageError" />
               </div>
             </td>
             <td class="bold">{{ row.nama }}</td>

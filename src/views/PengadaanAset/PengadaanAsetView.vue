@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
+import defaultImage from '@/assets/no-image.png';
+
 // Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +11,7 @@ import { useToastStore } from '@/stores/toast';
 
 // Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { API_BASE_URL } from '@/services/api';
 
 // Icon Import
 import SearchIcon from '@/components/icons/SearchIcon.vue';
@@ -82,19 +85,47 @@ const handleApplyFilter = () => {
   pengadaanStore.fetchMyPengadaan(params);
 };
 
-// Fungsi untuk convert timestamp ke format yang lebih readable
-const formatDateTime = (dateStr) => {
+// Fungsi untuk memisahkan tanggal dan waktu dari string ISO dan memformatnya
+const splitDateTime = (val: string) => {
+  if (!val) return ['', ''];
+  const cleanVal = val.replace('T', ' ');
+  const [datePart, timePart] = cleanVal.split(' ');
+  
+  if (!datePart) return ['', ''];
+  
+  const [y, m, d] = datePart.split('-');
+  const formattedDate = y && m && d ? `${d}-${m}-${y}` : datePart;
+  
+  let formattedTime = '';
+  if (timePart) {
+    const timeParts = timePart.split(':');
+    formattedTime = timeParts.length >= 2 ? `${timeParts[0]}:${timeParts[1]}` : timePart;
+  }
+  
+  return [formattedDate, formattedTime];
+};
+
+// Fungsi untuk menangani error saat memuat gambar, mengganti dengan gambar default
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
+
+const getFullImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    return API_BASE_URL + url;
+  }
+  return url;
+};
+
+// Fungsi untuk memformat tanggal dan waktu dengan format yang lebih user-friendly
+const formatDateOnly = (dateStr: string) => {
   if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  const [y, m, d] = dateStr.split('-');
+  return y && m && d ? `${d}-${m}-${y}` : dateStr;
 };
 
 // Fungsi untuk mereset filter dan menampilkan semua data kembali
@@ -252,15 +283,23 @@ const toggleSort = (column: string) => {
                 </td>
               </tr>
               <tr v-for="item in pengadaanStore.listPengadaan" :key="item.id_pengadaan">
-                <td class="b3-body">{{ formatDateTime(item.waktu_pengajuan) }}</td>
+                <td class="b3-body text-center">
+                  <div class="whitespace-nowrap">{{ splitDateTime(item.waktu_pengajuan)[0] }}</div>
+                  <div class="text-[10px] text-gray-500">{{ splitDateTime(item.waktu_pengajuan)[1] }}</div>
+                </td>
                 <td class="text-center">
-                  <img :src="item.link_gambar" class="asset-img mx-auto" />
+                  <img 
+                    :src="getFullImageUrl(item.link_gambar) || defaultImage" 
+                    @error="onImageError" 
+                    :alt="item.nama_aset"
+                    class="asset-img mx-auto" 
+                  />
                 </td>
                 <td class="b2-body">{{ item.nama_aset }}</td>
                 <td>{{ item.merk }}</td>
                 <td class="text-center">{{ item.qty }}</td>
-                <td>Rp{{ item.estimasi_harga?.toLocaleString() }}</td>
-                <td>{{ item.tanggal_pengadaan }}</td>
+                <td>Rp{{ item.estimasi_harga?.toLocaleString('id-ID') }}</td>
+                <td>{{ formatDateOnly(item.tanggal_pengadaan) }}</td>
                 <td>{{ formatDisplay(item.kategori) }}</td>
                 <td class="text-center">
                   <span :class="['badge', getStatusClass(item.status_pengadaan)]">

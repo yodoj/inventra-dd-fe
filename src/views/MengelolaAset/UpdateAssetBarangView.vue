@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, markRaw } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
@@ -91,6 +92,13 @@ const allStatuses = [
   { label: 'Sedang Dipinjam', value: 'SEDANG_DIPINJAM', categories: ['BARANG_TIDAK_HABIS_PAKAI'] },
   { label: 'Dimusnahkan', value: 'DIMUSNAHKAN', categories: ['BARANG_TIDAK_HABIS_PAKAI'] }
 ];
+
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
 
 const filteredStatuses = computed(() => {
   if (!form.value.kategoriAset) return [];
@@ -288,7 +296,12 @@ const handleSubmit = async () => {
                     </div>
 
                     <div v-else class="dz-filled">
-                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset)" alt="Preview" />
+                      <img 
+                        class="dz-img" 
+                        :src="previewUrl || getFullImageUrl(form.gambarUrlAset) || defaultImage" 
+                        @error="onImageError"
+                        alt="Preview" 
+                      />
                       <div class="dz-bar">
                         <div class="dz-name">{{ fotoFile ? fotoFile.name : 'Gambar saat ini' }}</div>
                         <button

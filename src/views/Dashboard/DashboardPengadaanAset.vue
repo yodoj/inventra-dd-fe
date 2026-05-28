@@ -179,6 +179,43 @@ const jumlahAsetAxis = computed(() => {
   const max = Math.max(...store.jumlahAsetPerTahun.map(item => item.jumlahAset), 0)
   return getAxisData(max * 1.05, 4, true)
 })
+
+const getPointX = (index: number, total: number) => {
+  if (total <= 1) return 500;
+  const minX = 50;
+  const maxX = 950;
+  return minX + (index / (total - 1)) * (maxX - minX);
+};
+
+const getPointYBiaya = (value: number) => {
+  if (biayaAxis.value.niceMax === 0) return 400;
+  return 400 - (value / biayaAxis.value.niceMax) * 400;
+};
+
+const svgPathBiaya = computed(() => {
+  const data = store.biayaPerTahun;
+  if (data.length < 2) return "";
+  return data.reduce((path, point, i) => {
+    const x = getPointX(i, data.length);
+    const y = getPointYBiaya(point.totalBiaya);
+    return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
+  }, "");
+});
+
+const getPointYJumlahAset = (value: number) => {
+  if (jumlahAsetAxis.value.niceMax === 0) return 400;
+  return 400 - (value / jumlahAsetAxis.value.niceMax) * 400;
+};
+
+const svgPathJumlahAset = computed(() => {
+  const data = store.jumlahAsetPerTahun;
+  if (data.length < 2) return "";
+  return data.reduce((path, point, i) => {
+    const x = getPointX(i, data.length);
+    const y = getPointYJumlahAset(point.jumlahAset);
+    return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
+  }, "");
+});
 </script>
 
 <template>
@@ -253,10 +290,32 @@ const jumlahAsetAxis = computed(() => {
             </div>
           </div>
           <div class="chart-container">
-            <div v-for="item in store.biayaPerTahun" :key="item.tahun" class="bar-wrapper">
-              <span class="bar-value">{{ formatRupiah(item.totalBiaya) }}</span>
-              <div class="bar-fill" :style="{ height: `${(item.totalBiaya / biayaAxis.niceMax) * 100}%` }"></div>
-              <span class="bar-label">{{ item.tahun }}</span>
+            <div class="grid-lines">
+              <div v-for="tick in biayaAxis.ticks" :key="tick.pos" class="grid-line" :style="{ bottom: `${tick.pos}%` }"></div>
+            </div>
+            <svg v-if="store.biayaPerTahun.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+              <path :d="svgPathBiaya" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="line-dots">
+              <div v-for="(point, i) in store.biayaPerTahun" :key="i" 
+                class="line-dot"
+                :style="{ 
+                  left: (getPointX(i, store.biayaPerTahun.length) / 10) + '%', 
+                  top: (getPointYBiaya(point.totalBiaya) / 4) + '%' 
+                }"
+              >
+                <span class="dot-tooltip">{{ formatRupiah(point.totalBiaya) }}</span>
+              </div>
+            </div>
+            <div class="line-labels">
+              <span 
+                v-for="(point, i) in store.biayaPerTahun" 
+                :key="point.tahun"
+                class="line-label"
+                :style="{ left: (getPointX(i, store.biayaPerTahun.length) / 10) + '%' }"
+              >
+                {{ point.tahun }}
+              </span>
             </div>
           </div>
         </div>
@@ -281,10 +340,32 @@ const jumlahAsetAxis = computed(() => {
             </div>
           </div>
           <div class="chart-container">
-            <div v-for="item in store.jumlahAsetPerTahun" :key="item.tahun" class="bar-wrapper">
-              <span class="bar-value">{{ new Intl.NumberFormat('id-ID').format(item.jumlahAset) }}</span>
-              <div class="bar-fill" :style="{ height: `${(item.jumlahAset / jumlahAsetAxis.niceMax) * 100}%` }"></div>
-              <span class="bar-label">{{ item.tahun }}</span>
+            <div class="grid-lines">
+              <div v-for="tick in jumlahAsetAxis.ticks" :key="tick.pos" class="grid-line" :style="{ bottom: `${tick.pos}%` }"></div>
+            </div>
+            <svg v-if="store.jumlahAsetPerTahun.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+              <path :d="svgPathJumlahAset" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="line-dots">
+              <div v-for="(point, i) in store.jumlahAsetPerTahun" :key="i" 
+                class="line-dot"
+                :style="{ 
+                  left: (getPointX(i, store.jumlahAsetPerTahun.length) / 10) + '%', 
+                  top: (getPointYJumlahAset(point.jumlahAset) / 4) + '%' 
+                }"
+              >
+                <span class="dot-tooltip">{{ new Intl.NumberFormat('id-ID').format(point.jumlahAset) }}</span>
+              </div>
+            </div>
+            <div class="line-labels">
+              <span 
+                v-for="(point, i) in store.jumlahAsetPerTahun" 
+                :key="point.tahun"
+                class="line-label"
+                :style="{ left: (getPointX(i, store.jumlahAsetPerTahun.length) / 10) + '%' }"
+              >
+                {{ point.tahun }}
+              </span>
             </div>
           </div>
         </div>
@@ -604,41 +685,85 @@ const jumlahAsetAxis = computed(() => {
 .chart-container {
   height: 160px;
   flex-grow: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
+  position: relative;
   border-bottom: 2px solid #8e9bb0;
 }
 
-.bar-wrapper {
-  width: 15%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  position: relative;
-  gap: 6px;
+.grid-lines {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
 }
 
-.bar-fill {
+.grid-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background-color: #f3f4f6;
+}
+
+.line-svg {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
-  background-color: #93c5fd;
-  border-radius: 8px 8px 0 0;
+  height: 100%;
+  z-index: 1;
 }
 
-.bar-value {
-  font-size: 10px;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: -6px;
+.line-dots {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.bar-label {
+.line-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #00588F;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.line-labels {
   position: absolute;
   bottom: -25px;
+  left: 0; right: 0;
+  height: 20px;
+}
+
+.line-label {
+  position: absolute;
+  transform: translateX(-50%);
   font-size: 11px;
   color: #666;
+  white-space: nowrap;
+}
+
+.dot-tooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1F2937;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.line-dot:hover .dot-tooltip {
+  opacity: 1;
 }
 
 .list-box {
