@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, markRaw } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
@@ -105,6 +106,13 @@ onMounted(async () => {
 
 const confirmSubmit = () => {
   showConfirmModal.value = true;
+};
+
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
 };
 
 const handleSubmit = async () => {
@@ -218,7 +226,12 @@ const handleSubmit = async () => {
                     </div>
 
                     <div v-else class="dz-filled">
-                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset)" alt="Preview" />
+                      <img 
+                        class="dz-img" 
+                        :src="previewUrl || getFullImageUrl(form.gambarUrlAset) || defaultImage" 
+                        @error="onImageError"
+                        alt="Preview" 
+                      />
                       <div class="dz-bar">
                         <div class="dz-name">{{ fotoFile ? fotoFile.name : 'Gambar saat ini' }}</div>
                         <button
