@@ -31,10 +31,12 @@ const isAuthorized = computed(() => {
   return authStore && ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
 });
 
-// Mengecek apakah status pengadaan memungkinkan untuk diedit atau dihapus
+// Mengecek apakah status pengadaan memungkinkan untuk diedit atau dihapus dan merupakan milik user
 const canEditDelete = computed(() => {
   const status = pengadaan.value?.status_pengadaan?.toUpperCase();
-  return ['DIAJUKAN', 'DITOLAK'].includes(status);
+  const isStatusValid = ['DIAJUKAN', 'DITOLAK'].includes(status);
+  const isOwner = authStore.user?.id && pengadaan.value?.user_id && authStore.user.id === pengadaan.value.user_id;
+  return isStatusValid && isOwner;
 });
 
 onMounted(async () => {
@@ -189,6 +191,14 @@ const handleDelete = async () => {
               <div class="row-data">
                 <span class="label">Kuantitas</span>
                 <span class="value">: {{ pengadaan.qty }}</span>
+              </div>
+              <div v-if="authStore.userRole === 'ADMIN'" class="row-data">
+                <span class="label">Nama Pengaju</span>
+                <span class="value">: {{ pengadaan.nama_pengaju || '-' }}</span>
+              </div>
+              <div v-if="authStore.userRole === 'ADMIN'" class="row-data">
+                <span class="label">Role Pengaju</span>
+                <span class="value">: {{ pengadaan.role_pengaju || '-' }}</span>
               </div>
             </div>
 
@@ -412,6 +422,8 @@ const handleDelete = async () => {
   font-size: 14px;
   color: #111111;
   line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .card-footer-action {

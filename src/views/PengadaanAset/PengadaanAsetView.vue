@@ -42,6 +42,7 @@ const searchQuery = ref('');
 // Filter & Sorting state
 const statusFilter = ref('');
 const categoryFilter = ref('');
+const unitFilter = ref('');
 const sortBy = ref('waktuPengajuan');
 const sortDirection = ref('DESC');
 
@@ -50,9 +51,11 @@ const isAuthorized = computed(() => {
   return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
 });
 
-// Aset hanya bisa diedit/hapus jika statusnya masih awal (Diajukan/Ditolak)
-const canEditDelete = (status: string) => {
-  return ['DIAJUKAN', 'DITOLAK'].includes(status?.toUpperCase());
+// Aset hanya bisa diedit/hapus jika statusnya masih awal (Diajukan/Ditolak) dan merupakan milik user yang login
+const canEditDelete = (status: string, itemUserId?: string) => {
+  const isStatusValid = ['DIAJUKAN', 'DITOLAK'].includes(status?.toUpperCase());
+  const isOwner = authStore.user?.id && itemUserId && authStore.user.id === itemUserId;
+  return isStatusValid && isOwner;
 };
 
 const categories = [
@@ -63,10 +66,12 @@ const categories = [
 const statuses = [
   { label: 'Diajukan', value: 'DIAJUKAN' },
   { label: 'Ditolak', value: 'DITOLAK' },
-  { label: 'Disetujui Oleh Kepsek', value: 'DISETUJUI_OLEH_KEPSEK' },
-  { label: 'Disetujui Oleh Yayasan', value: 'DISETUJUI_OLEH_YAYASAN' },
+  { label: 'Disetujui Oleh Kepsek', value: 'DISETUJUI_KEPSEK' },
+  { label: 'Disetujui Oleh Yayasan', value: 'DISETUJUI_YAYASAN' },
   { label: 'Dibeli', value: 'DIBELI' }
 ];
+
+const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
 
 onMounted(() => {
   pengadaanStore.fetchMyPengadaan();
@@ -78,6 +83,7 @@ const handleApplyFilter = () => {
   if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
   if (statusFilter.value) params.status = statusFilter.value;
   if (categoryFilter.value) params.kategori = categoryFilter.value;
+  if (unitFilter.value) params.unit = unitFilter.value;
   
   params.sortBy = sortBy.value;
   params.direction = sortDirection.value;
@@ -133,6 +139,7 @@ const handleReset = () => {
   searchQuery.value = '';
   statusFilter.value = '';
   categoryFilter.value = '';
+  unitFilter.value = '';
   pengadaanStore.fetchMyPengadaan();
 };
 
@@ -216,6 +223,17 @@ const toggleSort = (column: string) => {
               <select v-model="statusFilter" :class="{ 'placeholder-color': !statusFilter }">
                 <option value="">Semua Status</option>
                 <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+              </select>
+              <ChevronDown class="select-icon" />
+            </div>
+          </div>
+
+          <div v-if="authStore.userRole === 'ADMIN'" class="filter-item">
+            <label class="c2-caption mb-2 block" style="margin-bottom: 8px;">Unit</label>
+            <div class="custom-select">
+              <select v-model="unitFilter" :class="{ 'placeholder-color': !unitFilter }">
+                <option value="">Semua Unit</option>
+                <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
               </select>
               <ChevronDown class="select-icon" />
             </div>
@@ -308,7 +326,7 @@ const toggleSort = (column: string) => {
                 </td>
                 <td>
                   <div class="flex justify-center gap-2">
-                    <template v-if="canEditDelete(item.status_pengadaan)">
+                    <template v-if="canEditDelete(item.status_pengadaan, item.user_id)">
                       <button @click="router.push(`/pengadaan/pengajuan/update/${item.id_pengadaan}`)" class="btn-icon btn-edit">
                         <EditIcon class="w-4 h-4" />
                       </button>

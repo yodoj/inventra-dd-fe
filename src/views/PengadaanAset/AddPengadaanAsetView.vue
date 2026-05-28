@@ -255,7 +255,7 @@ const handleSubmit = async () => {
 
                   <div class="url-option mt-4">
                     <p class="c2-caption mb-3 text-gray-500">Atau masukkan link URL:</p>
-                    <input v-model="form.linkGambar" type="text" placeholder="https://contoh.com/gambar.jpg" class="form-input full-width" :disabled="!!fotoFile" />
+                    <input v-model="form.linkGambar" type="text" placeholder="https://contoh.com/gambar.jpg" class="form-input full-width" :disabled="!!fotoFile" autocomplete="off" />
                   </div>
                 </div>
                 <p v-if="fileError" class="text-xs text-red-500 mt-1">{{ fileError }}</p>

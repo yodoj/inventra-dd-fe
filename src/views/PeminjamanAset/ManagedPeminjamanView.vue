@@ -255,6 +255,16 @@ const displayLoans = computed(() => {
     let list = [];
     if (isPeninjauanTab.value) {
         list = [...tinjauStore.listTinjauan];
+        // Sembunyikan data jika sudah direview dan sudah lewat 1 hari dari waktu peminjaman
+        list = list.filter((loan: any) => {
+            if (loan.status_peminjaman !== 'DIAJUKAN' && loan.waktu_peminjaman) {
+                const peminjamanDate = new Date(loan.waktu_peminjaman).getTime();
+                const now = Date.now();
+                const diffDays = (now - peminjamanDate) / (1000 * 60 * 60 * 24);
+                if (diffDays >= 1) return false;
+            }
+            return true;
+        });
     } else {
         list = activeTab.value === 'lintas-unit' ? [...peminjamanStore.loansLintasUnit] : [...peminjamanStore.loans];
     }
@@ -310,9 +320,22 @@ const dynamicColspan = computed(() => {
   }
 });
 
-const isBeforeStart = (loan: any) => {
-  if (!loan.waktu_peminjaman) return false;
-  return new Date() < new Date(loan.waktu_peminjaman);
+const canEditReview = (loan: any) => {
+  if (!loan.updatedAt) return false;
+  
+  // Mengecek usia review (maksimal 2 hari)
+  const reviewDate = new Date(loan.updatedAt).getTime();
+  const now = Date.now();
+  const diffDays = (now - reviewDate) / (1000 * 60 * 60 * 24);
+  if (diffDays > 2) return false;
+  
+  // Mengecek apakah barang sudah mulai dipinjam
+  if (loan.waktu_peminjaman) {
+    const peminjamanDate = new Date(loan.waktu_peminjaman).getTime();
+    if (now >= peminjamanDate) return false;
+  }
+  
+  return true;
 };
 </script>
 
@@ -696,7 +719,7 @@ const isBeforeStart = (loan: any) => {
                         <MessageSquare class="w-4 h-4" />
                       </button>
                       <button
-                        v-else-if="isBeforeStart(loan)"
+                        v-else-if="canEditReview(loan)"
                         @click="handleActionTinjau(loan)"
                         class="btn-icon btn-edit-tinjau"
                         title="Ubah Peninjauan"
