@@ -16,7 +16,6 @@ const years = computed(() => {
   )
 })
 
-
 const months = [
   { label: "Januari", value: 1 }, { label: "Februari", value: 2 },
   { label: "Maret", value: 3 }, { label: "April", value: 4 },
@@ -39,31 +38,56 @@ const selectedUnit = ref<string | null>(null)
 const isPrivileged = computed(() =>
   ['YAYASAN', 'ADMIN', 'ROLE_YAYASAN', 'ROLE_ADMIN'].includes(role.value)
 )
-watch([selectedYear, selectedMonth, selectedKategori, selectedUnit], () => {
+
+const applyTopFilter = async () => {
   store.setYear(selectedYear.value)
-  store.setBulan(selectedMonth.value)
-  store.setKategori(selectedKategori.value)
   if (isPrivileged.value) {
     store.setUnit(selectedUnit.value === 'ALL' ? null : selectedUnit.value)
   }
-  store.fetchAll()
-})
+  
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  
+  const unitParam = selectedUnit.value === 'ALL' ? undefined : (selectedUnit.value || undefined)
+  store.fetchBiayaChart(unitParam)
+  store.fetchJumlahAsetChart(unitParam)
+}
 
-watch(selectedUnit, (newUnit) => {
-  if (isPrivileged.value) {
-    store.fetchBiayaChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
-  }
-})
-
-watch(selectedUnit, (newUnit) => {
-  if (isPrivileged.value) {
-    store.fetchJumlahAsetChart(newUnit === 'ALL' ? undefined : (newUnit || undefined))
-  }
-})
-
-onMounted(() => {
+const resetTopFilter = async () => {
+  selectedYear.value = new Date().getFullYear()
+  selectedUnit.value = null
   store.setYear(selectedYear.value)
-  store.fetchAll()
+  if (isPrivileged.value) {
+    store.setUnit(null)
+  }
+  
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  store.fetchBiayaChart()
+  store.fetchJumlahAsetChart()
+}
+
+const applyBottomFilter = async () => {
+  store.setKategori(selectedKategori.value)
+  store.setBulan(selectedMonth.value)
+  await store.fetchTopDashboard()
+}
+
+const resetBottomFilter = async () => {
+  selectedKategori.value = null
+  selectedMonth.value = null
+  store.setKategori(null)
+  store.setBulan(null)
+  await store.fetchTopDashboard()
+}
+
+onMounted(async () => {
+  selectedYear.value = new Date().getFullYear()
+  store.setYear(selectedYear.value)
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  store.fetchBiayaChart()
+  store.fetchJumlahAsetChart()
 })
 
 const formatRupiah = (value?: number) => {
@@ -220,24 +244,44 @@ const svgPathJumlahAset = computed(() => {
 
 <template>
   <main class="dashboard-page">
-    <h1 class="main-title">Dashboard Pengadaan Aset Tahun {{ selectedYear }}</h1>
+    <h1 v-if="role === 'KEPSEK' || role === 'SARPRAS'" class="main-title">
+      Dashboard Pengadaan Aset - {{ auth.user?.unit }}
+    </h1>
+    <h1 v-else-if="role === 'ADMIN' || role === 'YAYASAN'" class="main-title">
+      Dashboard Pengadaan Aset Dian Didaktika
+    </h1>
+    <h1 v-else class="main-title">Dashboard Pengadaan Aset</h1>
 
-    <div class="white-container mb-24">
-      <div class="header-filter">
-        <select v-if="role === 'YAYASAN' || role === 'ADMIN'" v-model="selectedUnit" class="custom-select-box mr-12">
-          <option :value=null>Semua Unit</option>
-          <option value="KB-TK">KB-TK</option>
-          <option value="SD">SD</option>
-          <option value="SMP">SMP</option>
-          <option value="SMA">SMA</option>
-        </select>
-
-        <select v-model="selectedYear" class="custom-select-box">
-          <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
-        </select>
+    <div class="master-container">
+      <!-- Top Filter -->
+      <div class="filter-box top-filter">
+        <div class="filter-controls">
+          <div v-if="role === 'YAYASAN' || role === 'ADMIN'" class="filter-item">
+            <label class="filter-label">Unit</label>
+            <select v-model="selectedUnit" class="custom-select-box">
+              <option :value="null">Semua Unit</option>
+              <option value="KB-TK">KB-TK</option>
+              <option value="SD">SD</option>
+              <option value="SMP">SMP</option>
+              <option value="SMA">SMA</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">Tahun</label>
+            <select v-model="selectedYear" class="custom-select-box">
+              <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button @click="applyTopFilter" class="btn-apply">Terapkan Filter</button>
+          <button @click="resetTopFilter" class="btn-reset">Reset</button>
+        </div>
       </div>
 
-      <div class="stats-grid">
+      <!-- Scorecard Box -->
+      <div class="white-container mb-24">
+        <div class="stats-grid">
         <div class="stat-card bg-blue-solid">
           <div class="icon-box"><i class="pi pi-box"></i></div>
           <div class="stat-info">
@@ -274,13 +318,6 @@ const svgPathJumlahAset = computed(() => {
       <div class="chart-card">
         <div class="flex-between mb-20">
           <h3 class="chart-title">Estimasi Biaya Pengadaan Per Tahun</h3>
-          <select v-if="isPrivileged" v-model="selectedUnit" class="custom-select-box small">
-            <option :value="null">Semua Unit</option>
-            <option value="KB-TK">KB-TK</option>
-            <option value="SD">SD</option>
-            <option value="SMP">SMP</option>
-            <option value="SMA">SMA</option>
-          </select>
         </div>
         <div class="chart-main-wrapper">
           <div class="y-axis">
@@ -324,13 +361,6 @@ const svgPathJumlahAset = computed(() => {
       <div class="chart-card">
         <div class="flex-between mb-20">
           <h3 class="chart-title">Jumlah Aset Pengadaan Per Tahun</h3>
-          <select v-if="isPrivileged" v-model="selectedUnit" class="custom-select-box small">
-            <option :value="null">Semua Unit</option>
-            <option value="KB-TK">KB-TK</option>
-            <option value="SD">SD</option>
-            <option value="SMP">SMP</option>
-            <option value="SMA">SMA</option>
-          </select>
         </div>
         <div class="chart-main-wrapper">
           <div class="y-axis">
@@ -373,27 +403,32 @@ const svgPathJumlahAset = computed(() => {
 
     </div>
 
+    <!-- Top 5 Box -->
     <div class="white-container">
-      <div class="header-filter-group">
-        <select v-model="selectedKategori" class="custom-select-box">
-          <option :value="null">Semua Kategori</option>
-          <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
-        </select>
-        <select v-if="role === 'YAYASAN' || role === 'ADMIN'" v-model="selectedUnit" class="custom-select-box">
-          <option :value="null">Semua Unit</option>
-          <option value="KB-TK">KB-TK</option>
-          <option value="SD">SD</option>
-          <option value="SMP">SMP</option>
-          <option value="SMA">SMA</option>
-        </select>
-        <select v-model="selectedMonth" class="custom-select-box">
-          <option :value="null">Semua Bulan</option>
-          <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
-        </select>
-        <select v-model="selectedYear" class="custom-select-box">
-          <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
-        </select>
+      <!-- Bottom Filter -->
+      <div class="filter-box bottom-filter">
+        <div class="filter-controls">
+          <div class="filter-item">
+            <label class="filter-label">Kategori Aset</label>
+            <select v-model="selectedKategori" class="custom-select-box">
+              <option :value="null">Kategori</option>
+              <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">Periode</label>
+            <select v-model="selectedMonth" class="custom-select-box">
+              <option :value="null">Bulan</option>
+              <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button @click="applyBottomFilter" class="btn-apply">Terapkan Filter</button>
+          <button @click="resetBottomFilter" class="btn-reset">Reset</button>
+        </div>
       </div>
+
       <!-- Part untuk list aset paling cepat habis (nanti akan diganti dengan data asli dari API) -->
       <div class="lists-grid">
         <div class="list-box bg-navy">
@@ -444,6 +479,8 @@ const svgPathJumlahAset = computed(() => {
         </div>
       </div>
     </div>
+    
+    </div> <!-- Close master-container -->
   </main>
 </template>
 
@@ -461,6 +498,14 @@ const svgPathJumlahAset = computed(() => {
   margin-bottom: 24px;
   color: #000;
 }
+
+.master-container {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
 .white-container {
   background: white;
   padding: 24px;
@@ -498,6 +543,78 @@ const svgPathJumlahAset = computed(() => {
 
 .header-filter-group {
   gap: 12px;
+}
+
+.filter-box {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.top-filter {
+  justify-content: flex-end;
+}
+
+.bottom-filter {
+  justify-content: flex-end;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #374151;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-apply {
+  background-color: #00588f;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  height: 42px;
+}
+
+.btn-apply:hover {
+  background-color: #004a78;
+}
+
+.btn-reset {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 42px;
+}
+
+.btn-reset:hover {
+  background-color: #f9fafb;
 }
 
 .stats-grid {
