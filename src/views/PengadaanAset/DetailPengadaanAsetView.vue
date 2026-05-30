@@ -3,6 +3,9 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { EditIcon, Trash2 } from 'lucide-vue-next';
 
+
+import defaultImage from '@/assets/no-image.png';
+
 // Store import
 import { usePengadaanStore } from '@/stores/pengadaanAset';
 import { useToastStore } from '@/stores/toast';
@@ -10,6 +13,7 @@ import { useAuthStore } from '@/stores/auth';
 
 // Component Import
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
+import { API_BASE_URL } from '@/services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -27,10 +31,12 @@ const isAuthorized = computed(() => {
   return authStore && ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
 });
 
-// Mengecek apakah status pengadaan memungkinkan untuk diedit atau dihapus
+// Mengecek apakah status pengadaan memungkinkan untuk diedit atau dihapus dan merupakan milik user
 const canEditDelete = computed(() => {
   const status = pengadaan.value?.status_pengadaan?.toUpperCase();
-  return ['DIAJUKAN', 'DITOLAK'].includes(status);
+  const isStatusValid = ['DIAJUKAN', 'DITOLAK'].includes(status);
+  const isOwner = authStore.user?.id && pengadaan.value?.user_id && authStore.user.id === pengadaan.value.user_id;
+  return isStatusValid && isOwner;
 });
 
 onMounted(async () => {
@@ -55,24 +61,52 @@ const getStatusClass = (status: string) => {
   }
 };
 
+// Fungsi untuk menangani error saat memuat gambar, mengganti dengan gambar default
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
+
+const getFullImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    return API_BASE_URL + url;
+  }
+  return url;
+};
+
 // Fungsi untuk memformat teks status agar lebih mudah dibaca
 const formatDisplay = (text: string) => {
   return text?.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
-// Fungsi untuk convert timestamp ke format yang lebih readable
-const formatDateTime = (dateStr) => {
+// Fungsi untuk memformat tanggal dan waktu dengan format yang lebih user-friendly
+const formatDateTimeDetail = (dateStr: string) => {
   if (!dateStr) return "-";
-  const date = new Date(dateStr);
+  const cleanVal = dateStr.replace('T', ' ');
+  const [datePart, timePart] = cleanVal.split(' ');
   
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  if (!datePart) return "-";
   
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  const [y, m, d] = datePart.split('-');
+  const formattedDate = y && m && d ? `${d}-${m}-${y}` : datePart;
+  
+  let formattedTime = '';
+  if (timePart) {
+    const timeParts = timePart.split(':');
+    formattedTime = timeParts.length >= 2 ? `${timeParts[0]}:${timeParts[1]}` : timePart;
+  }
+  
+  return formattedTime ? `${formattedDate} | ${formattedTime}` : formattedDate;
+};
+
+// Fungsi untuk memformat tanggal dengan format yang lebih user-friendly
+const formatDateOnly = (dateStr: string) => {
+  if (!dateStr) return "-";
+  const [y, m, d] = dateStr.split('-');
+  return y && m && d ? `${d}-${m}-${y}` : dateStr;
 };
 
 // Fungsi untuk menangani penghapusan pengadaan
@@ -129,7 +163,12 @@ const handleDelete = async () => {
         </div>
 
         <div class="image-showcase">
-          <img :src="pengadaan.link_gambar" :alt="pengadaan.nama_aset" class="asset-img-large" />
+          <img 
+            :src="getFullImageUrl(pengadaan.link_gambar) || defaultImage" 
+            @error="onImageError"
+            :alt="pengadaan.nama_aset" 
+            class="asset-img-large" 
+          />
         </div>
 
         <div class="info-section">
@@ -153,20 +192,28 @@ const handleDelete = async () => {
                 <span class="label">Kuantitas</span>
                 <span class="value">: {{ pengadaan.qty }}</span>
               </div>
+              <div v-if="authStore.userRole === 'ADMIN'" class="row-data">
+                <span class="label">Nama Pengaju</span>
+                <span class="value">: {{ pengadaan.nama_pengaju || '-' }}</span>
+              </div>
+              <div v-if="authStore.userRole === 'ADMIN'" class="row-data">
+                <span class="label">Role Pengaju</span>
+                <span class="value">: {{ pengadaan.role_pengaju || '-' }}</span>
+              </div>
             </div>
 
             <div class="info-column">
               <div class="row-data">
                 <span class="label">Waktu Pengajuan</span>
-                <span class="value">: {{ formatDateTime(pengadaan.waktu_pengajuan) }}</span>
+                <span class="value">: {{ formatDateTimeDetail(pengadaan.waktu_pengajuan) }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Estimasi Harga</span>
-                <span class="value">: Rp{{ pengadaan.estimasi_harga?.toLocaleString() }}</span>
+                <span class="value">: Rp{{ pengadaan.estimasi_harga?.toLocaleString('id-ID') }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Tanggal Pengadaan</span>
-                <span class="value">: {{ pengadaan.tanggal_pengadaan }}</span>
+                <span class="value">: {{ formatDateOnly(pengadaan.tanggal_pengadaan) }}</span>
               </div>
               <div class="row-data">
                 <span class="label">Unit</span>
@@ -375,6 +422,8 @@ const handleDelete = async () => {
   font-size: 14px;
   color: #111111;
   line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .card-footer-action {

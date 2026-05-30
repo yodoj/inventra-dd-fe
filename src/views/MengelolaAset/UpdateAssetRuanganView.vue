@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, markRaw } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
@@ -109,6 +110,13 @@ const confirmSubmit = () => {
   showConfirmModal.value = true;
 };
 
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
+
 const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
@@ -191,7 +199,7 @@ const handleSubmit = async () => {
             <div class="form-column">
               <div class="form-group gambar-upload-group">
                 <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
-                
+
                 <div class="upload-options">
                   <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
                     <input

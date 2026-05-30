@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, markRaw } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
@@ -93,6 +94,13 @@ const allStatuses = [
   { label: 'Dimusnahkan', value: 'DIMUSNAHKAN', categories: ['BARANG_TIDAK_HABIS_PAKAI'] }
 ];
 
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
+
 const filteredStatuses = computed(() => {
   if (!form.value.kategoriAset) return [];
   return allStatuses.filter(s => s.categories.includes(form.value.kategoriAset));
@@ -162,7 +170,7 @@ watch([
   () => form.value.qtyDipinjam
 ], () => {
   // Physical Tersedia is the total stock minus unusable items
-  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save 
+  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save
   // we want to ensure the sum remains consistent with qtyAset.
   form.value.qtyTersedia = Math.max(0, form.value.qtyAset - (form.value.qtyRusak || 0) - (form.value.qtyPerbaikan || 0) - (form.value.qtyDimusnahkan || 0) - (form.value.qtyDipinjam || 0));
 });
@@ -267,7 +275,7 @@ const handleSubmit = async () => {
               <!-- Gambar below Kategori -->
               <div class="form-group gambar-upload-group">
                 <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
-                
+
                 <div class="upload-options">
                   <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
                     <input
@@ -327,7 +335,7 @@ const handleSubmit = async () => {
 
               <div v-if="form.kategoriAset === 'BARANG_TIDAK_HABIS_PAKAI'" class="form-group">
                 <label class="s2-subtitle mb-10 block">Rincian Ketersediaan <span class="required-star">*</span></label>
-                
+
                 <div class="grid grid-cols-2 gap-x-4 gap-y-5">
                   <div class="form-group-sub">
                     <label class="c2-caption mb-2 block">Tersedia</label>

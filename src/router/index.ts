@@ -58,6 +58,12 @@ const router = createRouter({
       meta: { roles: ['ALL'] }
     },
     {
+      path: '/assets/laporan',
+      name: 'laporan-peminjaman-aset',
+      component: () => import('../views/Laporan/LaporanUtilisasiView.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
+    },
+    {
       path: '/assets/tambah-barang',
       name: 'add-asset-barang',
       component: () => import('../views/MengelolaAset/AddAssetBarangView.vue'),
@@ -238,6 +244,24 @@ const router = createRouter({
       meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
     },
     {
+      path: '/profile/pengelolaan-akun/:id',
+      name: 'detail-user',
+      component: () => import('../views/Profile/DetailUserView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
+      path: '/profile/pengelolaan-akun/:id/edit',
+      name: 'edit-user',
+      component: () => import('../views/Profile/EditUserView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
+      path: '/profile/pengelolaan-akun/:id/change-password',
+      name: 'change-user-password',
+      component: () => import('../views/Profile/ChangeUserPasswordView.vue'),
+      meta: { roles: ['SARPRAS', 'SUPERADMIN'] }
+    },
+    {
       path: '/pengadaan/dashboard',
       name: 'dashboard-pengadaan-aset',
       component: () => import('../views/Dashboard/DashboardPengadaanAset.vue'),
@@ -248,6 +272,12 @@ const router = createRouter({
       name: 'dashboard-asset',
       component: () => import('../views/Dashboard/DashboardPeminjamanAset.vue'),
       meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'ADMIN'] }
+    },
+    {
+      path: '/pengadaan/laporan',
+      name: 'laporan-pengadaan-aset',
+      component: () => import('../views/Laporan/LaporanPengadaanAset.vue'),
+      meta: { roles: ['SARPRAS', 'KEPSEK', 'YAYASAN', 'SUPERADMIN'] }
     },
     {
       path: '/403',

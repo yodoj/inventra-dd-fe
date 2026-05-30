@@ -26,6 +26,7 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
   function reset() {
     dashboard.value = null
     topBiaya.value = []
+    topCepatHabis.value = []
     topPengadaan.value = []
     biayaPerTahun.value = []
     errorMessage.value = ''
@@ -72,7 +73,7 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
       if (thisVersion !== fetchVersion) return
 
       topBiaya.value = result.topBiaya || []
-      // topPengadaan.value = result.topBiaya || [];
+      topCepatHabis.value = result.topPengadaan || [];
 
       console.log(result.topBiaya)
     } catch (e: any) {
@@ -116,10 +117,10 @@ export const useDashboardPengadaanStore = defineStore('dashboardPengadaanStore',
 
   async function fetchAll() {
     await fetchDashboard()
-    await fetchTopDashboard()
     await fetchBiayaChart()
-    await fetchTopCepatHabis()
+    // await fetchTopCepatHabis()
     await fetchJumlahAsetChart()
+    await fetchTopDashboard()
   }
 
   function setYear(year: number | null) {
