@@ -125,6 +125,7 @@ function buildParams(): LaporanFilterParams {
 
 /* ── Actions ── */
 function handleApplyFilter() {
+  if (isDateRangeInvalid.value) return
   store.currentPage = 0
   store.fetchLaporan(buildParams())
 }
@@ -416,10 +417,10 @@ async function handleExportPDF() {
     }
 
     const head = isAdminOrYayasan.value
-      ? [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Unit', 'Status', 'Bukti', 'Alasan']]
-      : [['Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Status', 'Bukti', 'Alasan']]
+      ? [['No', 'Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Unit', 'Status', 'Bukti', 'Alasan']]
+      : [['No', 'Waktu Pengajuan', 'Nama Pengaju', 'Nama Aset', 'Merk', 'Qty', 'Tgl Pengadaan', 'Est. Harga', 'Harga Aktual', 'Kategori', 'Status', 'Bukti', 'Alasan']]
 
-    const buktiColIdx = isAdminOrYayasan.value ? 11 : 10
+    const buktiColIdx = isAdminOrYayasan.value ? 12 : 11
 
     // Status pill colors — mirror UI .status-pill CSS classes
     const STATUS_PILL_COLORS: Record<string, { fill: [number, number, number]; text: [number, number, number] }> = {
@@ -453,8 +454,9 @@ async function handleExportPDF() {
       }),
     )
 
-    const body = data.map((it) => {
+    const body = data.map((it, idx) => {
       const base: any[] = [
+        String(idx + 1),
         formatDateTime(it.waktu_pengajuan),
         it.nama_pengaju ?? '-',
         it.nama_aset ?? '-',
@@ -487,12 +489,41 @@ async function handleExportPDF() {
       head,
       body,
       startY: tableStartY,
-      styles: { fontSize: 10, font: 'helvetica', textColor: [30, 41, 59], cellPadding: 2 },
-      headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'helvetica', fontStyle: 'bold', fontSize: 10 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      columnStyles: {
-        [buktiColIdx]: { minCellHeight: 18, halign: 'center', cellWidth: 22 },
-      },
+      theme: 'grid',
+      styles: { fontSize: 7, font: 'helvetica', textColor: [30, 41, 59], cellPadding: 2, lineColor: [180, 180, 180], lineWidth: 0.1 },
+      headStyles: { fillColor: [0, 88, 143], textColor: [255, 255, 255], font: 'helvetica', fontStyle: 'bold', fontSize: 7 },
+      columnStyles: isAdminOrYayasan.value
+        ? {
+            0:  { cellWidth: 8,  halign: 'center' },
+            1:  { cellWidth: 22 },
+            2:  { cellWidth: 20 },
+            3:  { cellWidth: 22 },
+            4:  { cellWidth: 17 },
+            5:  { cellWidth: 8,  halign: 'center' },
+            6:  { cellWidth: 18 },
+            7:  { cellWidth: 17 },
+            8:  { cellWidth: 17 },
+            9:  { cellWidth: 26 },
+            10: { cellWidth: 12 },
+            11: { cellWidth: 22 },
+            12: { minCellHeight: 18, halign: 'center', cellWidth: 22 },
+            13: { cellWidth: 38 },
+          }
+        : {
+            0:  { cellWidth: 8,  halign: 'center' },
+            1:  { cellWidth: 22 },
+            2:  { cellWidth: 20 },
+            3:  { cellWidth: 22 },
+            4:  { cellWidth: 17 },
+            5:  { cellWidth: 8,  halign: 'center' },
+            6:  { cellWidth: 18 },
+            7:  { cellWidth: 17 },
+            8:  { cellWidth: 17 },
+            9:  { cellWidth: 26 },
+            10: { cellWidth: 22 },
+            11: { minCellHeight: 18, halign: 'center', cellWidth: 22 },
+            12: { cellWidth: 50 },
+          },
       margin: { bottom: 18, left: 14, right: 14 },
       didParseCell: (cellData) => {
         // Suppress filename text in bukti column — image rendered in didDrawCell instead
@@ -646,11 +677,11 @@ onUnmounted(() => clearInterval(phTimer))
           <div class="flex gap-2">
             <div class="flex-1">
               <label class="filter-label" style="margin-bottom: 8px;">From</label>
-              <input type="date" v-model="dateFrom" class="custom-input" :class="{ 'border-red-500': isDateRangeInvalid }" @change="onFromToChange" />
+              <input type="date" v-model="dateFrom" class="custom-input" :class="{ 'input-error': isDateRangeInvalid }" @change="onFromToChange" />
             </div>
             <div class="flex-1">
               <label class="filter-label" style="margin-bottom: 8px;">To</label>
-              <input type="date" v-model="dateTo" class="custom-input" :class="{ 'border-red-500': isDateRangeInvalid }" @change="onFromToChange" />
+              <input type="date" v-model="dateTo" class="custom-input" :class="{ 'input-error': isDateRangeInvalid }" @change="onFromToChange" />
             </div>
           </div>
           <div class="relative h-0">
@@ -726,9 +757,9 @@ onUnmounted(() => clearInterval(phTimer))
       <table>
         <thead>
           <tr>
-            <th class="w-100">Waktu Pengajuan</th>
+            <th class="w-110">Waktu Pengajuan</th>
             <th class="w-110">Nama Pengaju</th>
-            <th @click="toggleSort('namaAset')" class="sortable w-120">
+            <th @click="toggleSort('namaAset')" class="sortable w-110">
               <div class="th-inner">
                 <span>Nama Aset</span>
                 <ArrowUp v-if="store.sortBy === 'namaAset' && store.direction === 'ASC'" class="sort-icon" />
@@ -738,8 +769,8 @@ onUnmounted(() => clearInterval(phTimer))
             </th>
             <th class="w-100">Merk</th>
             <th class="w-50">Qty</th>
-            <th class="w-100">Tanggal Pengadaan</th>
-            <th @click="toggleSort('estimasiHarga')" class="sortable w-130">
+            <th class="w-90">Tanggal Pengadaan</th>
+            <th @click="toggleSort('estimasiHarga')" class="sortable w-110">
               <div class="th-inner">
                 <span>Estimasi Harga</span>
                 <ArrowUp v-if="store.sortBy === 'estimasiHarga' && store.direction === 'ASC'" class="sort-icon" />
@@ -747,7 +778,7 @@ onUnmounted(() => clearInterval(phTimer))
                 <ArrowUpDown v-else class="sort-icon unsorted" />
               </div>
             </th>
-            <th @click="toggleSort('harga')" class="sortable w-120">
+            <th @click="toggleSort('harga')" class="sortable w-110">
               <div class="th-inner">
                 <span>Harga Aktual</span>
                 <ArrowUp v-if="store.sortBy === 'harga' && store.direction === 'ASC'" class="sort-icon" />
@@ -755,11 +786,11 @@ onUnmounted(() => clearInterval(phTimer))
                 <ArrowUpDown v-else class="sort-icon unsorted" />
               </div>
             </th>
-            <th class="w-120">Kategori</th>
+            <th class="w-90">Kategori</th>
             <th v-if="isAdminOrYayasan" class="w-80">Unit</th>
             <th class="w-130">Status</th>
             <th class="w-100">Bukti Pembelian</th>
-            <th class="w-150">Alasan</th>
+            <th class="w-200">Alasan</th>
           </tr>
         </thead>
 
@@ -776,16 +807,16 @@ onUnmounted(() => clearInterval(phTimer))
             </td>
           </tr>
           <tr v-for="(row, i) in tableRows" :key="i" v-else>
-            <td class="text-xs color-subtle">{{ formatDateTime(row.waktuPengajuan) }}</td>
+            <td class="text-xs color-subtle cell-nowrap">{{ formatDateTime(row.waktuPengajuan) }}</td>
             <td>{{ row.namaPengaju }}</td>
             <td>{{ row.nama }}</td>
-            <td>{{ row.merk }}</td>
-            <td class="center">{{ row.qty }}</td>
-            <td>{{ formatDate(row.waktuPengadaan) }}</td>
-            <td class="bold">{{ formatRupiah(row.estimasiHarga) }}</td>
-            <td>{{ formatRupiah(row.hargaAktual) }}</td>
+            <td class="cell-nowrap">{{ row.merk }}</td>
+            <td class="center cell-nowrap">{{ row.qty }}</td>
+            <td class="cell-nowrap">{{ formatDate(row.waktuPengadaan) }}</td>
+            <td class="bold cell-nowrap">{{ formatRupiah(row.estimasiHarga) }}</td>
+            <td class="cell-nowrap">{{ formatRupiah(row.hargaAktual) }}</td>
             <td>{{ formatKategori(row.kategori) }}</td>
-            <td v-if="isAdminOrYayasan">{{ row.unit }}</td>
+            <td v-if="isAdminOrYayasan" class="cell-nowrap">{{ row.unit }}</td>
             <td class="center">
               <span :class="['status-pill', row.status]">
                 {{ statusLabel[row.status] ?? row.status }}
@@ -897,6 +928,7 @@ onUnmounted(() => clearInterval(phTimer))
   background: white;
   transition: all 0.2s;
 }
+.custom-input.input-error { border-color: #ef4444; }
 .custom-select select { appearance: none; cursor: pointer; padding-right: 2.5rem; }
 .select-icon { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 1rem; color: #64748b; pointer-events: none; }
 .search-box { position: relative; }
@@ -1027,11 +1059,16 @@ td { padding: 1rem; font-size: 0.75rem; border-bottom: 1px solid #f1f5f9; vertic
 .error-state { color: #e11d48; }
 
 /* Width helpers */
-.w-50 { min-width: 50px; }
-.w-80 { min-width: 80px; }
+.w-50  { min-width: 50px; }
+.w-80  { min-width: 80px; }
+.w-90  { min-width: 90px; }
 .w-100 { min-width: 100px; }
 .w-110 { min-width: 110px; }
 .w-120 { min-width: 120px; }
 .w-130 { min-width: 130px; }
 .w-150 { min-width: 150px; }
+.w-200 { min-width: 200px; }
+
+/* Table cell helpers */
+.cell-nowrap { white-space: nowrap; }
 </style>
