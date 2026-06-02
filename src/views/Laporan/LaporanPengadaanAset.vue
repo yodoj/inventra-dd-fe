@@ -673,22 +673,20 @@ onUnmounted(() => clearInterval(phTimer))
         </div>
 
         <!-- From / To -->
-        <div class="filter-item" style="min-width: 260px; flex: 2; position: relative; max-width: 300px;">
-          <div class="flex gap-2">
-            <div class="flex-1">
-              <label class="filter-label" style="margin-bottom: 8px;">From</label>
+        <div class="filter-item from-to-wrapper">
+          <div class="from-to-row">
+            <div class="from-to-col">
+              <label class="filter-label">From</label>
               <input type="date" v-model="dateFrom" class="custom-input" :class="{ 'input-error': isDateRangeInvalid }" @change="onFromToChange" />
             </div>
-            <div class="flex-1">
-              <label class="filter-label" style="margin-bottom: 8px;">To</label>
+            <div class="from-to-col">
+              <label class="filter-label">To</label>
               <input type="date" v-model="dateTo" class="custom-input" :class="{ 'input-error': isDateRangeInvalid }" @change="onFromToChange" />
             </div>
           </div>
-          <div class="relative h-0">
-            <p v-if="isDateRangeInvalid" class="absolute top-1 left-0 text-red-500 text-[10px] italic leading-tight whitespace-nowrap">
-              Rentang tanggal tidak valid: 'From' tidak boleh lebih besar dari 'To'
-            </p>
-          </div>
+          <p v-if="isDateRangeInvalid" class="date-range-error">
+            Rentang tanggal tidak valid: 'From' tidak boleh lebih besar dari 'To'
+          </p>
         </div>
 
         <!-- Kategori -->
@@ -929,6 +927,10 @@ onUnmounted(() => clearInterval(phTimer))
   transition: all 0.2s;
 }
 .custom-input.input-error { border-color: #ef4444; }
+.from-to-wrapper { position: relative; }
+.from-to-row { display: flex; gap: 0.5rem; }
+.from-to-col { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; }
+.date-range-error { position: absolute; top: 100%; left: 0; font-size: 10px; color: #ef4444; font-style: italic; line-height: 1.2; white-space: nowrap; margin-top: 2px; }
 .custom-select select { appearance: none; cursor: pointer; padding-right: 2.5rem; }
 .select-icon { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 1rem; color: #64748b; pointer-events: none; }
 .search-box { position: relative; }
