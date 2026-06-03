@@ -42,6 +42,38 @@ const units = [
   { label: 'SMA', value: 'SMA' }
 ];
 
+const kelasOptionsMap: Record<string, string[]> = {
+  'KB-TK': ['KB', 'TK A', 'TK B'],
+  'SD':    ['1', '2', '3', '4', '5', '6'],
+  'SMP':   ['7', '8', '9'],
+  'SMA':   ['10', '11', '12'],
+};
+
+const kelasOptions = computed(() => kelasOptionsMap[form.unit] ?? []);
+
+function mapKelasToOption(kelas: string, unit: string): string {
+  const opts = kelasOptionsMap[unit] ?? [];
+  if (!kelas) return '';
+  if (opts.includes(kelas)) return kelas;
+  const romanToNum: [string, string][] = [
+    ['XII', '12'], ['XI', '11'], ['X', '10'],
+    ['IX', '9'], ['VIII', '8'], ['VII', '7'],
+    ['VI', '6'], ['V', '5'], ['IV', '4'],
+    ['III', '3'], ['II', '2'], ['I', '1'],
+  ];
+  const upper = kelas.trim().toUpperCase();
+  for (const [roman, num] of romanToNum) {
+    if (upper.startsWith(roman) && opts.includes(num)) return num;
+  }
+  return '';
+}
+
+watch(() => form.unit, (newUnit) => {
+  if (isSiswa.value) {
+    form.kelas = mapKelasToOption(form.kelas, newUnit);
+  }
+});
+
 const displayRole = computed(() => {
   if (!form.role) return '';
   return form.role.charAt(0).toUpperCase() + form.role.slice(1).toLowerCase();
@@ -90,7 +122,7 @@ onMounted(async () => {
       form.role = data.role || '';
       form.unit = data.unit || '';
       form.nisn = (data as any).nisn || '';
-      form.kelas = (data as any).kelas || '';
+      form.kelas = mapKelasToOption(data.kelas || '', data.unit || '');
     } else {
       toastStore.error('Error', 'Gagal memuat data pengguna');
       router.push({ name: 'pengelolaan-akun' });
@@ -262,12 +294,13 @@ const submitForm = async () => {
           <Transition name="fade">
             <div v-if="isSiswa" class="form-group">
               <label class="label-text">Kelas <span class="required">*</span></label>
-              <input
-                v-model="form.kelas"
-                type="text"
-                placeholder="Contoh: X MIPA 1"
-                class="form-input"
-              />
+              <div class="custom-select">
+                <select v-model="form.kelas" :class="{ placeholder: !form.kelas }">
+                  <option value="" disabled>Pilih kelas</option>
+                  <option v-for="opt in kelasOptions" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+                <ChevronDown class="select-icon" />
+              </div>
             </div>
           </Transition>
 
