@@ -25,6 +25,7 @@ const form = ref({
 const fotoFile = ref<File | null>(null);
 const previewUrl = ref('');
 const fileError = ref('');
+const originalGambarUrl = ref('');
 
 const getFullImageUrl = (url: string) => {
   if (!url) return '';
@@ -87,12 +88,13 @@ const isYayasanOrAdmin = computed(() => {
 onMounted(async () => {
   try {
     const data = await assetStore.fetchAssetRuanganById(id);
+    originalGambarUrl.value = data.gambar_url_aset || '';
     form.value = {
       namaAset: data.nama_aset,
       statusAset: data.status_aset,
       kategoriAset: data.kategori_aset,
       unit: data.unit,
-      gambarUrlAset: data.gambar_url_aset,
+      gambarUrlAset: data.gambar_url_aset && !data.gambar_url_aset.startsWith('/uploads/') ? data.gambar_url_aset : '',
       keteranganAset: data.keterangan_aset
     };
   } catch (error) {
@@ -129,7 +131,7 @@ const handleSubmit = async () => {
     if (fotoFile.value) {
       formData.append('gambarFile', fotoFile.value);
     } else {
-      formData.append('gambarUrlAset', form.value.gambarUrlAset);
+      formData.append('gambarUrlAset', form.value.gambarUrlAset || originalGambarUrl.value);
     }
 
     await assetStore.updateAssetRuangan(id, formData);
@@ -168,17 +170,6 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
-                <div class="custom-select">
-                  <select v-model="form.kategoriAset" class="form-input" :class="{ 'placeholder-color': !form.kategoriAset }" required>
-                    <option value="" disabled>Pilih Kategori</option>
-                    <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
-              </div>
-
-              <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
                 <div v-if="!isYayasanOrAdmin">
                   <input :value="form.unit" type="text" class="form-input bg-gray-50 cursor-not-allowed" disabled />
@@ -193,22 +184,22 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
-                <div class="custom-select" :class="{ 'opacity-50 pointer-events-none': !form.kategoriAset }">
-                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" :disabled="!form.kategoriAset" required>
-                    <option value="" disabled>{{ form.kategoriAset ? 'Pilih Status' : 'Pilih kategori terlebih dahulu' }}</option>
-                    <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+                <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
+                <div class="custom-select">
+                  <select v-model="form.kategoriAset" class="form-input" :class="{ 'placeholder-color': !form.kategoriAset }" required>
+                    <option value="" disabled>Pilih Kategori</option>
+                    <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
                   </select>
                   <ChevronDown class="select-icon" />
                 </div>
               </div>
             </div>
 
-            <!-- Right Column -->
+            <!-- Middle Column -->
             <div class="form-column">
               <div class="form-group gambar-upload-group">
-                <label class="s2-subtitle mb-2 block">Gambar</label>
-                
+                <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
+
                 <div class="upload-options">
                   <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
                     <input
@@ -219,21 +210,16 @@ const handleSubmit = async () => {
                       @change="onFileChange"
                     />
 
-                    <div v-if="!previewUrl && !form.gambarUrlAset" class="dz-empty">
+                    <div v-if="!previewUrl && !form.gambarUrlAset && !originalGambarUrl" class="dz-empty">
                       <div class="dz-icon">+</div>
                       <div class="dz-title">Upload Foto</div>
                       <div class="dz-sub">Klik untuk pilih file</div>
                     </div>
 
                     <div v-else class="dz-filled">
-                      <img 
-                        class="dz-img" 
-                        :src="previewUrl || getFullImageUrl(form.gambarUrlAset) || defaultImage" 
-                        @error="onImageError"
-                        alt="Preview" 
-                      />
+                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset || originalGambarUrl)" alt="Preview" />
                       <div class="dz-bar">
-                        <div class="dz-name">{{ fotoFile ? fotoFile.name : 'Gambar saat ini' }}</div>
+                        <div class="dz-name">{{ fotoFile ? fotoFile.name : (originalGambarUrl ? 'Gambar saat ini' : 'Gambar saat ini') }}</div>
                         <button
                           v-if="fotoFile"
                           type="button"
@@ -253,10 +239,24 @@ const handleSubmit = async () => {
                 </div>
                 <p v-if="fileError" class="text-xs text-red-500 mt-1">{{ fileError }}</p>
               </div>
+            </div>
 
+            <!-- Right Column -->
+            <div class="form-column">
               <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
+                <div class="custom-select">
+                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" required>
+                    <option value="" disabled>Pilih Status</option>
+                    <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>
+                  </select>
+                  <ChevronDown class="select-icon" />
+                </div>
+              </div>
+
+              <div class="form-group flex-grow-group">
                 <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
+                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea flex-textarea"></textarea>
               </div>
             </div>
           </div>
@@ -294,14 +294,14 @@ const handleSubmit = async () => {
   background: white;
   padding: 40px;
   border-radius: 24px;
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 32px;
 }
 
 .form-column {
@@ -543,5 +543,17 @@ select option {
 
 .mb-3 {
   margin-bottom: 12px;
+}
+
+.flex-grow-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-textarea {
+  flex: 1;
+  min-height: 180px;
+  resize: none;
 }
 </style>

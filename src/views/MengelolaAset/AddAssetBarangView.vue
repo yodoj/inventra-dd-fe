@@ -18,7 +18,7 @@ const form = ref({
   merkAset: '',
   qtyAset: null,
   lokasiAset: '',
-  statusAset: '',
+  statusAset: 'TERSEDIA',
   kategoriAset: '',
   unit: authStore.user?.unit || '',
   gambarUrlAset: '',
@@ -66,10 +66,20 @@ const removeFile = () => {
   previewUrl.value = '';
 };
 
+const isYayasanOrAdmin = computed(() => {
+  return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
+});
+
 // Watch for user changes to ensure unit is set if auth loads late
 watch(() => authStore.user, (newUser) => {
-  if (newUser?.unit && !form.value.unit) {
+  if (newUser?.unit && !form.value.unit && !isYayasanOrAdmin.value) {
     form.value.unit = newUser.unit;
+  }
+}, { immediate: true });
+
+watch(isYayasanOrAdmin, (newValue) => {
+  if (newValue) {
+    form.value.unit = '';
   }
 }, { immediate: true });
 
@@ -92,7 +102,8 @@ const allStatuses = [
 
 const filteredStatuses = computed(() => {
   if (!form.value.kategoriAset) return [];
-  return allStatuses.filter(s => s.categories.includes(form.value.kategoriAset));
+  // For adding a new asset, the only allowed status is 'TERSEDIA'
+  return allStatuses.filter(s => s.value === 'TERSEDIA' && s.categories.includes(form.value.kategoriAset));
 });
 
 // Reset status if it's not valid for the new category
@@ -103,10 +114,6 @@ watch(() => form.value.kategoriAset, (newCat) => {
 });
 
 const units = ['KB-TK', 'SD', 'SMP', 'SMA'];
-
-const isYayasanOrAdmin = computed(() => {
-  return ['YAYASAN', 'ADMIN'].includes(authStore.userRole || '');
-});
 
 const confirmSubmit = () => {
   showConfirmModal.value = true;
@@ -169,7 +176,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Total Kuantitas <span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
                 <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
               </div>
 
@@ -193,7 +200,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group gambar-upload-group">
-                <label class="s2-subtitle mb-2 block">Gambar</label>
+                <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
                 
                 <div class="upload-options">
                   <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
@@ -251,20 +258,9 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Status <span class="required-star">*</span></label>
-                <div class="custom-select">
-                  <select v-model="form.statusAset" class="form-input" :class="{ 'placeholder-color': !form.statusAset }" required>
-                    <option value="" disabled>Pilih Status</option>
-                    <option v-for="st in (form.kategoriAset ? filteredStatuses : allStatuses)" :key="st.value" :value="st.value">{{ st.label }}</option>
-                  </select>
-                  <ChevronDown class="select-icon" />
-                </div>
-              </div>
-
-              <div class="form-group">
+              <div class="form-group flex-grow-group">
                 <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="6"></textarea>
+                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea flex-textarea"></textarea>
               </div>
             </div>
           </div>
@@ -568,5 +564,17 @@ select option {
 
 .mb-3 {
   margin-bottom: 12px;
+}
+
+.flex-grow-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-textarea {
+  flex: 1;
+  min-height: 180px;
+  resize: none;
 }
 </style>
