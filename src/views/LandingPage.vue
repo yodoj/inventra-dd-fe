@@ -15,6 +15,7 @@ import {
   GraduationCap
 } from 'lucide-vue-next';
 import axios from 'axios';
+import api from '@/services/api';
 
 const stats = ref<Record<string, string>>({
   totalAsetSekolah: '1,254',
@@ -33,7 +34,7 @@ const activeFaq = ref<number | null>(0); // Default open the first one to show d
 
 const fetchHomeData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home');
+    const response = await api.get('/api/home');
     const responseData = response.data.data;
     if (responseData.stats) stats.value = responseData.stats;
     if (responseData.faqs) faqs.value = responseData.faqs;

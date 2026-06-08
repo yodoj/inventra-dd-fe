@@ -7,11 +7,16 @@ import {
   EyeOff, 
   Lock, 
   Mail, 
-  Package 
+  Package,
+  ArrowLeft
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
+import { useToastStore } from '@/stores/toast';
+
+import api from '@/services/api';
 
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 const router = useRouter();
 
 const email = ref('');
@@ -19,31 +24,47 @@ const password = ref('');
 const showPassword = ref(false);
 const isLoading = ref(false);
 const errorMessage = ref('');
+const hasError = ref(false);
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
+const clearError = () => {
+  if (hasError.value) {
+    hasError.value = false;
+    errorMessage.value = '';
+  }
+};
+
 const handleLogin = async () => {
   if (!email.value || !password.value) {
     errorMessage.value = 'Mohon isi email dan password Anda.';
+    hasError.value = true;
+    toastStore.error('Error', errorMessage.value);
     return;
   }
 
   isLoading.value = true;
   errorMessage.value = '';
+  hasError.value = false;
   
   try {
-    const response = await axios.post('http://localhost:8080/api/auth/login', {
-      email: email.value,
+    const response = await api.post('/api/auth/login', {
+      email: email.value.trim(),
       password: password.value
     });
     
     const loginData = response.data.data;
     authStore.setAuth(loginData, loginData.token);
     router.push('/');
+    toastStore.success('Success', 'Login Berhasil');
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || 'Login gagal. Periksa kembali email dan password Anda.';
+    const errorMsg = err.response?.data?.message || 'Login gagal. Periksa kembali email dan password Anda.';
+    errorMessage.value = errorMsg;
+    hasError.value = true;
+    password.value = ''; // Reset only password for efficiency
+    toastStore.error('Error', errorMsg);
   } finally {
     isLoading.value = false;
   }
@@ -54,6 +75,10 @@ const handleLogin = async () => {
   <div class="login-page">
     <!-- Left Column: Branding & Info -->
     <div class="info-column">
+      <router-link to="/" class="back-link">
+        <ArrowLeft class="icon-sm" /> Back to Home
+      </router-link>
+
       <div class="branding-content">
         <div class="brand-logo">
           <img src="@/assets/logo-dd.png" alt="Dian Didaktika Logo" />
@@ -85,37 +110,42 @@ const handleLogin = async () => {
           <form @submit.prevent="handleLogin" class="login-form">
             <!-- Email Field -->
             <div class="form-group">
-              <label class="c1-caption">Enter your email address</label>
-              <div class="input-wrapper">
+              <label class="c1-caption">
+                Enter your email address <span class="required-asterisk">*</span>
+              </label>
+              <div class="input-wrapper" :class="{ 'input-error': hasError }">
                 <Mail class="input-icon" />
                 <input 
                   type="email" 
                   v-model="email" 
                   placeholder="Email address" 
                   required
+                  @input="clearError"
                 />
               </div>
             </div>
 
             <!-- Password Field -->
             <div class="form-group">
-              <label class="c1-caption">Enter your password</label>
-              <div class="input-wrapper">
+              <label class="c1-caption">
+                Enter your password <span class="required-asterisk">*</span>
+              </label>
+              <div class="input-wrapper" :class="{ 'input-error': hasError }">
                 <Lock class="input-icon" />
                 <input 
                   :type="showPassword ? 'text' : 'password'" 
                   v-model="password" 
                   placeholder="Password" 
                   required
+                  @input="clearError"
                 />
                 <button type="button" @click="togglePassword" class="toggle-password">
                   <Eye v-if="!showPassword" />
                   <EyeOff v-else />
                 </button>
               </div>
+              <p v-if="hasError" class="error-msg c2-caption">{{ errorMessage }}</p>
             </div>
-
-            <p v-if="errorMessage" class="error-msg c2-caption">{{ errorMessage }}</p>
 
             <button type="submit" class="btn-submit btn-giant" :disabled="isLoading">
               {{ isLoading ? 'Signing in...' : 'Sign In' }}
@@ -141,10 +171,32 @@ const handleLogin = async () => {
   padding: 80px;
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .branding-content {
   max-width: 500px;
+}
+
+.back-link {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  padding: 10px 16px;
+  border-radius: 12px;
+}
+
+.back-link:hover {
+  color: var(--primary-main);
+  background-color: var(--primary-50);
 }
 
 .brand-logo {
@@ -254,6 +306,23 @@ const handleLogin = async () => {
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.input-wrapper.input-error {
+  border-color: var(--error);
+}
+
+.input-wrapper.input-error input {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.input-wrapper.input-error .input-icon {
+  color: var(--error);
+}
+
+.error-text {
+  color: var(--error) !important;
+}
+
 .input-wrapper input:focus {
   outline: none;
   border-color: var(--primary-main);
@@ -301,6 +370,11 @@ const handleLogin = async () => {
 .error-msg {
   color: var(--error);
   padding-left: 4px;
+}
+
+.required-asterisk {
+  color: var(--error);
+  margin-left: 2px;
 }
 
 .icon-sm {

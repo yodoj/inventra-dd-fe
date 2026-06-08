@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { toast } from 'vue-sonner';
 import { useAuthStore } from '@/stores/auth';
+import api from '@/services/api';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -25,6 +25,20 @@ const initials = computed(() => {
 const handleEditClick = () => {
   router.push('/profile/edit');
 };
+
+const refreshProfile = async () => {
+  try {
+    const response = await api.get('/api/profile');
+    const data = response.data.data;
+    authStore.setAuth(data, authStore.token!);
+  } catch {
+    // Silently fail - use cached data if refresh fails
+  }
+};
+
+onMounted(() => {
+  refreshProfile();
+});
 </script>
 
 <template>
@@ -64,7 +78,7 @@ const handleEditClick = () => {
         <div class="info-list">
 
           <!-- NISN hanya untuk Siswa, ditampilkan pertama -->
-          <div v-if="isSiswa" class="info-row">
+          <div v-if="isSiswa && profile.nisn" class="info-row">
             <span class="info-label">NISN</span>
             <span class="info-value">{{ profile.nisn }}</span>
           </div>
@@ -90,7 +104,7 @@ const handleEditClick = () => {
           </div>
 
           <!-- Kelas hanya untuk Siswa -->
-          <div v-if="isSiswa" class="info-row">
+          <div v-if="isSiswa && profile.kelas" class="info-row">
             <span class="info-label">Kelas</span>
             <span class="info-value">{{ profile.kelas }}</span>
           </div>
@@ -100,9 +114,21 @@ const handleEditClick = () => {
             <span class="info-value">{{ profile.phoneNumber }}</span>
           </div>
 
-          <div class="info-row no-border">
-            <span class="info-label">Password</span>
-            <span class="info-value password-dots">••••••••••••</span>
+          <!-- PASSWORD ROW -->
+          <div class="info-row no-border password-info-row">
+            <div class="password-left">
+              <span class="info-label">Password</span>
+              <span class="info-value password-dots">••••••••••••</span>
+            </div>
+            <div class="password-actions">
+              <button @click="router.push('/profile/change-password')" class="btn-change-password">
+                Ubah Password
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button @click="router.push('/profile/password-history')" class="btn-password-history">
+                Lihat Riwayat Perubahan Password
+              </button>
+            </div>
           </div>
 
         </div>
@@ -286,10 +312,68 @@ const handleEditClick = () => {
   font-weight: 400;
 }
 
+/* ── PASSWORD ROW ── */
+.password-info-row {
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.password-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .password-dots {
   font-size: 16px;
   letter-spacing: 2px;
   color: #888;
+}
+
+.password-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.btn-change-password {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #EEF4FF;
+  border: 1.5px solid #C7DCFF;
+  color: #1565a8;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btn-change-password:hover {
+  background: #dbeafe;
+}
+
+.btn-password-history {
+  background: none;
+  border: none;
+  color: #1565a8;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: right;
+}
+
+.btn-password-history:hover {
+  color: #0d3f72;
 }
 
 /* Loading */
@@ -314,6 +398,15 @@ const handleEditClick = () => {
 
   .right-card {
     padding: 24px 20px;
+  }
+
+  .password-info-row {
+    flex-direction: column !important;
+    align-items: flex-start;
+  }
+
+  .password-actions {
+    align-items: flex-start;
   }
 }
 </style>

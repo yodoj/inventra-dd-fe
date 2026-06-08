@@ -3,75 +3,91 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { Eye, EyeOff } from 'lucide-vue-next';
-import { toast } from 'vue-sonner';
+import { useToastStore } from '@/stores/toast';
 import api from '@/services/api';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const formData = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
+  current_password: '',
+  new_password: '',
+  confirm_password: ''
 });
 
-const showCurrentPassword = ref(false);
+const showCurrent_password = ref(false);
 const showNewPassword = ref(false);
-const showConfirmPassword = ref(false);
+const showConfirm_password = ref(false);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 const showCancelModal = ref(false);
+const showConfirmModal = ref(false);
 
 const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-  if (field === 'current') showCurrentPassword.value = !showCurrentPassword.value;
+  if (field === 'current') showCurrent_password.value = !showCurrent_password.value;
   if (field === 'new') showNewPassword.value = !showNewPassword.value;
-  if (field === 'confirm') showConfirmPassword.value = !showConfirmPassword.value;
+  if (field === 'confirm') showConfirm_password.value = !showConfirm_password.value;
 };
 
 const handleSavePassword = async () => {
-  if (!formData.value.currentPassword) {
+  if (!formData.value.current_password) {
     errorMessage.value = 'Password saat ini tidak boleh kosong';
     return;
   }
-  if (!formData.value.newPassword) {
+  if (!formData.value.new_password) {
     errorMessage.value = 'Password baru tidak boleh kosong';
     return;
   }
-  if (!formData.value.confirmPassword) {
+  if (!formData.value.confirm_password) {
     errorMessage.value = 'Konfirmasi password tidak boleh kosong';
     return;
   }
-  if (formData.value.newPassword !== formData.value.confirmPassword) {
+  if (formData.value.new_password !== formData.value.confirm_password) {
     errorMessage.value = 'Password baru dan konfirmasi tidak sesuai';
     return;
   }
-  if (formData.value.newPassword === formData.value.currentPassword) {
+  if (formData.value.new_password === formData.value.current_password) {
     errorMessage.value = 'Password baru tidak boleh sama dengan password lama';
     return;
   }
-  if (formData.value.newPassword.length < 8) {
-    errorMessage.value = 'Password baru minimal 8 karakter';
+  // Strong password validation
+  const p = formData.value.new_password;
+  const hasEightChars = p.length >= 8;
+  const hasUpper = /[A-Z]/.test(p);
+  const hasLower = /[a-z]/.test(p);
+  const hasNumber = /[0-9]/.test(p);
+  const hasSpecial = /[^A-Za-z0-9]/.test(p);
+
+  if (!hasEightChars || !hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+    errorMessage.value = 'Password baru tidak memenuhi kriteria keamanan';
     return;
   }
 
+  showConfirmModal.value = true;
+};
+
+const submitSavePassword = async () => {
+  showConfirmModal.value = false;
   isLoading.value = true;
   errorMessage.value = '';
   successMessage.value = '';
 
   try {
     await api.put('/api/profile/password', {
-      currentPassword: formData.value.currentPassword,
-      newPassword: formData.value.newPassword,
-      confirmPassword: formData.value.confirmPassword
+      current_password: formData.value.current_password,
+      new_password: formData.value.new_password,
+      confirm_password: formData.value.confirm_password
     });
 
-    toast.success('Password berhasil diubah!');
+    toastStore.success('Success', 'Password berhasil diubah!');
     setTimeout(() => router.push('/profile'), 1500);
   } catch (err: any) {
     errorMessage.value =
       err.response?.data?.message || 'Gagal mengubah password. Silakan coba lagi.';
-    toast.error(errorMessage.value);
+    toastStore.error('Error', errorMessage.value);
   } finally {
     isLoading.value = false;
   }
@@ -79,9 +95,9 @@ const handleSavePassword = async () => {
 
 const handleCancel = () => {
   const isDirty =
-    formData.value.currentPassword ||
-    formData.value.newPassword ||
-    formData.value.confirmPassword;
+    formData.value.current_password ||
+    formData.value.new_password ||
+    formData.value.confirm_password;
 
   if (isDirty) {
     showCancelModal.value = true;
@@ -131,14 +147,14 @@ const confirmCancel = () => {
           <label class="form-label">Password Saat Ini</label>
           <div class="password-input-wrapper">
             <input
-              :type="showCurrentPassword ? 'text' : 'password'"
-              v-model="formData.currentPassword"
+              :type="showCurrent_password ? 'text' : 'password'"
+              v-model="formData.current_password"
               placeholder="Masukkan password saat ini"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('current')" class="toggle-btn">
-              <Eye v-if="showCurrentPassword" class="icon-toggle" />
+              <Eye v-if="showCurrent_password" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
@@ -150,7 +166,7 @@ const confirmCancel = () => {
           <div class="password-input-wrapper">
             <input
               :type="showNewPassword ? 'text' : 'password'"
-              v-model="formData.newPassword"
+              v-model="formData.new_password"
               placeholder="Masukkan password baru"
               class="form-input"
               required
@@ -160,7 +176,27 @@ const confirmCancel = () => {
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
-          <p class="form-hint">Minimal 8 karakter</p>
+          <!-- Real-time Validation Checklist -->
+          <div class="password-requirements mt-3">
+            <p class="text-xs font-semibold mb-2 text-gray-500">KRITERIA PASSWORD:</p>
+            <ul class="requirements-list">
+              <li :class="{ 'valid': /[A-Z]/.test(formData.new_password) }">
+                <span class="dot"></span> Uppercase letter
+              </li>
+              <li :class="{ 'valid': /[a-z]/.test(formData.new_password) }">
+                <span class="dot"></span> Lowercase letter
+              </li>
+              <li :class="{ 'valid': /[0-9]/.test(formData.new_password) }">
+                <span class="dot"></span> Number
+              </li>
+              <li :class="{ 'valid': /[^A-Za-z0-9]/.test(formData.new_password) }">
+                <span class="dot"></span> Special character (e.g. !?<>@#$%)
+              </li>
+              <li :class="{ 'valid': formData.new_password.length >= 8 }">
+                <span class="dot"></span> 8 characters or more
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Confirm Password -->
@@ -168,14 +204,14 @@ const confirmCancel = () => {
           <label class="form-label">Konfirmasi Password Baru</label>
           <div class="password-input-wrapper">
             <input
-              :type="showConfirmPassword ? 'text' : 'password'"
-              v-model="formData.confirmPassword"
+              :type="showConfirm_password ? 'text' : 'password'"
+              v-model="formData.confirm_password"
               placeholder="Konfirmasi password baru"
               class="form-input"
               required
             />
             <button type="button" @click="togglePasswordVisibility('confirm')" class="toggle-btn">
-              <Eye v-if="showConfirmPassword" class="icon-toggle" />
+              <Eye v-if="showConfirm_password" class="icon-toggle" />
               <EyeOff v-else class="icon-toggle" />
             </button>
           </div>
@@ -193,6 +229,19 @@ const confirmCancel = () => {
 
       </form>
     </div>
+
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      :show="showConfirmModal"
+      title="Konfirmasi Ubah Password"
+      message="Apakah Anda yakin ingin mengubah password Anda?"
+      confirm-text="Ya, Ubah Password"
+      cancel-text="Batal"
+      type="confirm"
+      :is-loading="isLoading"
+      @confirm="submitSavePassword"
+      @cancel="showConfirmModal = false"
+    />
 
     <!-- Cancel Confirmation Modal -->
     <Transition name="modal">
@@ -374,6 +423,55 @@ const confirmCancel = () => {
   font-size: 12px;
   color: #999;
   margin: 0;
+}
+
+/* Password Requirements Checklist */
+.password-requirements {
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.requirements-list li {
+  font-size: 11px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li.valid {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.requirements-list li.valid .dot {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.mt-3 {
+  margin-top: 12px;
 }
 
 /* ── ACTION BUTTONS ── */

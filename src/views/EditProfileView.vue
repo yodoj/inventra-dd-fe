@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { toast } from 'vue-sonner';
+import { useToastStore } from '@/stores/toast';
 import api from '@/services/api';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const formData = ref({
   name: '',
@@ -25,6 +26,38 @@ const successMessage = ref('');
 const showCancelModal = ref(false); // ← modal state
 
 const isSiswa = computed(() => formData.value.role === 'SISWA');
+
+const kelasOptionsMap: Record<string, string[]> = {
+  'KB-TK': ['KB', 'TK A', 'TK B'],
+  'SD':    ['1', '2', '3', '4', '5', '6'],
+  'SMP':   ['7', '8', '9'],
+  'SMA':   ['10', '11', '12'],
+};
+
+const kelasOptions = computed(() => kelasOptionsMap[formData.value.unit] ?? []);
+
+function mapKelasToOption(kelas: string, unit: string): string {
+  const opts = kelasOptionsMap[unit] ?? [];
+  if (!kelas) return '';
+  if (opts.includes(kelas)) return kelas;
+  const romanToNum: [string, string][] = [
+    ['XII', '12'], ['XI', '11'], ['X', '10'],
+    ['IX', '9'], ['VIII', '8'], ['VII', '7'],
+    ['VI', '6'], ['V', '5'], ['IV', '4'],
+    ['III', '3'], ['II', '2'], ['I', '1'],
+  ];
+  const upper = kelas.trim().toUpperCase();
+  for (const [roman, num] of romanToNum) {
+    if (upper.startsWith(roman) && opts.includes(num)) return num;
+  }
+  return '';
+}
+
+watch(() => formData.value.unit, (newUnit) => {
+  if (isSiswa.value) {
+    formData.value.kelas = mapKelasToOption(formData.value.kelas, newUnit);
+  }
+});
 
 const isFormDirty = computed(() => {
   return (
@@ -48,9 +81,11 @@ const fetchProfile = async () => {
       unit: data.unit || '',
       phoneNumber: data.phoneNumber || '',
       nisn: data.nisn || '',
-      kelas: data.kelas || '',
+      kelas: mapKelasToOption(data.kelas || '', data.unit || ''),
     };
-  } catch (err: any) {
+    // Update auth store with complete profile data
+    authStore.setAuth(data, authStore.token!);
+  } catch {
     errorMessage.value = 'Gagal memuat data profil. Silakan coba lagi.';
   } finally {
     isLoading.value = false;
@@ -69,8 +104,15 @@ const handleSaveProfile = async () => {
     errorMessage.value = 'No Telepon tidak boleh kosong';
     return;
   }
-  if (!/^\d+$/.test(formData.value.phoneNumber)) {
-    errorMessage.value = 'No Telepon hanya boleh berisi angka';
+  // Strip spasi, -, ., (, ) lalu normalisasi prefix +62/62 → 08
+  let cleanedPhone = formData.value.phoneNumber.replace(/[\s\-.\(\)]/g, '');
+  if (cleanedPhone.startsWith('+62')) {
+    cleanedPhone = '0' + cleanedPhone.substring(3);
+  } else if (cleanedPhone.startsWith('62') && cleanedPhone.length > 5) {
+    cleanedPhone = '0' + cleanedPhone.substring(2);
+  }
+  if (!/^08[0-9]{6,13}$/.test(cleanedPhone)) {
+    errorMessage.value = 'No Telepon tidak valid. Gunakan format 08xx, +62xx, atau 62xx dengan panjang 8-15 digit';
     return;
   }
 
@@ -80,8 +122,8 @@ const handleSaveProfile = async () => {
       errorMessage.value = 'NISN tidak boleh kosong untuk Siswa';
       return;
     }
-    if (!/^\d+$/.test(formData.value.nisn)) {
-      errorMessage.value = 'NISN hanya boleh berisi angka';
+    if (!/^[0-9]{10}$/.test(formData.value.nisn)) {
+      errorMessage.value = 'NISN harus tepat 10 digit angka';
       return;
     }
     if (!formData.value.kelas.trim()) {
@@ -105,7 +147,7 @@ const handleSaveProfile = async () => {
   successMessage.value = '';
 
   try {
-    const payload: any = {
+    const payload: Record<string, string | undefined> = {
       name: formData.value.name,
       phoneNumber: formData.value.phoneNumber
     };
@@ -120,11 +162,13 @@ const handleSaveProfile = async () => {
     const updatedUser = { ...authStore.user, ...response.data.data };
     authStore.setAuth(updatedUser, authStore.token!);
 
-    toast.success('Profil berhasil diperbarui!');
+    toastStore.success('Success', 'Profil berhasil diperbarui!');
     setTimeout(() => router.push('/profile'), 1500);
-  } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
-    toast.error(errorMessage.value);
+  } catch (err: unknown) {
+    const axiosErr = err as { response?: { data?: { message?: string } } };
+    errorMessage.value = axiosErr.response?.data?.message || 'Gagal menyimpan profil. Silakan coba lagi.';
+    // Error notification is now handled by components using premium toastStore
+    toastStore.error('Error', errorMessage.value);
   } finally {
     isSaving.value = false;
   }
@@ -149,6 +193,10 @@ const confirmCancel = () => {
 
 const handleOpenChangePassword = () => {
   router.push('/profile/change-password');
+};
+
+const handleViewPasswordHistory = () => {
+  router.push('/profile/password-history');
 };
 
 onMounted(() => { fetchProfile(); });
@@ -218,35 +266,34 @@ onMounted(() => { fetchProfile(); });
         <!-- NISN - Siswa only -->
         <div v-if="isSiswa" class="form-row">
           <label class="form-label">NISN</label>
+          <small class="form-hint">NISN harus tepat 10 digit angka</small>
           <input
             type="text"
             v-model="formData.nisn"
             placeholder="Masukkan NISN"
             class="form-input"
-            pattern="[0-9]+"
+            pattern="[0-9]{10}"
           />
         </div>
 
         <!-- Kelas - Siswa only -->
         <div v-if="isSiswa" class="form-row">
           <label class="form-label">Kelas</label>
-          <input
-            type="text"
-            v-model="formData.kelas"
-            placeholder="Masukkan kelas"
-            class="form-input"
-          />
+          <select v-model="formData.kelas" class="form-input kelas-select">
+            <option value="" disabled>Pilih kelas</option>
+            <option v-for="opt in kelasOptions" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
         </div>
 
         <!-- No Telepon (editable) -->
         <div class="form-row">
           <label class="form-label">No Telepon</label>
+          <small class="form-hint">Format yang diterima: 08xx, +62xx, atau 62xx (8-15 digit)</small>
           <input
             type="tel"
             v-model="formData.phoneNumber"
-            placeholder="Masukkan nomor telepon"
+            placeholder="Contoh: 08123456789, +62 812-3456-7890"
             class="form-input"
-            pattern="[0-9]+"
             required
           />
         </div>
@@ -264,6 +311,9 @@ onMounted(() => { fetchProfile(); });
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>
+          <a href="javascript:void(0)" @click="handleViewPasswordHistory" class="password-history-link">
+            Lihat Riwayat Perubahan Password
+          </a>
         </div>
 
         <!-- Read-only fields note -->
@@ -455,11 +505,22 @@ onMounted(() => { fetchProfile(); });
   font-family: inherit;
   transition: color 0.2s;
 }
+.kelas-select {
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+}
 .form-input::placeholder {
   color: #bbb;
 }
 .form-input:focus {
   color: #1565a8;
+}
+.form-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* ── UBAH PASSWORD BUTTON ── */
@@ -482,6 +543,20 @@ onMounted(() => { fetchProfile(); });
 .change-password-btn:hover {
   background: #DDE9FF;
   border-color: #1565a8;
+}
+
+/* ── PASSWORD HISTORY LINK ── */
+.password-history-link {
+  font-size: 13px;
+  color: #1565a8;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-align: center;
+}
+.password-history-link:hover {
+  color: #0d3f72;
+  text-decoration: underline;
 }
 
 /* ── ACTION BUTTONS ── */

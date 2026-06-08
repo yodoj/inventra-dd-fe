@@ -3,8 +3,10 @@ import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
 import { toast } from 'vue-sonner';
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080'
+  baseURL: API_BASE_URL
 });
 
 // Request Interceptor - Add token to headers
@@ -28,23 +30,23 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      const authStore = useAuthStore();
-      authStore.logout();
-      toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
-      router.push('/login');
+      // Token expired or invalid (skip for login requests to avoid incorrect error message)
+      if (!error.config?.url?.includes('/api/auth/login')) {
+        const authStore = useAuthStore();
+        authStore.logout();
+        toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+        router.push('/login');
+      }
       return Promise.reject(error);
     }
 
     if (error.response?.status === 400) {
-      // Bad request - validation error
-      toast.error(error.response?.data?.message || 'Input tidak valid');
+      // Bad request - validation error (handled by components)
       return Promise.reject(error);
     }
 
     if (error.response?.status === 500) {
-      // Server error
-      toast.error('Terjadi kesalahan server. Silakan coba lagi.');
+      // Server error (handled by components)
       return Promise.reject(error);
     }
 

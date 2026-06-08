@@ -1,0 +1,961 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { useDashboardPengadaanStore } from '@/stores/dashboardPengadaanStore'
+import { useAuthStore } from '@/stores/auth'
+
+const store = useDashboardPengadaanStore()
+const auth = useAuthStore()
+const role = computed(() => auth.userRole)
+
+const years = computed(() => {
+  const currentYear = new Date().getFullYear()
+  const startYear = 1980
+  return Array.from(
+    { length: currentYear - startYear },
+    (_, i) => currentYear - i
+  )
+})
+
+const months = [
+  { label: "Januari", value: 1 }, { label: "Februari", value: 2 },
+  { label: "Maret", value: 3 }, { label: "April", value: 4 },
+  { label: "Mei", value: 5 }, { label: "Juni", value: 6 },
+  { label: "Juli", value: 7 }, { label: "Agustus", value: 8 },
+  { label: "September", value: 9 }, { label: "Oktober", value: 10 },
+  { label: "November", value: 11 }, { label: "Desember", value: 12 }
+]
+
+const categories = [
+  { label: "Barang Habis Pakai", value: "BARANG_HABIS_PAKAI" },
+  { label: "Barang Tidak Habis Pakai", value: "BARANG_TIDAK_HABIS_PAKAI" }
+]
+
+const selectedYear = ref<number>(2026)
+const selectedMonth = ref<number | null>(null)
+const selectedKategori = ref<string | null>(null)
+const selectedUnit = ref<string | null>(null)
+
+const isPrivileged = computed(() =>
+  ['YAYASAN', 'ADMIN', 'ROLE_YAYASAN', 'ROLE_ADMIN'].includes(role.value)
+)
+
+const applyTopFilter = async () => {
+  store.setYear(selectedYear.value)
+  if (isPrivileged.value) {
+    store.setUnit(selectedUnit.value === 'ALL' ? null : selectedUnit.value)
+  }
+  
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  
+  const unitParam = selectedUnit.value === 'ALL' ? undefined : (selectedUnit.value || undefined)
+  store.fetchBiayaChart(unitParam)
+  store.fetchJumlahAsetChart(unitParam)
+}
+
+const resetTopFilter = async () => {
+  selectedYear.value = new Date().getFullYear()
+  selectedUnit.value = null
+  store.setYear(selectedYear.value)
+  if (isPrivileged.value) {
+    store.setUnit(null)
+  }
+  
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  store.fetchBiayaChart()
+  store.fetchJumlahAsetChart()
+}
+
+const applyBottomFilter = async () => {
+  store.setKategori(selectedKategori.value)
+  store.setBulan(selectedMonth.value)
+  await store.fetchTopDashboard()
+}
+
+const resetBottomFilter = async () => {
+  selectedKategori.value = null
+  selectedMonth.value = null
+  store.setKategori(null)
+  store.setBulan(null)
+  await store.fetchTopDashboard()
+}
+
+onMounted(async () => {
+  selectedYear.value = new Date().getFullYear()
+  store.setYear(selectedYear.value)
+  await store.fetchDashboard()
+  await store.fetchTopDashboard()
+  store.fetchBiayaChart()
+  store.fetchJumlahAsetChart()
+})
+
+const formatRupiah = (value?: number) => {
+  if (!value) return 'Rp0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+  }).format(value).replace(',00', '').replace(/\s+/g, '')
+}
+
+const formatShortRupiah = (value: number) => {
+  if (value >= 1000000) {
+    return `Rp${(value / 1000000).toFixed(0)} jt`
+  }
+  return formatRupiah(value)
+}
+
+const totalBarang = computed(() => store.dashboard?.total?.totalBarang || 0)
+const totalBiaya = computed(() => store.dashboard?.total?.totalBiaya || 0)
+
+const unitComparison = computed(() => {
+  const defaultUnits = ['KB-TK', 'SD', 'SMP', 'SMA']
+
+  const breakdown = store.dashboard?.breakdownUnit || []
+
+  return defaultUnits.map(unitName => {
+    const found = breakdown.find(b => b.unit === unitName)
+
+    return {
+      name: unitName,
+      price: found?.totalBiaya || 0,
+      items: found?.totalBarang || 0
+    }
+  })
+})
+
+const fastMoving = computed(() => store.topCepatHabis || [])
+const expensiveData = computed(() => store.topBiaya?.map(item => ({
+  name: item.namaAset,
+  price: item.totalBiaya
+})) || [])
+
+const isExpensiveEmpty = computed(() => {
+  return !expensiveData.value?.length ||
+         expensiveData.value.every(item => item.price === 0)
+})
+
+const formatBiayaYAxisLabel = (value: number) => {
+  if (value === 0) return 'Rp0'
+  if (value >= 1000000000) {
+    const m = value / 1000000000
+    const str = Number.isInteger(m) ? m.toString() : m.toFixed(1).replace('.', ',')
+    return `Rp${str} M`
+  }
+  return `Rp${new Intl.NumberFormat('id-ID').format(value)}`
+}
+
+const formatJumlahAsetYAxisLabel = (value: number) => {
+  if (value === 0) return '0'
+  if (value >= 1000000) {
+    const jt = value / 1000000
+    const str = Number.isInteger(jt) ? jt.toString() : jt.toFixed(1).replace('.', ',')
+    return `${str} jt`
+  }
+  return new Intl.NumberFormat('id-ID').format(value)
+}
+
+const getAxisData = (maxValue: number, intervals = 4, isInteger = false) => {
+  if (maxValue === 0) {
+    return {
+      niceMax: 100,
+      ticks: [0, 1, 2, 3, 4].map(i => ({ value: 25 * i, pos: i * 25 }))
+    }
+  }
+
+  const roughStep = maxValue / intervals
+  const stepExponent = Math.floor(Math.log10(roughStep))
+  const stepFraction = roughStep / Math.pow(10, stepExponent)
+
+  let niceStep
+  if (stepFraction <= 1) niceStep = 1
+  else if (stepFraction <= 1.25) niceStep = 1.25
+  else if (stepFraction <= 1.5) niceStep = 1.5
+  else if (stepFraction <= 2) niceStep = 2
+  else if (stepFraction <= 2.5) niceStep = 2.5
+  else if (stepFraction <= 3) niceStep = 3
+  else if (stepFraction <= 4) niceStep = 4
+  else if (stepFraction <= 5) niceStep = 5
+  else niceStep = 10
+
+  let step = niceStep * Math.pow(10, stepExponent)
+  if (isInteger) {
+    step = Math.ceil(step)
+  }
+  const niceMax = step * intervals
+
+  const ticks = []
+  for (let i = 0; i <= intervals; i++) {
+    ticks.push({
+      value: step * i,
+      pos: (i / intervals) * 100
+    })
+  }
+
+  return { niceMax, ticks }
+}
+
+const biayaAxis = computed(() => {
+  const max = Math.max(...store.biayaPerTahun.map(item => item.totalBiaya), 0)
+  return getAxisData(max * 1.05, 4, false)
+})
+
+const jumlahAsetAxis = computed(() => {
+  const max = Math.max(...store.jumlahAsetPerTahun.map(item => item.jumlahAset), 0)
+  return getAxisData(max * 1.05, 4, true)
+})
+
+const getPointX = (index: number, total: number) => {
+  if (total <= 1) return 500;
+  const minX = 50;
+  const maxX = 950;
+  return minX + (index / (total - 1)) * (maxX - minX);
+};
+
+const getPointYBiaya = (value: number) => {
+  if (biayaAxis.value.niceMax === 0) return 400;
+  return 400 - (value / biayaAxis.value.niceMax) * 400;
+};
+
+const svgPathBiaya = computed(() => {
+  const data = store.biayaPerTahun;
+  if (data.length < 2) return "";
+  return data.reduce((path, point, i) => {
+    const x = getPointX(i, data.length);
+    const y = getPointYBiaya(point.totalBiaya);
+    return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
+  }, "");
+});
+
+const getPointYJumlahAset = (value: number) => {
+  if (jumlahAsetAxis.value.niceMax === 0) return 400;
+  return 400 - (value / jumlahAsetAxis.value.niceMax) * 400;
+};
+
+const svgPathJumlahAset = computed(() => {
+  const data = store.jumlahAsetPerTahun;
+  if (data.length < 2) return "";
+  return data.reduce((path, point, i) => {
+    const x = getPointX(i, data.length);
+    const y = getPointYJumlahAset(point.jumlahAset);
+    return i === 0 ? `M ${x} ${y}` : `${path} L ${x} ${y}`;
+  }, "");
+});
+</script>
+
+<template>
+  <main class="dashboard-page">
+    <h1 v-if="role === 'KEPSEK' || role === 'SARPRAS'" class="main-title">
+      Dashboard Pengadaan Aset - {{ auth.user?.unit }}
+    </h1>
+    <h1 v-else-if="role === 'ADMIN' || role === 'YAYASAN'" class="main-title">
+      Dashboard Pengadaan Aset Dian Didaktika
+    </h1>
+    <h1 v-else class="main-title">Dashboard Pengadaan Aset</h1>
+
+    <div class="master-container">
+      <!-- Top Filter -->
+      <div class="filter-box top-filter">
+        <div class="filter-controls">
+          <div v-if="role === 'YAYASAN' || role === 'ADMIN'" class="filter-item">
+            <label class="filter-label">Unit</label>
+            <select v-model="selectedUnit" class="custom-select-box">
+              <option :value="null">Semua Unit</option>
+              <option value="KB-TK">KB-TK</option>
+              <option value="SD">SD</option>
+              <option value="SMP">SMP</option>
+              <option value="SMA">SMA</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">Tahun</label>
+            <select v-model="selectedYear" class="custom-select-box">
+              <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button @click="applyTopFilter" class="btn-apply">Terapkan Filter</button>
+          <button @click="resetTopFilter" class="btn-reset">Reset</button>
+        </div>
+      </div>
+
+      <!-- Scorecard Box -->
+      <div class="white-container mb-24">
+        <div class="stats-grid">
+        <div class="stat-card bg-blue-solid">
+          <div class="icon-box"><i class="pi pi-box"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Total Pengadaan Aset</span>
+            <div class="stat-value-group">
+              <span class="stat-number">{{ totalBarang }}</span>
+              <span class="stat-unit">Unit Barang</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card bg-blue-solid">
+          <div class="icon-box"><i class="pi pi-wallet"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Total Estimasi Biaya Pengadaan Aset</span>
+            <span class="stat-number">{{ formatRupiah(totalBiaya) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="role === 'YAYASAN' || role === 'ADMIN'" class="comparison-section mt-24">
+        <h3 class="comparison-title">Perbandingan Antar Unit {{ selectedYear }}</h3>
+        <div class="comparison-grid">
+          <div v-for="unit in unitComparison" :key="unit.name" class="comp-card">
+            <p class="comp-unit-name">{{ unit.name }}</p>
+            <p class="comp-price">{{ formatRupiah(unit.price) }}</p>
+            <p class="comp-items">{{ unit.items }} Barang</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="charts-grid mb-24">
+
+      <div class="chart-card">
+        <div class="flex-between mb-20">
+          <h3 class="chart-title">Estimasi Biaya Pengadaan Per Tahun</h3>
+        </div>
+        <div class="chart-main-wrapper">
+          <div class="y-axis">
+            <div class="y-tick" v-for="tick in biayaAxis.ticks" :key="tick.pos" :style="{ bottom: `${tick.pos}%` }">
+              <span class="y-tick-label">{{ formatBiayaYAxisLabel(tick.value) }}</span>
+              <div class="y-tick-mark"></div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div class="grid-lines">
+              <div v-for="tick in biayaAxis.ticks" :key="tick.pos" class="grid-line" :style="{ bottom: `${tick.pos}%` }"></div>
+            </div>
+            <svg v-if="store.biayaPerTahun.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+              <path :d="svgPathBiaya" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="line-dots">
+              <div v-for="(point, i) in store.biayaPerTahun" :key="i" 
+                class="line-dot"
+                :style="{ 
+                  left: (getPointX(i, store.biayaPerTahun.length) / 10) + '%', 
+                  top: (getPointYBiaya(point.totalBiaya) / 4) + '%' 
+                }"
+              >
+                <span class="dot-tooltip">{{ formatRupiah(point.totalBiaya) }}</span>
+              </div>
+            </div>
+            <div class="line-labels">
+              <span 
+                v-for="(point, i) in store.biayaPerTahun" 
+                :key="point.tahun"
+                class="line-label"
+                :style="{ left: (getPointX(i, store.biayaPerTahun.length) / 10) + '%' }"
+              >
+                {{ point.tahun }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="flex-between mb-20">
+          <h3 class="chart-title">Jumlah Aset Pengadaan Per Tahun</h3>
+        </div>
+        <div class="chart-main-wrapper">
+          <div class="y-axis">
+            <div class="y-tick" v-for="tick in jumlahAsetAxis.ticks" :key="tick.pos" :style="{ bottom: `${tick.pos}%` }">
+              <span class="y-tick-label">{{ formatJumlahAsetYAxisLabel(tick.value) }}</span>
+              <div class="y-tick-mark"></div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div class="grid-lines">
+              <div v-for="tick in jumlahAsetAxis.ticks" :key="tick.pos" class="grid-line" :style="{ bottom: `${tick.pos}%` }"></div>
+            </div>
+            <svg v-if="store.jumlahAsetPerTahun.length > 0" class="line-svg" viewBox="0 0 1000 400" preserveAspectRatio="none">
+              <path :d="svgPathJumlahAset" fill="none" stroke="#00588F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="miter" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="line-dots">
+              <div v-for="(point, i) in store.jumlahAsetPerTahun" :key="i" 
+                class="line-dot"
+                :style="{ 
+                  left: (getPointX(i, store.jumlahAsetPerTahun.length) / 10) + '%', 
+                  top: (getPointYJumlahAset(point.jumlahAset) / 4) + '%' 
+                }"
+              >
+                <span class="dot-tooltip">{{ new Intl.NumberFormat('id-ID').format(point.jumlahAset) }}</span>
+              </div>
+            </div>
+            <div class="line-labels">
+              <span 
+                v-for="(point, i) in store.jumlahAsetPerTahun" 
+                :key="point.tahun"
+                class="line-label"
+                :style="{ left: (getPointX(i, store.jumlahAsetPerTahun.length) / 10) + '%' }"
+              >
+                {{ point.tahun }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Top 5 Box -->
+    <div class="white-container">
+      <!-- Bottom Filter -->
+      <div class="filter-box bottom-filter">
+        <div class="filter-controls">
+          <div class="filter-item">
+            <label class="filter-label">Kategori Aset</label>
+            <select v-model="selectedKategori" class="custom-select-box">
+              <option :value="null">Kategori</option>
+              <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">Periode</label>
+            <select v-model="selectedMonth" class="custom-select-box">
+              <option :value="null">Bulan</option>
+              <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button @click="applyBottomFilter" class="btn-apply">Terapkan Filter</button>
+          <button @click="resetBottomFilter" class="btn-reset">Reset</button>
+        </div>
+      </div>
+
+      <!-- Part untuk list aset paling cepat habis (nanti akan diganti dengan data asli dari API) -->
+      <div class="lists-grid">
+        <div class="list-box bg-navy">
+          <h3 class="list-title">Top 5 Aset Paling Cepat Habis</h3>
+          <div class="items-stack">
+            <div v-if="!fastMoving || fastMoving.length === 0" class="empty-list">
+              Tidak ada data
+            </div>
+            <template v-else>
+              <div v-for="(item, i) in fastMoving" :key="i" class="pill-item justify-between">
+                <div class="flex-items-center">
+                  <div class="blue-bullet">{{ i + 1 }}.</div>
+                  <span class="pill-text">{{ item.namaAset }}</span>
+                </div>
+                <span class="price-tag">
+                  {{ item.jumlahPengadaan }} kali pengadaan
+                </span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="list-box bg-blue">
+          <h3 class="list-title">Top 5 Estimasi Biaya Pengadaan Terbesar</h3>
+          <div class="items-stack">
+            <!-- Empty state -->
+            <div v-if="isExpensiveEmpty" class="empty-list">
+              Tidak ada data
+            </div>
+
+            <!-- Data ada -->
+            <template v-else>
+              <div
+                v-for="(item, i) in expensiveData"
+                :key="i"
+                class="pill-item justify-between"
+              >
+                <div class="flex-items-center">
+                  <div class="blue-bullet">{{ i + 1 }}.</div>
+                  <span class="pill-text">{{ item.name }}</span>
+                </div>
+                <span class="price-tag">
+                  {{ formatRupiah(item.price) }}
+                </span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    </div> <!-- Close master-container -->
+  </main>
+</template>
+
+<style scoped>
+.dashboard-page {
+  padding: 30px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+
+.main-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 24px;
+  color: #000;
+}
+
+.master-container {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.white-container {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #eaeaea;
+}
+.mb-24 {
+  margin-bottom: 24px;
+}
+.mt-24 {
+  margin-top: 24px;
+}
+.mr-12 {
+  margin-right: 12px;
+}
+
+.custom-select-box {
+  appearance: none; -webkit-appearance: none;
+  padding: 10px 35px 10px 16px; border-radius: 12px; border: 1px solid #d1d5db;
+  font-size: 14px; background: white no-repeat right 12px center / 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563' stroke-width='2'%3E%3Cpath d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  cursor: pointer;
+}
+.custom-select-box.small {
+  padding: 5px 30px 5px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.header-filter, .header-filter-group {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.header-filter-group {
+  gap: 12px;
+}
+
+.filter-box {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.top-filter {
+  justify-content: flex-end;
+}
+
+.bottom-filter {
+  justify-content: flex-end;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: #374151;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-apply {
+  background-color: #00588f;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  height: 42px;
+}
+
+.btn-apply:hover {
+  background-color: #004a78;
+}
+
+.btn-reset {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  height: 42px;
+}
+
+.btn-reset:hover {
+  background-color: #f9fafb;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.stat-card {
+  padding: 30px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  color: white;
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(135deg, #23456b 0%, #163252 100%);
+}
+
+.bg-blue-solid {
+  background-color: #00588f;
+}
+.icon-box {
+  background: rgba(255, 255, 255, 0.2);
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.stat-value-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.stat-unit {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* COMPARISON YAYASAN */
+.comparison-section {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.comparison-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.comp-card {
+  background-color: #e6f1ff;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.comp-unit-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+
+.comp-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: #00588f;
+  margin: 0;
+}
+
+.comp-items {
+  font-size: 11px;
+  color: #666;
+  margin: 4px 0 0;
+}
+
+/* CHARTS & LISTS */
+.charts-grid,
+.lists-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.chart-card {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #eaeaea;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-title,
+.list-title {
+  font-size: 16px;
+  font-weight: 700;
+  padding-bottom: 20px;
+}
+
+.chart-main-wrapper {
+  display: flex;
+  align-items: flex-end;
+  height: 180px;
+  margin-top: 15px;
+  margin-bottom: 25px;
+}
+
+.y-axis {
+  position: relative;
+  height: 160px;
+  width: 90px;
+  border-right: 2px solid #8e9bb0;
+  flex-shrink: 0;
+}
+
+.y-axis::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  right: -2px;
+  width: 2px;
+  height: 15px;
+  background-color: #8e9bb0;
+}
+
+.y-tick {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  display: flex;
+  align-items: center;
+}
+
+.y-tick-label {
+  font-size: 10px;
+  color: #4b5563;
+  margin-right: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.y-tick-mark {
+  width: 5px;
+  height: 2px;
+  background-color: #8e9bb0;
+}
+
+.chart-container {
+  height: 160px;
+  flex-grow: 1;
+  position: relative;
+  border-bottom: 2px solid #8e9bb0;
+}
+
+.grid-lines {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background-color: #f3f4f6;
+}
+
+.line-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.line-dots {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.line-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #00588F;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.line-labels {
+  position: absolute;
+  bottom: -25px;
+  left: 0; right: 0;
+  height: 20px;
+}
+
+.line-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.dot-tooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1F2937;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.line-dot:hover .dot-tooltip {
+  opacity: 1;
+}
+
+.list-box {
+  padding: 24px;
+  border-radius: 18px;
+  color: white;
+}
+
+.bg-navy {
+  background-color: #00406b;
+}
+
+.bg-blue {
+  background-color: #00588f;
+}
+
+.items-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pill-item {
+  background: white;
+  padding: 10px 18px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  color: #333;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.flex-items-center {
+  display: flex;
+  align-items: center;
+}
+
+.blue-bullet {
+  background-color: #e6f1ff;
+  color: #00588f;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.pill-text {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.price-tag {
+  background-color: #e6f1ff;
+  color: #00588f;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.empty-list {
+  width: 100%;
+  text-align: center;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 20px 0;
+}
+</style>
