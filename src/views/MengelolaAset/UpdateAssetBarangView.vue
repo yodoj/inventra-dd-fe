@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, markRaw } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import defaultImage from '@/assets/no-image.png';
 import { useAssetStore } from '@/stores/asset';
 import { useAuthStore } from '@/stores/auth';
 import { ChevronDown, ArrowLeft } from 'lucide-vue-next';
@@ -36,6 +37,7 @@ const form = ref({
 const fotoFile = ref<File | null>(null);
 const previewUrl = ref('');
 const fileError = ref('');
+const originalGambarUrl = ref('');
 
 const getFullImageUrl = (url: string) => {
   if (!url) return '';
@@ -92,6 +94,13 @@ const allStatuses = [
   { label: 'Dimusnahkan', value: 'DIMUSNAHKAN', categories: ['BARANG_TIDAK_HABIS_PAKAI'] }
 ];
 
+const onImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = defaultImage;
+  }
+};
+
 const filteredStatuses = computed(() => {
   if (!form.value.kategoriAset) return [];
   return allStatuses.filter(s => s.categories.includes(form.value.kategoriAset));
@@ -114,6 +123,7 @@ const isYayasanOrAdmin = computed(() => {
 onMounted(async () => {
   try {
     const data = await assetStore.fetchAssetBarangById(id);
+    originalGambarUrl.value = data.gambar_url_aset || '';
     form.value = {
       namaAset: data.nama_aset,
       merkAset: data.merk_aset,
@@ -127,7 +137,7 @@ onMounted(async () => {
       statusAset: data.status_aset,
       kategoriAset: data.kategori_aset,
       unit: data.unit,
-      gambarUrlAset: data.gambar_url_aset,
+      gambarUrlAset: data.gambar_url_aset && !data.gambar_url_aset.startsWith('/uploads/') ? data.gambar_url_aset : '',
       keteranganAset: data.keterangan_aset
     };
   } catch (error) {
@@ -160,7 +170,7 @@ watch([
   () => form.value.qtyDipinjam
 ], () => {
   // Physical Tersedia is the total stock minus unusable items
-  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save 
+  // Note: qtyDipinjam is currently set by BE as "Active right now", but for the DB save
   // we want to ensure the sum remains consistent with qtyAset.
   form.value.qtyTersedia = Math.max(0, form.value.qtyAset - (form.value.qtyRusak || 0) - (form.value.qtyPerbaikan || 0) - (form.value.qtyDimusnahkan || 0) - (form.value.qtyDipinjam || 0));
 });
@@ -195,7 +205,7 @@ const handleSubmit = async () => {
     if (fotoFile.value) {
       formData.append('gambarFile', fotoFile.value);
     } else {
-      formData.append('gambarUrlAset', form.value.gambarUrlAset);
+      formData.append('gambarUrlAset', form.value.gambarUrlAset || originalGambarUrl.value);
     }
 
     await assetStore.updateAssetBarang(id, formData);
@@ -226,8 +236,8 @@ const handleSubmit = async () => {
       <div v-else class="form-card card-shadow">
         <form @submit.prevent="confirmSubmit" class="asset-form">
           <div class="form-grid">
-            <!-- Left Column -->
-            <div class="form-column">
+            <!-- Left Column (Nama, Merk, Kuantitas, Lokasi) -->
+            <div class="form-column left-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Nama Aset <span class="required-star">*</span></label>
                 <input v-model="form.namaAset" type="text" placeholder="Contoh: Kamera DSLR" class="form-input" required />
@@ -239,7 +249,7 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Total Kuantitas <span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
                 <input v-model.number="form.qtyAset" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
               </div>
 
@@ -247,15 +257,10 @@ const handleSubmit = async () => {
                 <label class="s2-subtitle mb-2 block">Lokasi <span class="required-star">*</span></label>
                 <input v-model="form.lokasiAset" type="text" placeholder="Contoh: Lab Komputer" class="form-input" required />
               </div>
-
-              <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Keterangan</label>
-                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="6"></textarea>
-              </div>
             </div>
 
-            <!-- Middle Column -->
-            <div class="form-column">
+            <!-- Middle Column (Kategori, Gambar) -->
+            <div class="form-column middle-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Kategori <span class="required-star">*</span></label>
                 <div class="custom-select">
@@ -269,8 +274,8 @@ const handleSubmit = async () => {
 
               <!-- Gambar below Kategori -->
               <div class="form-group gambar-upload-group">
-                <label class="s2-subtitle mb-2 block">Gambar</label>
-                
+                <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
+
                 <div class="upload-options">
                   <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
                     <input
@@ -281,16 +286,16 @@ const handleSubmit = async () => {
                       @change="onFileChange"
                     />
 
-                    <div v-if="!previewUrl && !form.gambarUrlAset" class="dz-empty">
+                    <div v-if="!previewUrl && !form.gambarUrlAset && !originalGambarUrl" class="dz-empty">
                       <div class="dz-icon">+</div>
                       <div class="dz-title">Upload Foto</div>
                       <div class="dz-sub">Klik untuk pilih file</div>
                     </div>
 
                     <div v-else class="dz-filled">
-                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset)" alt="Preview" />
+                      <img class="dz-img" :src="previewUrl || getFullImageUrl(form.gambarUrlAset || originalGambarUrl)" alt="Preview" />
                       <div class="dz-bar">
-                        <div class="dz-name">{{ fotoFile ? fotoFile.name : 'Gambar saat ini' }}</div>
+                        <div class="dz-name">{{ fotoFile ? fotoFile.name : (originalGambarUrl ? 'Gambar saat ini' : 'Gambar saat ini') }}</div>
                         <button
                           v-if="fotoFile"
                           type="button"
@@ -312,8 +317,8 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            <!-- Right Column -->
-            <div class="form-column">
+            <!-- Right Column (Unit, Rincian Ketersediaan) -->
+            <div class="form-column right-column">
               <div class="form-group">
                 <label class="s2-subtitle mb-2 block">Unit <span class="required-star">*</span></label>
                 <div v-if="!isYayasanOrAdmin">
@@ -329,11 +334,11 @@ const handleSubmit = async () => {
               </div>
 
               <div v-if="form.kategoriAset === 'BARANG_TIDAK_HABIS_PAKAI'" class="form-group">
-                <label class="s2-subtitle mb-10 block">Rincian Ketersediaan</label>
-                
+                <label class="s2-subtitle mb-10 block">Rincian Ketersediaan <span class="required-star">*</span></label>
+
                 <div class="grid grid-cols-2 gap-x-4 gap-y-5">
                   <div class="form-group-sub">
-                    <label class="c2-caption mb-2 block">Tersedia (Fisik)</label>
+                    <label class="c2-caption mb-2 block">Tersedia</label>
                     <input v-model.number="form.qtyTersedia" type="number" class="form-input-small bg-gray-50 cursor-not-allowed" disabled title="Dihitung otomatis dari Total - (Rusak/Perbaikan/Dipinjam)" />
                   </div>
                   <div class="form-group-sub">
@@ -353,16 +358,24 @@ const handleSubmit = async () => {
                     <input v-model.number="form.qtyDimusnahkan" type="number" class="form-input-small" min="0" />
                   </div>
                 </div>
-                <p class="text-[10px] mt-3 text-blue-600 italic">
+                <p class="text-[11px] mt-3 text-gray-500">
                   * Kolom Tersedia & Dipinjam dikelola otomatis oleh sistem reservasi.
                 </p>
-                <p class="text-[11px] mt-1" :class="isQtySumValid ? 'text-gray-500 italic' : 'text-danger font-medium'">
-                  {{ isQtySumValid ? `* Total rincian sesuai dengan kuantitas` : `* Total rincian tidak sesuai` }}
+                <p class="text-[11px] mt-1" :class="isQtySumValid ? 'text-gray-500' : 'text-red-500 font-medium'">
+                  * {{ isQtySumValid ? 'Total rincian sesuai dengan kuantitas' : 'Total rincian tidak sesuai dengan kuantitas' }}
                 </p>
               </div>
               <div v-else-if="form.kategoriAset === 'BARANG_HABIS_PAKAI'" class="form-group">
                 <label class="s2-subtitle mb-2 block">Tersedia <span class="required-star">*</span></label>
                 <input v-model.number="form.qtyTersedia" type="number" class="form-input" min="0" required />
+              </div>
+            </div>
+
+            <!-- Full Width Row for Keterangan (Spans columns 1 and 2) -->
+            <div class="form-column keterangan-column">
+              <div class="form-group">
+                <label class="s2-subtitle mb-2 block">Keterangan</label>
+                <textarea v-model="form.keteranganAset" placeholder="Masukkan keterangan" class="form-textarea" rows="4"></textarea>
               </div>
             </div>
           </div>
@@ -669,5 +682,29 @@ select option {
 
 .mb-3 {
   margin-bottom: 12px;
+}
+
+.left-column {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.middle-column {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.right-column {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.keterangan-column {
+  grid-column: 1 / span 2;
+  grid-row: 2;
+}
+
+.keterangan-column .form-textarea {
+  min-height: 160px;
 }
 </style>

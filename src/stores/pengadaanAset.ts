@@ -5,6 +5,7 @@ import api from '@/services/api';
 // Interface untuk data tunggal pengadaan aset
 export interface PengadaanAset {
     id_pengadaan: string;
+    user_id?: string;
     waktu_pengajuan: string;
     nama_aset: string;
     merk: string;

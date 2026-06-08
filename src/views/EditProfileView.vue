@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
@@ -27,6 +27,38 @@ const showCancelModal = ref(false); // ← modal state
 
 const isSiswa = computed(() => formData.value.role === 'SISWA');
 
+const kelasOptionsMap: Record<string, string[]> = {
+  'KB-TK': ['KB', 'TK A', 'TK B'],
+  'SD':    ['1', '2', '3', '4', '5', '6'],
+  'SMP':   ['7', '8', '9'],
+  'SMA':   ['10', '11', '12'],
+};
+
+const kelasOptions = computed(() => kelasOptionsMap[formData.value.unit] ?? []);
+
+function mapKelasToOption(kelas: string, unit: string): string {
+  const opts = kelasOptionsMap[unit] ?? [];
+  if (!kelas) return '';
+  if (opts.includes(kelas)) return kelas;
+  const romanToNum: [string, string][] = [
+    ['XII', '12'], ['XI', '11'], ['X', '10'],
+    ['IX', '9'], ['VIII', '8'], ['VII', '7'],
+    ['VI', '6'], ['V', '5'], ['IV', '4'],
+    ['III', '3'], ['II', '2'], ['I', '1'],
+  ];
+  const upper = kelas.trim().toUpperCase();
+  for (const [roman, num] of romanToNum) {
+    if (upper.startsWith(roman) && opts.includes(num)) return num;
+  }
+  return '';
+}
+
+watch(() => formData.value.unit, (newUnit) => {
+  if (isSiswa.value) {
+    formData.value.kelas = mapKelasToOption(formData.value.kelas, newUnit);
+  }
+});
+
 const isFormDirty = computed(() => {
   return (
     formData.value.name !== authStore.user?.name ||
@@ -49,7 +81,7 @@ const fetchProfile = async () => {
       unit: data.unit || '',
       phoneNumber: data.phoneNumber || '',
       nisn: data.nisn || '',
-      kelas: data.kelas || '',
+      kelas: mapKelasToOption(data.kelas || '', data.unit || ''),
     };
     // Update auth store with complete profile data
     authStore.setAuth(data, authStore.token!);
@@ -247,12 +279,10 @@ onMounted(() => { fetchProfile(); });
         <!-- Kelas - Siswa only -->
         <div v-if="isSiswa" class="form-row">
           <label class="form-label">Kelas</label>
-          <input
-            type="text"
-            v-model="formData.kelas"
-            placeholder="Masukkan kelas"
-            class="form-input"
-          />
+          <select v-model="formData.kelas" class="form-input kelas-select">
+            <option value="" disabled>Pilih kelas</option>
+            <option v-for="opt in kelasOptions" :key="opt" :value="opt">{{ opt }}</option>
+          </select>
         </div>
 
         <!-- No Telepon (editable) -->
@@ -474,6 +504,11 @@ onMounted(() => { fetchProfile(); });
   padding: 0;
   font-family: inherit;
   transition: color 0.2s;
+}
+.kelas-select {
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
 }
 .form-input::placeholder {
   color: #bbb;

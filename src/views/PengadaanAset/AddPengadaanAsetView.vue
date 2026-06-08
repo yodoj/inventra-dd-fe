@@ -27,6 +27,45 @@ const form = ref({
   linkGambar: ''
 });
 
+const fotoFile = ref<File | null>(null);
+const previewUrl = ref('');
+const fileError = ref('');
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const onFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    fileError.value = 'File harus berupa gambar';
+    if (fileInput.value) fileInput.value.value = '';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    fileError.value = 'Ukuran file maksimal 2MB';
+    if (fileInput.value) fileInput.value.value = '';
+    return;
+  }
+
+  fileError.value = '';
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
+
+  fotoFile.value = file;
+  previewUrl.value = URL.createObjectURL(file);
+  form.value.linkGambar = '';
+};
+
+const removeFile = () => {
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
+  fotoFile.value = null;
+  previewUrl.value = '';
+  if (fileInput.value) fileInput.value.value = '';
+};
+
+
 // Mengecek apakah role user diperbolehkan membuat pengadaan
 const isAuthorized = computed(() => {
   return ['ADMIN', 'SARPRAS', 'GURU'].includes(authStore.userRole || '');
@@ -61,6 +100,22 @@ const today = new Date().toISOString().split('T')[0] ?? '';
     toastStore.error('Error', 'Tanggal pengadaan tidak boleh hari ini atau lampau');
     return;
   }
+
+  if (form.value.linkGambar && fotoFile.value) {
+    toastStore.error('Error', 'Pilih salah satu metode upload: gunakan link URL atau upload file, jangan keduanya');
+    return;
+  }
+
+  if (!form.value.linkGambar && !fotoFile.value) {
+    toastStore.error('Error', 'Gambar aset wajib diisi, pilih URL atau upload file');
+    return;
+  }
+
+  if (fileError.value) {
+    toastStore.error('Error', fileError.value);
+    return;
+  }
+  
   showConfirmModal.value = true;
 };
 
@@ -69,7 +124,22 @@ const handleSubmit = async () => {
   showConfirmModal.value = false;
   isSubmitting.value = true;
   try {
-    await pengadaanStore.createPengadaan(form.value);
+    const formData = new FormData();
+    formData.append('namaAset', form.value.namaAset);
+    formData.append('merk', form.value.merk);
+    formData.append('qty', form.value.qty.toString());
+    if (form.value.estimasiHarga) formData.append('estimasiHarga', form.value.estimasiHarga.toString());
+    formData.append('waktuPengadaan', form.value.waktuPengadaan);
+    formData.append('kategoriAset', form.value.kategoriAset);
+    formData.append('unit', form.value.unit);
+    
+    if (fotoFile.value) {
+      formData.append('gambarFile', fotoFile.value);
+    } else {
+      formData.append('linkGambar', form.value.linkGambar);
+    }
+
+    await pengadaanStore.createPengadaan(formData);
     toastStore.success('Success', 'Pengajuan pengadaan berhasil diajukan');
     router.push('/pengadaan/pengajuan');
   } catch (error: any) {
@@ -105,14 +175,14 @@ const handleSubmit = async () => {
               </div>
 
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Kuantitas (Per Item)<span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Kuantitas <span class="required-star">*</span></label>
                 <input v-model.number="form.qty" type="number" placeholder="Contoh: 1" class="form-input" min="1" required />
               </div>
             </div>
 
             <div class="form-column">
               <div class="form-group">
-                <label class="s2-subtitle mb-2 block">Estimasi Harga (Rp) <span class="required-star">*</span></label>
+                <label class="s2-subtitle mb-2 block">Estimasi Harga Per Item (Rp) <span class="required-star">*</span></label>
                 <input v-model.number="form.estimasiHarga" type="number" placeholder="Contoh: 5000000" class="form-input" min="1" required />
               </div>
 
@@ -148,10 +218,48 @@ const handleSubmit = async () => {
                 </div>
               </div>
 
-              <div class="form-group-full mt-6">
-              <label class="s2-subtitle mb-2 block">Link Gambar <span class="required-star">*</span></label>
-              <input v-model="form.linkGambar" type="url" placeholder="Masukkan link URL gambar" class="form-input full-width" required />
-            </div>
+              <div class="form-group gambar-upload-group mt-6">
+                <label class="s2-subtitle mb-2 block">Gambar <span class="required-star">*</span></label>
+                
+                <div class="upload-options">
+                  <label class="dropzone" :class="{ 'dz-disabled': isSubmitting }">
+                    <input
+                      ref="fileInput"
+                      class="file-hidden"
+                      type="file"
+                      accept="image/*"
+                      :disabled="isSubmitting"
+                      @change="onFileChange"
+                    />
+
+                    <div v-if="!previewUrl" class="dz-empty">
+                      <div class="dz-icon">+</div>
+                      <div class="dz-title">Upload Foto</div>
+                      <div class="dz-sub">Klik untuk pilih file</div>
+                    </div>
+
+                    <div v-else class="dz-filled">
+                      <img class="dz-img" :src="previewUrl" alt="Preview" />
+                      <div class="dz-bar">
+                        <div class="dz-name">{{ fotoFile?.name }}</div>
+                        <button
+                          type="button"
+                          class="dz-remove"
+                          @click.prevent="removeFile"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </label>
+
+                  <div class="url-option mt-4">
+                    <p class="c2-caption mb-3 text-gray-500">Atau masukkan link URL:</p>
+                    <input v-model="form.linkGambar" type="text" placeholder="https://contoh.com/gambar.jpg" class="form-input full-width" :disabled="!!fotoFile" autocomplete="off" />
+                  </div>
+                </div>
+                <p v-if="fileError" class="text-xs text-red-500 mt-1">{{ fileError }}</p>
+              </div>
             </div>
           </div>
 
@@ -329,5 +437,105 @@ const handleSubmit = async () => {
   .form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Upload Styles */
+.file-hidden {
+  display: none;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px dashed #D1D5DB;
+  border-radius: 12px;
+  background: #F9FAFB;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropzone:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.dz-empty {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.dz-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #E5E7EB;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #00588F;
+  background: white;
+}
+
+.dz-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.dz-sub {
+  font-size: 11px;
+  color: #6B7280;
+}
+
+.dz-img {
+  width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.dz-bar {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.dz-name {
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dz-remove {
+  border: none;
+  background: #FEE2E2;
+  color: #DC2626;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
 }
 </style>
